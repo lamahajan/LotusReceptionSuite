@@ -1310,7 +1310,17 @@ Reason: {reason}"></textarea>
               <button id="gp-logo-right" onclick="gpSetLogoPos('right')" class="btn bgh" style="flex:1;font-size:12px;padding:7px 4px">➡️ Top Right</button>
             </div>
           </div>
-          <div style="background:var(--bg3);border:1.5px solid var(--border);border-radius:var(--rs);padding:11px 13px;margin-bottom:12px">
+          <!-- Enable/disable printing -->
+          <div style="background:var(--bg3);border:1.5px solid var(--border);border-radius:var(--rs);padding:11px 13px;margin-bottom:10px">
+            <label style="display:flex;align-items:center;gap:9px;cursor:pointer">
+              <input type="checkbox" id="gp-print-enabled" style="accent-color:var(--green);width:16px;height:16px" onchange="gpSavePrintEnabled()" checked>
+              <div>
+                <div style="font-size:13px;font-weight:700;color:var(--text)">Enable auto-print on gate pass issue</div>
+                <div style="font-size:11px;color:var(--muted);margin-top:1px">Uncheck to stop slip from printing automatically</div>
+              </div>
+            </label>
+          </div>
+          <div style="background:var(--bg3);border:1.5px solid var(--border);border-radius:var(--rs);padding:11px 13px;margin-bottom:10px">
             <label style="display:flex;align-items:center;gap:9px;cursor:pointer">
               <input type="checkbox" id="gp-print-direct" style="accent-color:var(--blue);width:16px;height:16px" onchange="gpSavePrintDirect()">
               <div>
@@ -1318,6 +1328,30 @@ Reason: {reason}"></textarea>
                 <div style="font-size:11px;color:var(--muted);margin-top:1px">Directly opens browser print dialog (faster)</div>
               </div>
             </label>
+          </div>
+          <!-- Picker photo on slip -->
+          <div style="background:var(--bg3);border:1.5px solid var(--border);border-radius:var(--rs);padding:11px 13px;margin-bottom:10px">
+            <label style="display:flex;align-items:center;gap:9px;cursor:pointer">
+              <input type="checkbox" id="gp-print-photo" style="accent-color:var(--blue);width:16px;height:16px" onchange="gpSavePrintPhoto()">
+              <div>
+                <div style="font-size:13px;font-weight:700;color:var(--text)">✅ Print picker photo on slip</div>
+                <div style="font-size:11px;color:var(--muted);margin-top:1px">If a photo was captured, it will be included on the printed slip</div>
+              </div>
+            </label>
+          </div>
+          <!-- Principal signature -->
+          <div style="background:var(--bg3);border:1.5px solid var(--border);border-radius:var(--rs);padding:11px 13px;margin-bottom:12px">
+            <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:6px">✍️ Principal Signature</div>
+            <div style="font-size:11px;color:var(--muted);margin-bottom:8px">Upload once — appears automatically on every printed slip.</div>
+            <div id="sig-preview-wrap" style="border:1.5px dashed var(--border2);border-radius:var(--rs);padding:8px 10px;text-align:center;background:var(--bg2);cursor:pointer;min-height:44px;display:flex;align-items:center;justify-content:center" onclick="document.getElementById('sig-file-input').click()">
+              <input type="file" id="sig-file-input" accept="image/*" style="display:none" onchange="loadSignatureFile(this)">
+              <img id="sig-preview-img" style="max-height:38px;max-width:150px;display:none;border-radius:3px">
+              <span id="sig-placeholder" style="font-size:12px;color:var(--sub)">📁 Click to upload signature</span>
+            </div>
+            <div style="display:flex;gap:6px;margin-top:6px">
+              <button class="btn bgh" style="font-size:11px;flex:1" onclick="document.getElementById('sig-file-input').click()">📁 Upload</button>
+              <button class="btn bgh" style="font-size:11px" onclick="clearSignature()">✕ Remove</button>
+            </div>
           </div>
           <button class="btn bp bfull" onclick="gpPrintPasses('today')" style="margin-bottom:6px">🖨️ Print Today's Passes</button>
           <button class="btn bgh bfull" onclick="gpPrintPasses('all')" style="font-size:12px">Print All Records</button>
@@ -3225,7 +3259,7 @@ document.addEventListener('click',ev=>{
 async function openCam(){
   const note=document.getElementById('cam-note'),fup=document.getElementById('file-up');
   note.style.display='none';fup.style.display='none';
-  if(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia){
+  if(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia&&window.isSecureContext){
     try{
       let stream;
       try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:720}}});}
@@ -3237,8 +3271,9 @@ async function openCam(){
       document.getElementById('cam-ctrl').style.display='flex';
       return;
     }catch(err){
-      if(location.protocol==='file:')note.textContent='⚠️ Camera needs HTTPS.';
-      else if(err.name==='NotAllowedError')note.textContent='📷 Camera permission denied.';
+      if(location.protocol==='file:')note.textContent='⚠️ Camera needs HTTPS — open via a web server, not a local file.';
+      else if(err.name==='NotAllowedError')note.textContent='📷 Camera permission denied — allow camera access in browser settings.';
+      else if(!navigator.mediaDevices||!window.isSecureContext)note.textContent='📷 Camera requires HTTPS. If hosted on GitHub Pages, make sure you are using https:// not http:// in the URL.';
       else note.textContent='📷 Camera unavailable: '+err.message;
       note.style.display='block';fup.style.display='block';return;
     }
@@ -3260,7 +3295,7 @@ async function issuePass(){
   S.passes.unshift(pass);
   await push('passes');
   gpToast(`✅ Pass issued for ${pass.studentName}`);
-  gpPrintA6Slip(pass);
+  if(_gpPrintCfg.enabled!==false)gpPrintA6Slip(pass);
   // Telegram school log — always fires (photo or text-only)
   if(TGCfg.enabled) sendToTelegramLog(pass);
   // OneDrive photo upload — only if photo exists
@@ -3921,6 +3956,9 @@ function gpLoadPrintCfg(){
   const dir=document.getElementById('gp-print-direct');
   if(dir)dir.checked=!!_gpPrintCfg.direct;
   gpApplyLogoPosButtons(_gpPrintCfg.logoPos||'left');
+  const enEl=document.getElementById('gp-print-enabled');if(enEl)enEl.checked=_gpPrintCfg.enabled!==false;
+  const phEl=document.getElementById('gp-print-photo');if(phEl)phEl.checked=!!_gpPrintCfg.printPhoto;
+  loadSignature();_updateSigPreview();
   const sub=document.getElementById('gacc-print-sub');
   if(sub)sub.textContent=gpPrintSizeLabel(_gpPrintCfg.size||'a6',_gpPrintCfg.orient||'portrait');
 }
@@ -4012,9 +4050,9 @@ function gpPrintA6Slip(p){
   const pageDecl=isLandscape?cfg.pW+'mm '+cfg.pH+'mm':cfg.pW+' '+cfg.pH;
 
   const html='<!DOCTYPE html><html><head><meta charset="UTF-8"><style>'
-    +'@page{size:'+pageDecl+';margin:0}'
+    +'/* @page handled in body style */'
     +'*{box-sizing:border-box;margin:0;padding:0}'
-    +(()=>{const lp=_gpPrintCfg.logoPos||'left';const ml=lp==='center'?'auto':lp==='right'?'auto':'0';const mr=lp==='center'?'auto':lp==='right'?'0':'auto';return 'body{width:'+cW+';height:'+cH+';font-family:"Segoe UI",Arial,sans-serif;color:#1a1035;background:#fff;margin-left:'+ml+';margin-right:'+mr+'}';})()
+    +(()=>{const lp=_gpPrintCfg.logoPos||'left';let pageMargin='@page{size:'+pageDecl+';margin:0}';let bodyStyle='body{width:'+cW+';height:'+cH+';font-family:"Segoe UI",Arial,sans-serif;color:#1a1035;background:#fff;position:absolute;top:0;';if(lp==='center')bodyStyle+='left:50%;transform:translateX(-50%);}';else if(lp==='right')bodyStyle+='right:0;left:auto;}';else bodyStyle+='left:0;}';return bodyStyle;})()
     +'.wrap{width:'+cW+';height:'+cH+';padding:'+pad+';display:flex;flex-direction:column;gap:2mm}'
     +'.top{display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:3mm;border-bottom:2px solid #7c3aed}'
     +'.school{font-size:'+fSub+'pt;font-weight:900;color:#7c3aed;letter-spacing:.8px;text-transform:uppercase}'
@@ -4039,7 +4077,7 @@ function gpPrintA6Slip(p){
     +'<div><div class="school">🪷 Lotus International School</div><div class="doc-label">Gate Pass</div></div>'
     +'<div style="display:flex;flex-direction:column;align-items:flex-end;gap:2mm">'
     +'<div class="pass-id">#'+xEsc(p.id.substr(-4).toUpperCase())+'</div>'
-    +(p.gateOutTime?'<div class="chip out">✅ OUT</div>':'<div class="chip pend">⏳ PENDING</div>')
+    // chip not shown on print — status visible in app only
     +'</div></div>'
     +'<div class="sname">'+xEsc(p.studentName)+'</div>'
     +'<div class="meta">Class '+xEsc(p.class||'—')+' &nbsp;·&nbsp; Adm: <b style="font-family:monospace">'+xEsc(p.admissionNumber||'—')+'</b></div>'
@@ -4049,11 +4087,12 @@ function gpPrintA6Slip(p){
     +(p.busNumber?'<div class="box"><div class="lbl">Bus</div><div class="val">'+xEsc(p.busNumber)+'</div></div>':'')
     +'</div>'
     +(p.reason?'<div class="rsn">📝 '+xEsc(p.reason)+'</div>':'')
+    +(_gpPrintCfg.printPhoto&&p.pickerPhoto?'<div style="margin-top:2mm;text-align:center"><img src="'+p.pickerPhoto+'" style="max-height:24mm;max-width:100%;border-radius:3px;border:1px solid #e4ddf5"></div>':'')
     +'<div class="foot">'
     +'<div class="fi"><div class="fl">Date</div><div class="fv">'+xEsc(gpFmtPrintDate(p.date))+'</div></div>'
     +'<div class="fi"><div class="fl">Time</div><div class="fv">'+xEsc(gpFmtPrintTime(p.time))+'</div></div>'
     +(p.gateOutTime?'<div class="fi"><div class="fl">Gate Out</div><div class="fv">'+xEsc(p.gateOutTime)+'</div></div>':'')
-    +'<div class="fi" style="text-align:right"><div class="fl">Signature</div><div style="width:18mm;border-bottom:1px solid #c4b5fd;height:7mm;margin-top:1mm"></div></div>'
+    +(_gpSignatureData?'<div class="fi" style="text-align:right"><div class="fl">Principal</div><img src="'+_gpSignatureData+'" style="height:9mm;max-width:22mm;display:block;margin-left:auto;margin-top:1mm"></div>':'<div class="fi" style="text-align:right"><div class="fl">Signature</div><div style="width:18mm;border-bottom:1px solid #c4b5fd;height:7mm;margin-top:1mm"></div></div>')
     +'</div></div>'
     +'<script>window.onload=function(){window.print();setTimeout(function(){window.close();},1200);}<\/script>'
     +'</body></html>';
@@ -4246,7 +4285,7 @@ function getAllFYs(){const s=new Set(R.entries.map(e=>e.fy).filter(Boolean));s.a
 
 // ─── INIT ────────────────────────────────────────────────
 function _refInit(){
-  initTheme();loadCFG();loadFSCfg();loadODCfg();loadGPODCfg();loadTGCfg();loadPTGCfg();loadRefTGCfg();loadWixCfg();
+  initTheme();loadCFG();loadFSCfg();loadODCfg();loadGPODCfg();loadTGCfg();loadPTGCfg();loadRefTGCfg();loadWixCfg();loadSignature();
   if(CFG.adminAlertEnabled===undefined)CFG.adminAlertEnabled=true;
   const fu=localStorage.getItem('ref_fb_url'),fc=localStorage.getItem('ref_fb_code');
   if(fu&&fc){fbCfg={url:fu,code:fc};fbFetchAll();if(fbIv)clearInterval(fbIv);fbIv=setInterval(fbFetchAll,8000);}
@@ -6806,6 +6845,37 @@ function fqInit(){
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',fqInit);
 else fqInit();
 })();
+
+// ─── PRINT ENABLED / PHOTO / SIGNATURE ──────────────────
+function gpSavePrintEnabled(){
+  const el=document.getElementById('gp-print-enabled');
+  _gpPrintCfg.enabled=el?el.checked:true;
+  _gpSavePrintCfg();
+  gpToast(_gpPrintCfg.enabled?'Auto-print enabled':'Auto-print disabled');
+}
+function gpSavePrintPhoto(){
+  const el=document.getElementById('gp-print-photo');
+  _gpPrintCfg.printPhoto=el?el.checked:false;
+  _gpSavePrintCfg();
+}
+let _gpSignatureData='';
+function loadSignature(){
+  try{const d=localStorage.getItem('gp_signature');if(d){_gpSignatureData=d;_updateSigPreview();}}catch(e){}
+}
+function _updateSigPreview(){
+  const img=document.getElementById('sig-preview-img');
+  const ph=document.getElementById('sig-placeholder');
+  if(!img||!ph)return;
+  if(_gpSignatureData){img.src=_gpSignatureData;img.style.display='block';ph.style.display='none';}
+  else{img.style.display='none';ph.style.display='';}
+}
+function loadSignatureFile(input){
+  const file=input.files[0];if(!file)return;
+  const r=new FileReader();
+  r.onload=e=>{_gpSignatureData=e.target.result;localStorage.setItem('gp_signature',_gpSignatureData);_updateSigPreview();gpToast('✅ Signature saved');};
+  r.readAsDataURL(file);
+}
+function clearSignature(){_gpSignatureData='';localStorage.removeItem('gp_signature');_updateSigPreview();gpToast('Signature removed');}
 
 // ─── TELEGRAM SUB-TAB SWITCHER (Gatepass) ─────────────────
 function switchTGSubTab(tab){
