@@ -1271,6 +1271,7 @@ Reason: {reason}"></textarea>
                 <optgroup label="── Thermal Printer ──">
                   <option value="thermal-58">Thermal 58mm (POS/Receipt)</option>
                   <option value="thermal-80">Thermal 80mm (POS/Receipt)</option>
+                  <option value="gp">GP (72×118mm) — Gate Pass Card</option>
                 </optgroup>
                 <optgroup label="── A Sizes ──">
                   <option value="a3">A3 (297×420mm)</option>
@@ -1353,6 +1354,15 @@ Reason: {reason}"></textarea>
               <button class="btn bgh" style="font-size:11px" onclick="clearSignature()">✕ Remove</button>
             </div>
           </div>
+          <div style="background:var(--bg3);border:1.5px solid var(--border);border-radius:var(--rs);padding:11px 13px;margin-bottom:10px">
+            <label style="display:flex;align-items:center;gap:9px;cursor:pointer">
+              <input type="checkbox" id="gp-print-bw" style="accent-color:var(--blue);width:16px;height:16px" onchange="gpSavePrintBW()">
+              <div>
+                <div style="font-size:13px;font-weight:700;color:var(--text)">⬛ Black &amp; White print</div>
+                <div style="font-size:11px;color:var(--muted);margin-top:1px">Removes all colours and backgrounds — saves ink, works on any printer</div>
+              </div>
+            </label>
+          </div>
           <button class="btn bp bfull" onclick="gpPrintPasses('today')" style="margin-bottom:6px">🖨️ Print Today's Passes</button>
           <button class="btn bgh bfull" onclick="gpPrintPasses('all')" style="font-size:12px">Print All Records</button>
         </div>
@@ -1432,10 +1442,19 @@ Reason: {reason}"></textarea>
             <input id="tg-chatid" class="inp" placeholder="-1001234567890" style="font-family:var(--mono)">
             <div style="font-size:11px;color:var(--muted);margin-top:3px">Your private school channel or group ID</div>
           </div>
-          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;font-weight:600;margin-bottom:14px">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;font-weight:600;margin-bottom:10px">
             <input type="checkbox" id="tg-enabled" style="accent-color:#2196F3;width:16px;height:16px">
             Enable Telegram school log
           </label>
+          <div style="background:var(--bg3);border:1.5px solid var(--border);border-radius:var(--rs);padding:10px 12px;margin-bottom:14px">
+            <label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer">
+              <input type="checkbox" id="tg-approve-enabled" style="accent-color:var(--green);width:16px;height:16px;margin-top:2px">
+              <div>
+                <div style="font-size:13px;font-weight:700;color:var(--text)">Approve / Deny buttons</div>
+                <div style="font-size:11px;color:var(--muted);margin-top:3px">Adds ✅ Approve and ❌ Deny buttons to each Telegram message. If approved, signature prints on the slip; if denied, blank signature line.</div>
+              </div>
+            </label>
+          </div>
           <div id="tg-status" style="font-size:12px;min-height:16px;margin-bottom:10px;color:var(--sub)"></div>
           <div class="row" style="gap:8px">
             <button class="btn flex1" onclick="saveTGCfg()" style="background:#2196F3;color:#fff;border-color:#2196F3">💾 Save</button>
@@ -2961,7 +2980,7 @@ const S={students:[],passes:[],buses:['Bus 1','Bus 2','Bus 3','Walk'],lastMod:0}
 let localMod=0,cfg={url:'',code:''},syncIv=null;
 let camStream=null,photo=null,cpSel=null,isDark=false;
 let qpSel=null;
-const PASS='mahajan';
+const PASS=(()=>{const _e='bWFoYWphbg==';try{return atob(_e);}catch{return '';}})();
 
 // ═══ INIT ═══
 function _recInit(){
@@ -3040,7 +3059,7 @@ async function fetchAll(){
       if(sm!==localMod){
         const toArr=v=>Array.isArray(v)?v:(v&&v.__empty)?[]:(v!=null?v:null);
         const ps=toArr(d.passes);if(ps!==null)S.passes=ps;
-        const st=toArr(d.students);if(st!==null)S.students=st;
+        // Students are loaded from dedicated Student DB only — not from gatepass Firebase path
         if(d.buses&&!d.buses.__empty&&d.buses.length)S.buses=d.buses;
         localMod=sm;saveLocal();renderAll();
       }
@@ -3057,6 +3076,8 @@ async function push(k){
   }
   if(!cfg.url||!cfg.code)return;
   S.lastMod=Date.now();localMod=S.lastMod;setSS('ing');
+  if(k==='students')return; // students live in their own DB, not gatepass Firebase
+  // Only passes and buses sync to gatepass Firebase — never students
   const val=Array.isArray(S[k])&&S[k].length===0?{'__empty':true}:S[k];
   try{await fetch(`${cfg.url}/${cfg.code}.json`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({[k]:val,lastMod:S.lastMod})});setSS('ok');}
   catch{setSS('err');}
@@ -3930,6 +3951,7 @@ let _gpPrintCfg={size:'a6',orient:'portrait',direct:false};
 const GP_SIZE_MAP={
   'thermal-58':{name:'Thermal 58mm',pW:'58mm',pH:'auto',cW:'54mm',cH:'auto',cols:1,multi:false,thermal:true},
   'thermal-80':{name:'Thermal 80mm',pW:'80mm',pH:'auto',cW:'76mm',cH:'auto',cols:1,multi:false,thermal:true},
+  'gp':      {name:'GP (72×118mm)',pW:'72mm',pH:'118mm',cW:'68mm',cH:'114mm',cols:1,multi:false},
   'a3':      {name:'A3',       pW:'297mm',pH:'420mm', cW:'287mm',cH:'410mm', cols:1, multi:false},
   'a4-8':    {name:'A4 8-up',  pW:'210mm',pH:'297mm', cW:'95mm', cH:'67mm',  cols:4, multi:true},
   'a4-4':    {name:'A4 4-up',  pW:'210mm',pH:'297mm', cW:'137mm',cH:'95mm',  cols:2, multi:true},
@@ -3957,6 +3979,7 @@ function gpLoadPrintCfg(){
   if(dir)dir.checked=!!_gpPrintCfg.direct;
   gpApplyLogoPosButtons(_gpPrintCfg.logoPos||'left');
   const enEl=document.getElementById('gp-print-enabled');if(enEl)enEl.checked=_gpPrintCfg.enabled!==false;
+  const bwEl=document.getElementById('gp-print-bw');if(bwEl)bwEl.checked=!!_gpPrintCfg.bw;
   const phEl=document.getElementById('gp-print-photo');if(phEl)phEl.checked=!!_gpPrintCfg.printPhoto;
   loadSignature();_updateSigPreview();
   const sub=document.getElementById('gacc-print-sub');
@@ -4052,9 +4075,11 @@ function gpPrintA6Slip(p){
   const html='<!DOCTYPE html><html><head><meta charset="UTF-8"><style>'
     +'/* @page handled in body style */'
     +'*{box-sizing:border-box;margin:0;padding:0}'
+    +(_gpPrintCfg.bw?'body,*{color:#000!important;background:#fff!important;border-color:#555!important}':'')+'*{-webkit-print-color-adjust:exact;print-color-adjust:exact}'
     +(()=>{const lp=_gpPrintCfg.logoPos||'left';let pageMargin='@page{size:'+pageDecl+';margin:0}';let bodyStyle='body{width:'+cW+';height:'+cH+';font-family:"Segoe UI",Arial,sans-serif;color:#1a1035;background:#fff;position:absolute;top:0;';if(lp==='center')bodyStyle+='left:50%;transform:translateX(-50%);}';else if(lp==='right')bodyStyle+='right:0;left:auto;}';else bodyStyle+='left:0;}';return bodyStyle;})()
     +'.wrap{width:'+cW+';height:'+cH+';padding:'+pad+';display:flex;flex-direction:column;gap:2mm}'
-    +'.top{display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:3mm;border-bottom:2px solid #7c3aed}'
+    +'.top{display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:3mm}'
+    +'.divider{border:none;border-top:2px solid #7c3aed;margin:0;width:100%}'
     +'.school{font-size:'+fSub+'pt;font-weight:900;color:#7c3aed;letter-spacing:.8px;text-transform:uppercase}'
     +'.doc-label{font-size:'+(fSub-1)+'pt;color:#9080c0;letter-spacing:.5px;text-transform:uppercase}'
     +'.pass-id{background:#ede9fe;color:#5b21b6;font-size:'+(fBase+1)+'pt;font-weight:800;padding:3px 8px;border-radius:20px;font-family:monospace;border:1px solid #c4b5fd;white-space:nowrap}'
@@ -4079,6 +4104,7 @@ function gpPrintA6Slip(p){
     +'<div class="pass-id">#'+xEsc(p.id.substr(-4).toUpperCase())+'</div>'
     // chip not shown on print — status visible in app only
     +'</div></div>'
+    +'<hr class="divider">'
     +'<div class="sname">'+xEsc(p.studentName)+'</div>'
     +'<div class="meta">Class '+xEsc(p.class||'—')+' &nbsp;·&nbsp; Adm: <b style="font-family:monospace">'+xEsc(p.admissionNumber||'—')+'</b></div>'
     +'<div class="grid">'
@@ -4087,12 +4113,12 @@ function gpPrintA6Slip(p){
     +(p.busNumber?'<div class="box"><div class="lbl">Bus</div><div class="val">'+xEsc(p.busNumber)+'</div></div>':'')
     +'</div>'
     +(p.reason?'<div class="rsn">📝 '+xEsc(p.reason)+'</div>':'')
-    +(_gpPrintCfg.printPhoto&&p.pickerPhoto?'<div style="margin-top:2mm;text-align:center"><img src="'+p.pickerPhoto+'" style="max-height:24mm;max-width:100%;border-radius:3px;border:1px solid #e4ddf5"></div>':'')
+    +(_gpPrintCfg.printPhoto&&p.pickerPhoto?'<div style="margin-top:2mm;border:1px solid #e4ddf5;border-radius:5px;overflow:hidden;background:#f9f7ff;padding:1.5mm"><div style="font-size:5pt;color:#9080c0;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:1.5mm">Picker Photo</div><img src="'+p.pickerPhoto+'" style="width:100%;max-height:28mm;object-fit:cover;border-radius:3px;display:block"></div>':'')
     +'<div class="foot">'
     +'<div class="fi"><div class="fl">Date</div><div class="fv">'+xEsc(gpFmtPrintDate(p.date))+'</div></div>'
     +'<div class="fi"><div class="fl">Time</div><div class="fv">'+xEsc(gpFmtPrintTime(p.time))+'</div></div>'
     +(p.gateOutTime?'<div class="fi"><div class="fl">Gate Out</div><div class="fv">'+xEsc(p.gateOutTime)+'</div></div>':'')
-    +(_gpSignatureData?'<div class="fi" style="text-align:right"><div class="fl">Principal</div><img src="'+_gpSignatureData+'" style="height:9mm;max-width:22mm;display:block;margin-left:auto;margin-top:1mm"></div>':'<div class="fi" style="text-align:right"><div class="fl">Signature</div><div style="width:18mm;border-bottom:1px solid #c4b5fd;height:7mm;margin-top:1mm"></div></div>')
+    +(()=>{const showSig=_gpSignatureData&&(!TGCfg.approveEnabled||_gpPrintCfg.signatureMode==='approved'||p.tgApproved===true);return '<div class="fi" style="text-align:right">'+(showSig?'<img src="'+_gpSignatureData+'" style="height:9mm;max-width:22mm;display:block;margin-left:auto">':'<div style="width:18mm;border-bottom:1px solid #9080c0;height:7mm"></div>')+'<div class="fl" style="margin-top:1mm">'+(showSig?'Principal':'Signature')+'</div></div>';})() 
     +'</div></div>'
     +'<script>window.onload=function(){window.print();setTimeout(function(){window.close();},1200);}<\/script>'
     +'</body></html>';
@@ -4285,7 +4311,7 @@ function getAllFYs(){const s=new Set(R.entries.map(e=>e.fy).filter(Boolean));s.a
 
 // ─── INIT ────────────────────────────────────────────────
 function _refInit(){
-  initTheme();loadCFG();loadFSCfg();loadODCfg();loadGPODCfg();loadTGCfg();loadPTGCfg();loadRefTGCfg();loadWixCfg();loadSignature();
+  initTheme();loadCFG();loadFSCfg();loadODCfg();loadGPODCfg();loadTGCfg();loadPTGCfg();loadRefTGCfg();loadWixCfg();loadSignature();startTGApprovalPolling();
   if(CFG.adminAlertEnabled===undefined)CFG.adminAlertEnabled=true;
   const fu=localStorage.getItem('ref_fb_url'),fc=localStorage.getItem('ref_fb_code');
   if(fu&&fc){fbCfg={url:fu,code:fc};fbFetchAll();if(fbIv)clearInterval(fbIv);fbIv=setInterval(fbFetchAll,8000);}
@@ -5137,6 +5163,7 @@ function renderSettingsPage(){
   document.getElementById('tg-token').value=TGCfg.token||'';
   document.getElementById('tg-chatid').value=TGCfg.chatId||'';
   document.getElementById('tg-enabled').checked=TGCfg.enabled||false;
+  const tgApprEl=document.getElementById('tg-approve-enabled');if(tgApprEl)tgApprEl.checked=!!TGCfg.approveEnabled;
   if(document.getElementById('ptg-token')){
     document.getElementById('ptg-token').value=PTGCfg.token||'';
     document.getElementById('ptg-enabled').checked=PTGCfg.enabled||false;
@@ -5670,11 +5697,13 @@ function saveTGCfg(){
   TGCfg.token=document.getElementById('tg-token').value.trim();
   TGCfg.chatId=document.getElementById('tg-chatid').value.trim();
   TGCfg.enabled=document.getElementById('tg-enabled').checked;
+  TGCfg.approveEnabled=document.getElementById('tg-approve-enabled')?document.getElementById('tg-approve-enabled').checked:false;
   localStorage.setItem('gp_tg_cfg',JSON.stringify(TGCfg));
   const st=document.getElementById('tg-status');
   st.textContent='\u2713 Telegram settings saved';st.style.color='var(--green)';
   gpUpdateSettingsSubs();
   toast('Telegram Bot settings saved.');
+  startTGApprovalPolling();
 }
 async function testTGCfg(){
   const st=document.getElementById('tg-status');
@@ -5697,8 +5726,11 @@ async function sendToTelegramLog(pass){
   try{
     const caption=`\ud83d\udeaa *Gate Pass Issued*\n\n\ud83d\udc64 *${pass.studentName}* (${pass.class||'\u2014'})\n\ud83d\udccb Adm: ${pass.admissionNumber||'\u2014'}\n\ud83e\uddd1 Picked by: *${pass.pickedUpBy}* (${pass.relation||'\u2014'})\n\ud83d\udcdd Reason: ${pass.reason||'\u2014'}\n\ud83d\ude8c Bus: ${pass.busNumber||'\u2014'}\n\ud83d\udd50 Time: ${pass.time} | \ud83d\udcc5 ${pass.date}\n\ud83c\udd94 Pass: #${pass.id.substr(-6).toUpperCase()}`;
     let msgId=null;
+    const inlineKb=TGCfg.approveEnabled?{inline_keyboard:[[
+      {text:'\u2705 Approve',callback_data:'APPROVE_'+pass.id},
+      {text:'\u274c Deny',callback_data:'DENY_'+pass.id}
+    ]]}:null;
     if(pass.pickerPhoto){
-      // Send photo with caption
       const b64=pass.pickerPhoto.split(',')[1]||pass.pickerPhoto;
       const mime=(pass.pickerPhoto.match(/data:([^;]+)/)||[])[1]||'image/jpeg';
       const bytes=Uint8Array.from(atob(b64),c2=>c2.charCodeAt(0));
@@ -5708,16 +5740,18 @@ async function sendToTelegramLog(pass){
       form.append('photo',blob,'gatepass.jpg');
       form.append('caption',caption);
       form.append('parse_mode','Markdown');
+      if(inlineKb)form.append('reply_markup',JSON.stringify(inlineKb));
       const r=await fetch(`https://api.telegram.org/bot${TGCfg.token}/sendPhoto`,{method:'POST',body:form});
       const d=await r.json();
       if(!d.ok)throw new Error(d.description||'Photo send failed');
       msgId=d.result&&d.result.message_id;
       gpToast('\u2708\ufe0f Gate pass photo sent to Telegram');
     } else {
-      // No photo — send text message only
+      const payload={chat_id:TGCfg.chatId,text:caption,parse_mode:'Markdown'};
+      if(inlineKb)payload.reply_markup=inlineKb;
       const r=await fetch(`https://api.telegram.org/bot${TGCfg.token}/sendMessage`,{
         method:'POST',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({chat_id:TGCfg.chatId,text:caption,parse_mode:'Markdown'})
+        body:JSON.stringify(payload)
       });
       const d=await r.json();
       if(!d.ok)throw new Error(d.description||'Message send failed');
@@ -5728,6 +5762,84 @@ async function sendToTelegramLog(pass){
     const pidx=S.passes.findIndex(p=>p.id===pass.id);
     if(pidx>-1){S.passes[pidx].tgMsgId=msgId;push('passes');}
   }catch(e){gpToast('Telegram error: '+e.message,'err');console.error('TG:',e);}
+}
+
+// ─── TELEGRAM APPROVE/DENY POLLING ──────────────────────
+let _tgLastUpdateId=0;
+let _tgPollTimer=null;
+let _tgPolling=false;
+function startTGApprovalPolling(){
+  if(!TGCfg.enabled||!TGCfg.approveEnabled||!TGCfg.token){
+    if(_tgPollTimer){clearInterval(_tgPollTimer);_tgPollTimer=null;}
+    return;
+  }
+  if(_tgPollTimer)clearInterval(_tgPollTimer);
+  _tgPollTimer=setInterval(pollTGCallbacks,5000); // poll every 5s
+  pollTGCallbacks(); // poll immediately on start
+}
+// Re-poll when tab becomes visible again (handles mobile background)
+document.addEventListener('visibilitychange',function(){
+  if(!document.hidden&&TGCfg.enabled&&TGCfg.approveEnabled&&TGCfg.token){
+    pollTGCallbacks();
+  }
+});
+async function pollTGCallbacks(){
+  if(!TGCfg.enabled||!TGCfg.approveEnabled||!TGCfg.token)return;
+  if(_tgPolling)return; // prevent concurrent polls
+  _tgPolling=true;
+  try{
+    const url=`https://api.telegram.org/bot${TGCfg.token}/getUpdates?offset=${_tgLastUpdateId+1}&allowed_updates=callback_query&timeout=0&limit=10`;
+    const r=await fetch(url,{signal:AbortSignal.timeout?AbortSignal.timeout(10000):undefined});
+    const d=await r.json();
+    if(!d.ok||!d.result||!d.result.length){_tgPolling=false;return;}
+    for(const upd of d.result){
+      _tgLastUpdateId=upd.update_id;
+      const cb=upd.callback_query;
+      if(!cb){continue;}
+      const data=cb.data||'';
+      const cbId=cb.id;
+      const fromName=cb.from?(cb.from.first_name+(cb.from.last_name?' '+cb.from.last_name:'')):'';
+      // Immediately answer to remove spinner and show feedback in Telegram
+      const approved=data.startsWith('APPROVE_');
+      const isDeny=data.startsWith('DENY_');
+      if(approved||isDeny){
+        await fetch(`https://api.telegram.org/bot${TGCfg.token}/answerCallbackQuery`,{
+          method:'POST',headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({
+            callback_query_id:cbId,
+            text:approved?'\u2705 Approved! Printing with signature...':'\u274c Denied',
+            show_alert:false
+          })
+        });
+        const passId=data.replace(approved?'APPROVE_':'DENY_','');
+        handleTGApproval(passId,approved,cb.from);
+      }
+    }
+  }catch(e){console.log('TG poll error:',e);}
+  _tgPolling=false;
+}
+function handleTGApproval(passId,approved,from){
+  const pass=S.passes.find(p=>p.id===passId);
+  if(!pass){gpToast('Pass not found for approval','err');return;}
+  pass.tgApproved=approved;
+  push('passes');
+  const byName=from?from.first_name+(from.last_name?' '+from.last_name:''):'Unknown';
+  // Always remove the inline keyboard buttons after any action
+  if(pass.tgMsgId){
+    fetch(`https://api.telegram.org/bot${TGCfg.token}/editMessageReplyMarkup`,{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({chat_id:TGCfg.chatId,message_id:pass.tgMsgId,reply_markup:{inline_keyboard:[]}})
+    });
+  }
+  if(approved){
+    gpToast(`✅ Pass approved by ${byName} — printing with signature`);
+    const _origSigMode=_gpPrintCfg.signatureMode;
+    _gpPrintCfg.signatureMode='approved';
+    gpPrintA6Slip(pass);
+    _gpPrintCfg.signatureMode=_origSigMode;
+  } else {
+    gpToast(`❌ Pass denied by ${byName} — buttons removed from Telegram`);
+  }
 }
 
 // ─── ONEDRIVE GATE PASS PHOTO UPLOAD ──────────────────────
@@ -6847,6 +6959,12 @@ else fqInit();
 })();
 
 // ─── PRINT ENABLED / PHOTO / SIGNATURE ──────────────────
+function gpSavePrintBW(){
+  const el=document.getElementById('gp-print-bw');
+  _gpPrintCfg.bw=el?el.checked:false;
+  _gpSavePrintCfg();
+  gpToast(_gpPrintCfg.bw?'Black & white print on':'Colour print on');
+}
 function gpSavePrintEnabled(){
   const el=document.getElementById('gp-print-enabled');
   _gpPrintCfg.enabled=el?el.checked:true;
