@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+aa<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
@@ -4119,7 +4119,7 @@ function gpPrintA6Slip(p){
     +'<div class="fi"><div class="fv">'+xEsc(gpFmtPrintDate(p.date))+'</div><div class="fl">Date</div></div>'
     +'<div class="fi"><div class="fv">'+xEsc(gpFmtPrintTime(p.time))+'</div><div class="fl">Time</div></div>'
     +(p.gateOutTime?'<div class="fi"><div class="fv">'+xEsc(p.gateOutTime)+'</div><div class="fl">Gate Out</div></div>':'')
-    +(()=>{const showSig=_gpSignatureData&&(!TGCfg.approveEnabled||_gpPrintCfg.signatureMode==='approved'||p.tgApproved===true);return '<div class="fi" style="text-align:right">'+(showSig?'<img src="'+_gpSignatureData+'" style="height:9mm;max-width:22mm;display:block;margin-left:auto">':'<div style="width:18mm;border-bottom:1px solid #9080c0;height:7mm"></div>')+'<div class="fl" style="margin-top:1mm">'+(showSig?'Principal':'Signature')+'</div></div>';})() 
+    +(()=>{const showSig=_gpSignatureData&&(!TGCfg.approveEnabled||_gpPrintCfg.signatureMode==='approved'||p.tgApproved===true);return '<div class="fi" style="text-align:right">'+(showSig?'<img src="'+_gpSignatureData+'" style="height:7mm;max-width:15mm;display:block;margin-left:auto">':'<div style="width:18mm;border-bottom:1px solid #9080c0;height:7mm"></div>')+'<div class="fl" style="margin-top:1mm">'+(showSig?'Principal':'Signature')+'</div></div>';})() 
     +'</div></div>'
     +'<script>window.onload=function(){window.print();setTimeout(function(){window.close();},1200);}<\/script>'
     +'</body></html>';
