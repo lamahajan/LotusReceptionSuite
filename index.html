@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+aa<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
@@ -3612,6 +3612,7 @@ function renderRec(){
         </div>
         <div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex-shrink:0;margin-left:8px">
           <span class="ob ${lk?'done':'pend'}" style="font-size:9px;padding:2px 6px">${lk?'OUT '+p.gateOutTime:'PENDING'}</span>
+          ${TGCfg.approveEnabled?(p.tgApproved===true?'<span style="font-size:9px;padding:2px 6px;border-radius:5px;background:#dcfce7;color:#15803d;border:1px solid #86efac;font-weight:700">✅ Approved</span>':p.tgApproved===false?'<span style="font-size:9px;padding:2px 6px;border-radius:5px;background:#fee2e2;color:#dc2626;border:1px solid #fca5a5;font-weight:700">❌ Denied</span>':'<span style="font-size:9px;padding:2px 6px;border-radius:5px;background:var(--amber-l);color:var(--amber);border:1px solid var(--amber);font-weight:700">⏳ Pending</span>'):''}
           <span class="pid" style="font-size:9px">#${p.id.substr(-4).toUpperCase()}</span>
           <span class="chev" id="c-${p.id}">▼</span>
         </div>
@@ -4106,18 +4107,18 @@ function gpPrintA6Slip(p){
     +'</div></div>'
     +'<hr class="divider">'
     +'<div class="sname">'+xEsc(p.studentName)+'</div>'
-    +'<div class="meta">Class '+xEsc(p.class||'—')+' &nbsp;·&nbsp; Adm: <b style="font-family:monospace">'+xEsc(p.admissionNumber||'—')+'</b></div>'
+    +'<div class="meta"><b>'+xEsc(p.class||'—')+'</b> &nbsp;·&nbsp; Adm: <b style="font-family:monospace">'+xEsc(p.admissionNumber||'—')+'</b></div>'
     +'<div class="grid">'
     +'<div class="box"><div class="lbl">Picked Up By</div><div class="val">'+xEsc(p.pickedUpBy||'—')+'</div></div>'
     +'<div class="box"><div class="lbl">Relation</div><div class="val">'+xEsc(p.relation||'—')+'</div></div>'
     +(p.busNumber?'<div class="box"><div class="lbl">Bus</div><div class="val">'+xEsc(p.busNumber)+'</div></div>':'')
     +'</div>'
     +(p.reason?'<div class="rsn">📝 '+xEsc(p.reason)+'</div>':'')
-    +(_gpPrintCfg.printPhoto&&p.pickerPhoto?'<div style="margin-top:2mm;border:1px solid #e4ddf5;border-radius:5px;overflow:hidden;background:#f9f7ff;padding:1.5mm"><div style="font-size:5pt;color:#9080c0;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:1.5mm">Picker Photo</div><img src="'+p.pickerPhoto+'" style="width:100%;max-height:28mm;object-fit:cover;border-radius:3px;display:block"></div>':'')
+    +(_gpPrintCfg.printPhoto&&p.pickerPhoto?'<div style="margin-top:2mm;border:1px solid #e4ddf5;border-radius:5px;overflow:hidden;background:#f9f7ff"><img src="'+p.pickerPhoto+'" style="width:100%;max-height:30mm;object-fit:contain;display:block"></div>':'')
     +'<div class="foot">'
-    +'<div class="fi"><div class="fl">Date</div><div class="fv">'+xEsc(gpFmtPrintDate(p.date))+'</div></div>'
-    +'<div class="fi"><div class="fl">Time</div><div class="fv">'+xEsc(gpFmtPrintTime(p.time))+'</div></div>'
-    +(p.gateOutTime?'<div class="fi"><div class="fl">Gate Out</div><div class="fv">'+xEsc(p.gateOutTime)+'</div></div>':'')
+    +'<div class="fi"><div class="fv">'+xEsc(gpFmtPrintDate(p.date))+'</div><div class="fl">Date</div></div>'
+    +'<div class="fi"><div class="fv">'+xEsc(gpFmtPrintTime(p.time))+'</div><div class="fl">Time</div></div>'
+    +(p.gateOutTime?'<div class="fi"><div class="fv">'+xEsc(p.gateOutTime)+'</div><div class="fl">Gate Out</div></div>':'')
     +(()=>{const showSig=_gpSignatureData&&(!TGCfg.approveEnabled||_gpPrintCfg.signatureMode==='approved'||p.tgApproved===true);return '<div class="fi" style="text-align:right">'+(showSig?'<img src="'+_gpSignatureData+'" style="height:9mm;max-width:22mm;display:block;margin-left:auto">':'<div style="width:18mm;border-bottom:1px solid #9080c0;height:7mm"></div>')+'<div class="fl" style="margin-top:1mm">'+(showSig?'Principal':'Signature')+'</div></div>';})() 
     +'</div></div>'
     +'<script>window.onload=function(){window.print();setTimeout(function(){window.close();},1200);}<\/script>'
