@@ -36,7 +36,7 @@ self.addEventListener('fetch',e=>{if(e.request.method!=='GET')return;e.respondWi
 // ── Install prompt capture ──
 window._pwaInstallPrompt=null;
 window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();window._pwaInstallPrompt=e;document.querySelectorAll('.pwa-install-btn').forEach(b=>b.style.display='flex');});
-window.addEventListener('appinstalled',()=>{window._pwaInstallPrompt=null;document.querySelectorAll('.pwa-install-btn').forEach(b=>b.style.display='none');if(typeof toast==='function')toast('✅ App installed successfully!');});
+window.addEventListener('appinstalled',()=>{window._pwaInstallPrompt=null;document.querySelectorAll('.pwa-install-btn').forEach(b=>{b.textContent='✅ App Installed!';b.style.opacity='0.6';b.style.cursor='default';b.onclick=null;});if(typeof toast==='function')toast('✅ App installed successfully!');});
 function triggerPWAInstall(){if(window._pwaInstallPrompt){window._pwaInstallPrompt.prompt();}else{alert('To install:\n📱 iOS: Tap Share → Add to Home Screen\n🤖 Android: Tap ⋮ menu → Add to Home Screen\n💻 Desktop: Click ⊕ in address bar');}}
 </script>
 <title>Reception Suite - Lotus International School</title>
@@ -457,6 +457,22 @@ body{color:var(--text);font-family:var(--sans);min-height:100vh}
 #screen-ref .hdr-btn {background:rgba(255,255,255,.15);border:1.5px solid rgba(255,255,255,.3);border-radius:7px;padding:5px 12px;color:#fff;cursor:pointer;font-size:12px;font-family:var(--sans);font-weight:700;white-space:nowrap;flex-shrink:0;transition:all .2s;backdrop-filter:blur(4px)}
 #screen-ref .hdr-btn:hover {background:rgba(255,255,255,.28)}
 @media(max-width:700px){.hdr-chips{display:none}.hdr-fy-lbl{display:none}}
+@media(max-width:600px){
+  /* Reference Register header — hide divider and add-fy on small screens */
+  #screen-ref .hdr-div{display:none}
+  #screen-ref .hdr-add-fy{display:none}
+  #screen-ref .hdr{gap:6px;padding:0 10px;overflow:hidden}
+  #screen-ref .hdr-fy-sel{font-size:11px;padding:3px 6px}
+  #screen-ref .hdr-btn{font-size:11px;padding:4px 8px}
+  /* Fee QR header — stack action buttons */
+  #screen-feeqr .fq-hdr{flex-wrap:wrap;height:auto;padding:8px 12px;gap:6px}
+  #screen-feeqr .fq-htitle{flex:1;min-width:80px}
+  #screen-feeqr .fq-hdr .fq-btn{flex:1;font-size:11px;padding:6px 8px}
+  /* Fee QR toolbar — 2-column grid on mobile */
+  #screen-feeqr .fq-toolbar-row{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+  #screen-feeqr .fq-toolbar-row .fq-cls-wrap{grid-column:1/-1}
+  #screen-feeqr .fq-toolbar-row .fq-search-wrap{grid-column:1/-1}
+}
 
 /* TABS */
 #screen-ref .tabs {display:flex;background:var(--bg2);border-bottom:2px solid var(--border);position:sticky;top:58px;z-index:8;overflow-x:auto;scrollbar-width:none;box-shadow:var(--sha)}
@@ -1710,7 +1726,7 @@ Reason: {reason}"></textarea>
     </div>
 
     <!-- REFERENCE REGISTER -->
-    <div id="screen-ref" class="screen">
+    <div id="screen-ref" class="screen" style="overflow-x:hidden">
 <!-- HEADER -->
 <div class="hdr">
   <div class="hdr-logo">📒</div>
@@ -2450,7 +2466,7 @@ Reason: {reason}"></textarea>
 
   
     <!-- ═══ FEE QR SCREEN ═══ -->
-    <div id="screen-feeqr" class="screen">
+    <div id="screen-feeqr" class="screen" style="overflow-x:hidden">
 
       <!-- HEADER -->
       <div class="fq-hdr">
@@ -2473,9 +2489,9 @@ Reason: {reason}"></textarea>
       <div id="fq-tab-qr" class="fq-body">
 
         <!-- Toolbar -->
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+        <div class="fq-toolbar-row" style="display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap">
           <!-- Class dropdown -->
-          <div style="position:relative;flex-shrink:0" id="fq-cls-dropdown-wrap">
+          <div class="fq-cls-wrap" style="position:relative;flex-shrink:0" id="fq-cls-dropdown-wrap">
             <button onclick="fqToggleClsDropdown()" id="fq-cls-dd-btn"
               style="display:flex;align-items:center;gap:7px;padding:8px 12px;border-radius:9px;background:#fff;border:1.5px solid #cfc8b8;color:#1a1712;font-size:12px;font-weight:700;font-family:'Plus Jakarta Sans',sans-serif;cursor:pointer;white-space:nowrap;min-width:130px;justify-content:space-between;transition:border-color .15s">
               <span>📚 <span id="fq-cls-dd-lbl">All Classes</span></span>
@@ -2492,8 +2508,10 @@ Reason: {reason}"></textarea>
             </div>
           </div>
           <!-- Search -->
+          <div class="fq-search-wrap" style="flex:1;min-width:0">
           <input class="fq-inp" id="fq-search" placeholder="🔍 Search name, ID, class…" oninput="fqRenderGrid()"
-            style="flex:1;min-width:160px;padding:8px 12px;font-size:12px"/>
+            style="width:100%;padding:8px 12px;font-size:12px"/>
+          </div>
           <!-- Select / Deselect -->
           <button class="fq-btn fq-btn-gold" style="font-size:12px;padding:8px 14px;white-space:nowrap" onclick="fqSelectAllVisible()">✅ Select All</button>
           <button class="fq-btn fq-btn-outline" style="font-size:12px;padding:8px 14px;white-space:nowrap" onclick="fqDeselectAll()">✕ Deselect</button>
@@ -2775,7 +2793,7 @@ Thank you 🙏</textarea>
     <div style="background:linear-gradient(135deg,#b5883e,#8a6428);border-radius:var(--r);padding:16px 18px;margin-bottom:14px;box-shadow:0 4px 16px rgba(181,136,62,.3)">
       <div style="font-size:13px;font-weight:800;color:#fff;margin-bottom:4px">📲 Install as App</div>
       <div style="font-size:11px;color:rgba(255,255,255,.8);margin-bottom:12px;line-height:1.5">Install on your phone's home screen for offline use — works like a native app, no Play Store needed.</div>
-      <button class="pwa-install-btn" onclick="triggerPWAInstall()" style="display:flex;align-items:center;gap:8px;background:#fff;color:#8a6428;border:none;border-radius:9px;padding:10px 18px;font-size:13px;font-weight:800;cursor:pointer;font-family:var(--sans)">
+      <button class="pwa-install-btn" onclick="triggerPWAInstall()" style="display:none;align-items:center;gap:8px;background:#fff;color:#8a6428;border:none;border-radius:9px;padding:10px 18px;font-size:13px;font-weight:800;cursor:pointer;font-family:var(--sans)">
         ⊕ Install Lotus School Suite
       </button>
       <div style="font-size:10px;color:rgba(255,255,255,.65);margin-top:8px">📱 iOS: Share → Add to Home Screen &nbsp;|&nbsp; 🤖 Android: ⋮ → Add to Home Screen</div>
