@@ -4106,8 +4106,8 @@ function gpPrintA6Slip(p){
     +'/* @page handled in body style */'
     +'*{box-sizing:border-box;margin:0;padding:0}'
     +(_gpPrintCfg.bw?'body,*{color:#000!important;background:#fff!important;border-color:#555!important}':'')+'*{-webkit-print-color-adjust:exact;print-color-adjust:exact}'
-    +(()=>{const lp=_gpPrintCfg.logoPos||'left';let pageMargin='@page{size:'+pageDecl+';margin:0}';let bodyStyle='body{width:'+cW+';min-height:'+cH+';font-family:"Segoe UI",Arial,sans-serif;color:#1a1035;background:#fff;position:absolute;top:0;';if(lp==='center')bodyStyle+='left:50%;transform:translateX(-50%);}';else if(lp==='right')bodyStyle+='right:0;left:auto;}';else bodyStyle+='left:0;}';return bodyStyle;})()
-    +'.wrap{width:'+cW+';min-height:'+cH+';padding:'+pad+';padding-bottom:5mm;display:flex;flex-direction:column;gap:2mm}'
+    +(()=>{const lp=_gpPrintCfg.logoPos||'left';let bodyStyle='@page{size:'+pageDecl+';margin:0}body{width:'+cW+';min-height:'+cH+';font-family:"Segoe UI",Arial,sans-serif;color:#1a1035;background:#fff;position:absolute;top:0;';if(lp==='center')bodyStyle+='left:50%;transform:translateX(-50%);}';else if(lp==='right')bodyStyle+='right:0;left:auto;}';else bodyStyle+='left:0;}';return bodyStyle;})()
+    +'.wrap{width:'+cW+';min-height:'+cH+';padding:'+pad+';padding-bottom:4mm;display:flex;flex-direction:column;gap:1.5mm}'
     +'.top{display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:3mm}'
     +'.divider{border:none;border-top:2px solid #7c3aed;margin:0;width:100%}'
     +'.school{font-size:'+fSub+'pt;font-weight:900;color:#7c3aed;letter-spacing:.8px;text-transform:uppercase}'
@@ -4120,7 +4120,8 @@ function gpPrintA6Slip(p){
     +'.lbl{font-size:5.5pt;color:#9080c0;font-weight:400;text-transform:uppercase;letter-spacing:.5px}'
     +'.val{font-size:'+fBase+'pt;font-weight:700;color:#1a1035;margin-top:.5mm;overflow-wrap:break-word;word-break:break-word}'
     +'.rsn{background:#fef3c7;border:1px solid #d97706;border-radius:4px;padding:1.5mm 2mm;font-size:'+(fBase-1)+'pt;color:#92400e}'
-    +'.foot{margin-top:auto;display:flex;justify-content:space-between;align-items:flex-end;padding-top:3mm;margin-top:3mm;border-top:1px solid #e4ddf5}'
+    +'.spacer{flex:1}'
+    +'.foot{display:flex;justify-content:space-between;align-items:flex-end;padding-top:3mm;border-top:1px solid #e4ddf5}'
     +'.fi{text-align:center}'
     +'.fl{font-size:5.5pt;color:#9080c0;text-transform:uppercase;letter-spacing:.5px}'
     +'.fv{font-size:'+fBase+'pt;font-weight:700;color:#1a1035;font-family:monospace;margin-top:.5mm}'
@@ -4143,7 +4144,8 @@ function gpPrintA6Slip(p){
     +(p.busNumber?'<div class="box"><div class="lbl">Bus</div><div class="val">'+xEsc(p.busNumber)+'</div></div>':'')
     +'</div>'
     +(p.reason?'<div class="rsn"><span style="font-weight:400;text-transform:uppercase;font-size:5.5pt;letter-spacing:.5px;color:#92400e">Reason: </span><b>'+xEsc(p.reason)+'</b></div>':'')
-    +(_gpPrintCfg.printPhoto&&p.pickerPhoto?'<div style="margin:3mm 0;border:2px solid #c9bdf0;border-radius:6px;overflow:hidden;background:#f9f7ff;padding:2mm"><img src="'+p.pickerPhoto+'" style="width:100%;height:28mm;object-fit:cover;display:block;border-radius:3px"></div>':'')
+    +(_gpPrintCfg.printPhoto&&p.pickerPhoto?'<div style="margin:1mm 0;border:2px solid #c9bdf0;border-radius:6px;overflow:hidden;background:#f9f7ff;padding:2mm"><img src="'+p.pickerPhoto+'" style="width:100%;height:28mm;object-fit:cover;display:block;border-radius:3px"></div>':'')
+    +'<div class="spacer"></div>'
     +'<div class="foot">'
     +'<div class="fi"><div class="fv">'+xEsc(gpFmtPrintDate(p.date))+'</div><div class="fl">Date</div></div>'
     +'<div class="fi"><div class="fv">'+xEsc(gpFmtPrintTime(p.time))+'</div><div class="fl">Time</div></div>'
