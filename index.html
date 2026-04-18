@@ -1353,6 +1353,18 @@ Reason: {reason}"></textarea>
               <button class="btn bgh" style="font-size:11px;flex:1" onclick="document.getElementById('sig-file-input').click()">📁 Upload</button>
               <button class="btn bgh" style="font-size:11px" onclick="clearSignature()">✕ Remove</button>
             </div>
+            <!-- Signature size controls -->
+            <div style="margin-top:10px;display:flex;gap:8px;align-items:flex-end">
+              <div style="flex:1">
+                <div style="font-size:10px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Height (mm)</div>
+                <input type="number" id="gp-sig-h" class="inp" min="4" max="30" step="1" value="9" style="font-family:var(--mono);font-size:13px;text-align:center" oninput="gpSaveSigSize()">
+              </div>
+              <div style="flex:1">
+                <div style="font-size:10px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Max Width (mm)</div>
+                <input type="number" id="gp-sig-w" class="inp" min="10" max="60" step="1" value="22" style="font-family:var(--mono);font-size:13px;text-align:center" oninput="gpSaveSigSize()">
+              </div>
+              <div style="font-size:10px;color:var(--muted);padding-bottom:10px;white-space:nowrap">on slip</div>
+            </div>
           </div>
           <div style="background:var(--bg3);border:1.5px solid var(--border);border-radius:var(--rs);padding:11px 13px;margin-bottom:10px">
             <label style="display:flex;align-items:center;gap:9px;cursor:pointer">
@@ -3970,8 +3982,16 @@ const GP_SIZE_MAP={
   'b6':      {name:'B6',       pW:'125mm',pH:'176mm', cW:'117mm',cH:'168mm', cols:1, multi:false},
 };
 
+function _gpRestoreCfgFromStorage(){
+  try{
+    const d=localStorage.getItem(GP_PRINT_KEY);
+    if(d)_gpPrintCfg=Object.assign({size:'a6',orient:'portrait',direct:false},JSON.parse(d));
+  }catch(e){}
+  // Also restore signature data
+  loadSignature();
+}
 function gpLoadPrintCfg(){
-  try{const d=localStorage.getItem(GP_PRINT_KEY);if(d)_gpPrintCfg=Object.assign({size:'a6',orient:'portrait',direct:false},JSON.parse(d));}catch(e){}
+  _gpRestoreCfgFromStorage();
   const sel=document.getElementById('gp-print-size');
   if(sel)sel.value=_gpPrintCfg.size||'a6';
   const ori=document.getElementById('gp-print-orient');
@@ -3982,7 +4002,9 @@ function gpLoadPrintCfg(){
   const enEl=document.getElementById('gp-print-enabled');if(enEl)enEl.checked=_gpPrintCfg.enabled!==false;
   const bwEl=document.getElementById('gp-print-bw');if(bwEl)bwEl.checked=!!_gpPrintCfg.bw;
   const phEl=document.getElementById('gp-print-photo');if(phEl)phEl.checked=!!_gpPrintCfg.printPhoto;
-  loadSignature();_updateSigPreview();
+  const sigHEl=document.getElementById('gp-sig-h');if(sigHEl)sigHEl.value=_gpPrintCfg.sigH||9;
+  const sigWEl=document.getElementById('gp-sig-w');if(sigWEl)sigWEl.value=_gpPrintCfg.sigW||22;
+  _updateSigPreview();
   const sub=document.getElementById('gacc-print-sub');
   if(sub)sub.textContent=gpPrintSizeLabel(_gpPrintCfg.size||'a6',_gpPrintCfg.orient||'portrait');
 }
@@ -4008,6 +4030,13 @@ function _gpSavePrintCfg(){
   try{localStorage.setItem(GP_PRINT_KEY,JSON.stringify(_gpPrintCfg));}catch(e){}
   const sub=document.getElementById('gacc-print-sub');
   if(sub)sub.textContent=gpPrintSizeLabel(_gpPrintCfg.size,_gpPrintCfg.orient);
+}
+function gpSaveSigSize(){
+  const h=parseInt(document.getElementById('gp-sig-h').value)||9;
+  const w=parseInt(document.getElementById('gp-sig-w').value)||22;
+  _gpPrintCfg.sigH=Math.min(Math.max(h,4),30);
+  _gpPrintCfg.sigW=Math.min(Math.max(w,10),60);
+  _gpSavePrintCfg();
 }
 
 // ── Lookup pass by ID then print ──
@@ -4077,21 +4106,21 @@ function gpPrintA6Slip(p){
     +'/* @page handled in body style */'
     +'*{box-sizing:border-box;margin:0;padding:0}'
     +(_gpPrintCfg.bw?'body,*{color:#000!important;background:#fff!important;border-color:#555!important}':'')+'*{-webkit-print-color-adjust:exact;print-color-adjust:exact}'
-    +(()=>{const lp=_gpPrintCfg.logoPos||'left';let pageMargin='@page{size:'+pageDecl+';margin:0}';let bodyStyle='body{width:'+cW+';height:'+cH+';font-family:"Segoe UI",Arial,sans-serif;color:#1a1035;background:#fff;position:absolute;top:0;';if(lp==='center')bodyStyle+='left:50%;transform:translateX(-50%);}';else if(lp==='right')bodyStyle+='right:0;left:auto;}';else bodyStyle+='left:0;}';return bodyStyle;})()
-    +'.wrap{width:'+cW+';height:'+cH+';padding:'+pad+';display:flex;flex-direction:column;gap:2mm}'
+    +(()=>{const lp=_gpPrintCfg.logoPos||'left';let pageMargin='@page{size:'+pageDecl+';margin:0}';let bodyStyle='body{width:'+cW+';min-height:'+cH+';font-family:"Segoe UI",Arial,sans-serif;color:#1a1035;background:#fff;position:absolute;top:0;';if(lp==='center')bodyStyle+='left:50%;transform:translateX(-50%);}';else if(lp==='right')bodyStyle+='right:0;left:auto;}';else bodyStyle+='left:0;}';return bodyStyle;})()
+    +'.wrap{width:'+cW+';min-height:'+cH+';padding:'+pad+';padding-bottom:5mm;display:flex;flex-direction:column;gap:2mm}'
     +'.top{display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:3mm}'
     +'.divider{border:none;border-top:2px solid #7c3aed;margin:0;width:100%}'
     +'.school{font-size:'+fSub+'pt;font-weight:900;color:#7c3aed;letter-spacing:.8px;text-transform:uppercase}'
     +'.doc-label{font-size:'+(fSub-1)+'pt;color:#9080c0;letter-spacing:.5px;text-transform:uppercase}'
     +'.pass-id{background:#ede9fe;color:#5b21b6;font-size:'+(fBase+1)+'pt;font-weight:800;padding:3px 8px;border-radius:20px;font-family:monospace;border:1px solid #c4b5fd;white-space:nowrap}'
-    +'.sname{font-size:'+fName+'pt;font-weight:800;color:#1a1035;margin-top:1mm;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}'
+    +'.sname{font-size:'+fName+'pt;font-weight:800;color:#1a1035;margin-top:1mm;overflow-wrap:break-word;word-break:break-word;line-height:1.2}'
     +'.meta{font-size:'+fBase+'pt;color:#6b5b95;margin-top:.5mm}'
     +'.grid{display:grid;grid-template-columns:1fr 1fr;gap:2mm;margin-top:1mm}'
     +'.box{background:#f9f7ff;border:1px solid #e4ddf5;border-radius:4px;padding:2mm 3mm}'
-    +'.lbl{font-size:5.5pt;color:#9080c0;font-weight:700;text-transform:uppercase;letter-spacing:.5px}'
-    +'.val{font-size:'+fBase+'pt;font-weight:700;color:#1a1035;margin-top:.5mm;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}'
+    +'.lbl{font-size:5.5pt;color:#9080c0;font-weight:400;text-transform:uppercase;letter-spacing:.5px}'
+    +'.val{font-size:'+fBase+'pt;font-weight:700;color:#1a1035;margin-top:.5mm;overflow-wrap:break-word;word-break:break-word}'
     +'.rsn{background:#fef3c7;border:1px solid #d97706;border-radius:4px;padding:1.5mm 2mm;font-size:'+(fBase-1)+'pt;color:#92400e}'
-    +'.foot{margin-top:auto;display:flex;justify-content:space-between;align-items:flex-end;padding-top:2mm;border-top:1px solid #e4ddf5}'
+    +'.foot{margin-top:auto;display:flex;justify-content:space-between;align-items:flex-end;padding-top:3mm;margin-top:3mm;border-top:1px solid #e4ddf5}'
     +'.fi{text-align:center}'
     +'.fl{font-size:5.5pt;color:#9080c0;text-transform:uppercase;letter-spacing:.5px}'
     +'.fv{font-size:'+fBase+'pt;font-weight:700;color:#1a1035;font-family:monospace;margin-top:.5mm}'
@@ -4107,19 +4136,19 @@ function gpPrintA6Slip(p){
     +'</div></div>'
     +'<hr class="divider">'
     +'<div class="sname">'+xEsc(p.studentName)+'</div>'
-    +'<div class="meta"> Class: <b>'+xEsc(p.class||'—')+'</b> &nbsp;·&nbsp; Adm: <b style="font-family:monospace">'+xEsc(p.admissionNumber||'—')+'</b></div>'
+    +'<div class="meta">Class: <b>'+xEsc(p.class||'—')+'</b>&nbsp;·&nbsp; Adm: <b style="font-family:monospace">'+xEsc(p.admissionNumber||'—')+'</b></div>'
     +'<div class="grid">'
     +'<div class="box"><div class="lbl">Picked Up By</div><div class="val">'+xEsc(p.pickedUpBy||'—')+'</div></div>'
     +'<div class="box"><div class="lbl">Relation</div><div class="val">'+xEsc(p.relation||'—')+'</div></div>'
     +(p.busNumber?'<div class="box"><div class="lbl">Bus</div><div class="val">'+xEsc(p.busNumber)+'</div></div>':'')
     +'</div>'
-    +(p.reason?'<div class="rsn">📝 '+xEsc(p.reason)+'</div>':'')
-    +(_gpPrintCfg.printPhoto&&p.pickerPhoto?'<div style="margin-top:2mm;border:1px solid #e4ddf5;border-radius:5px;overflow:hidden;background:#f9f7ff"><img src="'+p.pickerPhoto+'" style="width:100%;max-height:30mm;object-fit:contain;display:block"></div>':'')
+    +(p.reason?'<div class="rsn"><span style="font-weight:400;text-transform:uppercase;font-size:5.5pt;letter-spacing:.5px;color:#92400e">Reason: </span><b>'+xEsc(p.reason)+'</b></div>':'')
+    +(_gpPrintCfg.printPhoto&&p.pickerPhoto?'<div style="margin:3mm 0;border:2px solid #c9bdf0;border-radius:6px;overflow:hidden;background:#f9f7ff;padding:2mm"><img src="'+p.pickerPhoto+'" style="width:100%;height:28mm;object-fit:cover;display:block;border-radius:3px"></div>':'')
     +'<div class="foot">'
     +'<div class="fi"><div class="fv">'+xEsc(gpFmtPrintDate(p.date))+'</div><div class="fl">Date</div></div>'
     +'<div class="fi"><div class="fv">'+xEsc(gpFmtPrintTime(p.time))+'</div><div class="fl">Time</div></div>'
     +(p.gateOutTime?'<div class="fi"><div class="fv">'+xEsc(p.gateOutTime)+'</div><div class="fl">Gate Out</div></div>':'')
-    +(()=>{const showSig=_gpSignatureData&&(!TGCfg.approveEnabled||_gpPrintCfg.signatureMode==='approved'||p.tgApproved===true);return '<div class="fi" style="text-align:right">'+(showSig?'<img src="'+_gpSignatureData+'" style="height:7mm;max-width:15mm;display:block;margin-left:auto">':'<div style="width:18mm;border-bottom:1px solid #9080c0;height:7mm"></div>')+'<div class="fl" style="margin-top:1mm">'+(showSig?'Principal':'Signature')+'</div></div>';})() 
+    +(()=>{const showSig=_gpSignatureData&&(!TGCfg.approveEnabled||_gpPrintCfg.signatureMode==='approved'||p.tgApproved===true);const sigH=(_gpPrintCfg.sigH||9)+'mm';const sigW=(_gpPrintCfg.sigW||22)+'mm';return '<div class="fi" style="text-align:right">'+(showSig?'<img src="'+_gpSignatureData+'" style="height:'+sigH+';max-width:'+sigW+';display:block;margin-left:auto">':'<div style="width:18mm;border-bottom:1px solid #9080c0;height:7mm"></div>')+'<div class="fl" style="margin-top:1mm">'+(showSig?'Principal':'Signature')+'</div></div>';})() 
     +'</div></div>'
     +'<script>window.onload=function(){window.print();setTimeout(function(){window.close();},1200);}<\/script>'
     +'</body></html>';
@@ -4167,6 +4196,7 @@ function gpPrintThermalSlip(p, cfg){
     +'<div class="row"><span class="lbl">Relation</span><span>'+xEsc(p.relation||'—')+'</span></div>'
     +(p.busNumber?'<div class="row"><span class="lbl">Bus</span><span>'+xEsc(p.busNumber)+'</span></div>':'')
     +(p.reason?'<div class="reason"><span class="lbl">Reason: </span>'+xEsc(p.reason)+'</div>':'')
+    +((_gpPrintCfg.printPhoto&&p.pickerPhoto)?'<div style="text-align:center;margin:2mm 0;border:1px solid #ccc;border-radius:3px;padding:1.5mm;background:#f9f9f9"><img src="'+p.pickerPhoto+'" style="max-width:100%;max-height:25mm;object-fit:contain;display:inline-block;border-radius:2px"></div>':'')
     +'<hr class="divider">'
     +'<div class="row"><span class="lbl">Date</span><span>'+xEsc(p.date||'')+'</span></div>'
     +'<div class="row"><span class="lbl">Time</span><span>'+xEsc(p.time||'')+'</span></div>'
@@ -4312,7 +4342,7 @@ function getAllFYs(){const s=new Set(R.entries.map(e=>e.fy).filter(Boolean));s.a
 
 // ─── INIT ────────────────────────────────────────────────
 function _refInit(){
-  initTheme();loadCFG();loadFSCfg();loadODCfg();loadGPODCfg();loadTGCfg();loadPTGCfg();loadRefTGCfg();loadWixCfg();loadSignature();startTGApprovalPolling();
+  initTheme();loadCFG();loadFSCfg();loadODCfg();loadGPODCfg();loadTGCfg();loadPTGCfg();loadRefTGCfg();loadWixCfg();_gpRestoreCfgFromStorage();startTGApprovalPolling();
   if(CFG.adminAlertEnabled===undefined)CFG.adminAlertEnabled=true;
   const fu=localStorage.getItem('ref_fb_url'),fc=localStorage.getItem('ref_fb_code');
   if(fu&&fc){fbCfg={url:fu,code:fc};fbFetchAll();if(fbIv)clearInterval(fbIv);fbIv=setInterval(fbFetchAll,8000);}
@@ -5746,7 +5776,7 @@ async function sendToTelegramLog(pass){
       const d=await r.json();
       if(!d.ok)throw new Error(d.description||'Photo send failed');
       msgId=d.result&&d.result.message_id;
-      gpToast('\u2708\ufe0f Gate pass photo sent to Telegram');
+      gpToast('\u2708\ufe0f Gate pass photo sent to Admin');
     } else {
       const payload={chat_id:TGCfg.chatId,text:caption,parse_mode:'Markdown'};
       if(inlineKb)payload.reply_markup=inlineKb;
