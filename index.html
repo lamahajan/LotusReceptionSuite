@@ -4,6 +4,41 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="SchoolSuite"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="theme-color" content="#b5883e"/>
+<meta name="description" content="Lotus International School — Gate Pass, Register & Fee QR"/>
+<link id="pwa-manifest" rel="manifest"/>
+<script>
+// ── Inline PWA Manifest ──
+(function(){
+  const icon='data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="22" fill="%23b5883e"/><text x="50" y="72" font-size="58" text-anchor="middle">🪷</text></svg>');
+  const manifest={name:'Lotus School Suite',short_name:'SchoolSuite',description:'Gate Pass, Register & Fee QR',start_url:'./'+window.location.search,display:'standalone',background_color:'#f2f0fa',theme_color:'#b5883e',orientation:'portrait',icons:[{src:icon,sizes:'192x192',type:'image/svg+xml',purpose:'any maskable'},{src:icon,sizes:'512x512',type:'image/svg+xml',purpose:'any maskable'}]};
+  const blob=new Blob([JSON.stringify(manifest)],{type:'application/manifest+json'});
+  document.getElementById('pwa-manifest').href=URL.createObjectURL(blob);
+})();
+
+// ── Service Worker (offline cache) ──
+if('serviceWorker' in navigator){
+  const swCode=`
+const CACHE='lotus-suite-v2';
+const SHELL=['./'];
+self.addEventListener('install',e=>{e.waitUntil(caches.open(CACHE).then(c=>c.addAll(SHELL)).then(()=>self.skipWaiting()));});
+self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim()));});
+self.addEventListener('fetch',e=>{if(e.request.method!=='GET')return;e.respondWith(caches.match(e.request).then(cached=>{const fresh=fetch(e.request).then(r=>{if(r&&r.status===200){const cl=r.clone();caches.open(CACHE).then(c=>c.put(e.request,cl));}return r;}).catch(()=>null);return cached||fresh;}).catch(()=>caches.match('./')));});
+`;
+  const swBlob=new Blob([swCode],{type:'text/javascript'});
+  const swURL=URL.createObjectURL(swBlob);
+  navigator.serviceWorker.register(swURL,{scope:'./'}).catch(()=>{});
+}
+
+// ── Install prompt capture ──
+window._pwaInstallPrompt=null;
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();window._pwaInstallPrompt=e;document.querySelectorAll('.pwa-install-btn').forEach(b=>b.style.display='flex');});
+window.addEventListener('appinstalled',()=>{window._pwaInstallPrompt=null;document.querySelectorAll('.pwa-install-btn').forEach(b=>b.style.display='none');if(typeof toast==='function')toast('✅ App installed successfully!');});
+function triggerPWAInstall(){if(window._pwaInstallPrompt){window._pwaInstallPrompt.prompt();}else{alert('To install:\n📱 iOS: Tap Share → Add to Home Screen\n🤖 Android: Tap ⋮ menu → Add to Home Screen\n💻 Desktop: Click ⊕ in address bar');}}
+</script>
 <title>Reception Suite - Lotus International School</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -177,9 +212,9 @@ body.dark .mt-screen-name{color:#f4ede0;}
 
 @media(max-width:768px){
   #sidebar{display:none!important}
-  #mobile-topbar{display:flex}
+  #mobile-topbar{display:none!important}
   #bottom-nav{display:flex!important}
-  .screen{top:48px;bottom:58px}
+  .screen{top:0;bottom:58px}
 }
 @media(min-width:769px){.screen{top:0;bottom:0}}
 
@@ -912,6 +947,7 @@ body.dark .fq-mtitle{color:#f4ede0}
         <div class="home-eyebrow">🪷 Lotus International School</div>
         <div class="home-h1">School Suite</div>
         <div class="home-sub" id="home-date-txt"></div>
+        <button class="pwa-install-btn" onclick="triggerPWAInstall()" style="display:none;margin-top:12px;align-items:center;gap:7px;background:#b5883e;color:#fff;border:none;border-radius:9px;padding:9px 16px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--sans)">📲 Install App</button>
       </div>
       <div class="home-body">
         <div class="home-cards">
@@ -2735,6 +2771,16 @@ Thank you 🙏</textarea>
     <div style="font-size:22px;font-weight:900;color:var(--txt);margin-bottom:4px">⚙️ Settings</div>
     <div style="font-size:13px;color:var(--sub);margin-bottom:24px">Configure all modules from one place</div>
 
+    <!-- PWA Install -->
+    <div style="background:linear-gradient(135deg,#b5883e,#8a6428);border-radius:var(--r);padding:16px 18px;margin-bottom:14px;box-shadow:0 4px 16px rgba(181,136,62,.3)">
+      <div style="font-size:13px;font-weight:800;color:#fff;margin-bottom:4px">📲 Install as App</div>
+      <div style="font-size:11px;color:rgba(255,255,255,.8);margin-bottom:12px;line-height:1.5">Install on your phone's home screen for offline use — works like a native app, no Play Store needed.</div>
+      <button class="pwa-install-btn" onclick="triggerPWAInstall()" style="display:flex;align-items:center;gap:8px;background:#fff;color:#8a6428;border:none;border-radius:9px;padding:10px 18px;font-size:13px;font-weight:800;cursor:pointer;font-family:var(--sans)">
+        ⊕ Install Lotus School Suite
+      </button>
+      <div style="font-size:10px;color:rgba(255,255,255,.65);margin-top:8px">📱 iOS: Share → Add to Home Screen &nbsp;|&nbsp; 🤖 Android: ⋮ → Add to Home Screen</div>
+    </div>
+
     <!-- Theme -->
     <div style="background:var(--surf);border:1.5px solid var(--bdr);border-radius:var(--r);padding:16px 18px;margin-bottom:14px;box-shadow:var(--sha)">
       <div style="font-size:13px;font-weight:800;color:var(--txt);margin-bottom:12px">🎨 Appearance</div>
@@ -4155,9 +4201,23 @@ function gpPrintA6Slip(p){
     +'<script>window.onload=function(){window.print();setTimeout(function(){window.close();},1200);}<\/script>'
     +'</body></html>';
 
-  const w=window.open('','_blank','width=600,height=750');
-  if(!w){gpToast('⚠️ Pop-up blocked — please allow pop-ups in browser settings','err');return;}
-  w.document.open();w.document.write(html);w.document.close();
+  _gpOpenPrintWindow(html);
+}
+
+// ── Mobile-friendly print window opener ──
+function _gpOpenPrintWindow(html){
+  try{
+    const blob=new Blob([html],{type:'text/html'});
+    const burl=URL.createObjectURL(blob);
+    const w=window.open(burl,'_blank');
+    if(w){setTimeout(()=>URL.revokeObjectURL(burl),5000);return;}
+    // fallback for strict popup blockers
+    const a=document.createElement('a');
+    a.href=burl;a.target='_blank';document.body.appendChild(a);a.click();
+    setTimeout(()=>{URL.revokeObjectURL(burl);a.remove();},5000);
+  }catch(e){
+    gpToast('⚠️ Could not open print window','err');
+  }
 }
 
 // ── Thermal printer slip (58mm / 80mm) ──
@@ -4209,9 +4269,7 @@ function gpPrintThermalSlip(p, cfg){
     +'</div>'
     +'<script>window.onload=function(){window.print();setTimeout(function(){window.close();},1200);}<\/script>'
     +'</body></html>';
-  const win=window.open('','_blank','width=400,height=700');
-  if(!win){gpToast('⚠️ Pop-up blocked — please allow pop-ups in browser settings','err');return;}
-  win.document.open();win.document.write(html);win.document.close();
+  _gpOpenPrintWindow(html);
 }
 
 // ── Filtered batch print from Records tab ──
@@ -4291,9 +4349,7 @@ function _gpBatchPrint(passes){
     +'<body><div class="gp-grid">'+passHTML+'</div>'
     +'<script>window.onload=function(){window.print();}<\/script></body></html>';
 
-  const w=window.open('','_blank');
-  if(!w){gpToast('⚠️ Pop-up blocked — please allow pop-ups in browser settings','err');return;}
-  w.document.open();w.document.write(html);w.document.close();
+  _gpOpenPrintWindow(html);
   gpToast('🖨️ '+passes.length+' pass'+(passes.length>1?'es':'')+' sent to print');
 }
 
@@ -7200,6 +7256,68 @@ async function updateRefTGMessage(entry){
 }
 
 </script>
+
+<!-- ═══ PWA — SERVICE WORKER + INSTALL PROMPT ═══ -->
+<script>
+// ── Service Worker registration ──
+if('serviceWorker' in navigator){
+  const swCode=`
+const CACHE='lotus-suite-v1';
+const URLS=[
+  'https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap',
+  'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js',
+  'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js',
+  'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js'
+];
+self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(URLS).catch(()=>{}))));
+self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==CACHE).map(k=>caches.delete(k))))));
+self.addEventListener('fetch',e=>{
+  if(e.request.method!=='GET')return;
+  e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(res=>{
+    if(res.ok&&e.request.url.startsWith('https://')){const c=res.clone();caches.open(CACHE).then(cache=>cache.put(e.request,c));}
+    return res;
+  }).catch(()=>new Response('',{status:503}))));
+});`;
+  const blob=new Blob([swCode],{type:'application/javascript'});
+  const swUrl=URL.createObjectURL(blob);
+  navigator.serviceWorker.register(swUrl,{scope:'/'}).catch(()=>{});
+}
+
+// ── Install Prompt ──
+let _pwaPrompt=null;
+window.addEventListener('beforeinstallprompt',e=>{
+  e.preventDefault();_pwaPrompt=e;
+  const bar=document.getElementById('pwa-install-bar');
+  if(bar)bar.style.display='flex';
+});
+function pwaDismiss(){
+  const bar=document.getElementById('pwa-install-bar');
+  if(bar)bar.style.display='none';
+}
+function pwaInstall(){
+  if(!_pwaPrompt)return;
+  _pwaPrompt.prompt();
+  _pwaPrompt.userChoice.then(r=>{
+    if(r.outcome==='accepted')pwaDismiss();
+    _pwaPrompt=null;
+  });
+}
+window.addEventListener('appinstalled',()=>pwaDismiss());
+</script>
+
+<!-- PWA Install Banner -->
+<div id="pwa-install-bar" style="display:none;position:fixed;bottom:62px;left:8px;right:8px;z-index:9999;
+  background:#1a1712;color:#fff;border-radius:14px;padding:12px 14px;
+  align-items:center;gap:10px;box-shadow:0 8px 28px rgba(0,0,0,.35);
+  font-family:'Plus Jakarta Sans',sans-serif;font-size:13px">
+  <span style="font-size:22px">🪷</span>
+  <div style="flex:1">
+    <div style="font-weight:800;font-size:13px">Install School Suite</div>
+    <div style="font-size:11px;opacity:.7;margin-top:1px">Add to home screen — works offline</div>
+  </div>
+  <button onclick="pwaInstall()" style="background:#b5883e;color:#fff;border:none;border-radius:9px;padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;font-family:inherit">Install</button>
+  <button onclick="pwaDismiss()" style="background:rgba(255,255,255,.12);color:#fff;border:none;border-radius:9px;width:30px;height:30px;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center">✕</button>
+</div>
 
 </body>
 </html>
