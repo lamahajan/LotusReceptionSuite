@@ -3721,7 +3721,7 @@ function gpStuPrev(){if(gpStuPage>1){gpStuPage--;gpRenderStuPage();}}
 function gpStuNext(){const p=Math.ceil(gpStuFiltered.length/GP_STU_PAGE);if(gpStuPage<p){gpStuPage++;gpRenderStuPage();}}
 function editStu(adm){const s=S.students.find(x=>x.admissionNumber===adm);if(!s)return;document.getElementById('sfn').value=s.name||'';document.getElementById('sfa').value=s.admissionNumber||'';document.getElementById('sfc').value=s.class||'';document.getElementById('sff').value=s.fatherName||'';document.getElementById('sfm').value=s.motherName||'';document.getElementById('sfb').value=s.busNumber||'';document.getElementById('sfphone').value=s.phone||'';document.getElementById('sf-form').style.display='block';document.getElementById('bulk-form').style.display='none';document.getElementById('sf-form').scrollIntoView({behavior:'smooth'});}
 function loadCSV(ev){const f=ev.target.files[0];if(!f)return;const r=new FileReader();r.onload=e2=>document.getElementById('csvt').value=e2.target.result;r.readAsText(f);}
-async function procBulk(){const text=document.getElementById('csvt').value.trim();if(!text){gpToast('⚠️ No data','err');return;}const lines=text.split('\n').filter(l=>l.trim());if(lines.length<2){gpToast('⚠️ Need header + data rows','err');return;}const raw=lines[0].split(',').map(h=>h.trim().replace(/^"|"$/g,'').toLowerCase());const col=kws=>raw.findIndex(h=>kws.some(k=>h.includes(k)));const nI=col(['name']),aI=col(['admission','adm','roll']),cI=col(['class','grade']),fI=col(['father']),mI=col(['mother']),bI=col(['bus']),phI=col(['phone','mobile','contact','whatsapp']);if(nI<0||aI<0){gpToast('⚠️ Need name & admissionNumber columns','err');return;}const map={};S.students.forEach(s=>map[s.admissionNumber]=s);let added=0,updated=0;for(let i=1;i<lines.length;i++){const c=lines[i].split(',').map(v=>v.trim().replace(/^"|"$/g,''));const adm=(c[aI]||'').trim().replace(/\s/g,'').slice(0,8),name=c[nI];if(!adm||!name)continue;const rawPhone=phI>=0?(c[phI]||''):'';const phone=rawPhone.replace(/[^0-9]/g,'');const st={name,admissionNumber:adm,class:cI>=0?c[cI]:'',fatherName:fI>=0?c[fI]:'',motherName:mI>=0?c[mI]:'',busNumber:bI>=0?c[bI]:'',phone};if(map[adm])updated++;else added++;map[adm]=st;}S.students=Object.values(map);await push('students');gpToast(`✅ ${added} added · ${updated} updated`);document.getElementById('csvt').value='';togBulk();renderStu();}
+async function procBulk(){const text=document.getElementById('csvt').value.trim();if(!text){gpToast('⚠️ No data','err');return;}const lines=text.split(/\r?\n/).filter(l=>l.trim());if(lines.length<2){gpToast('⚠️ Need header + data rows','err');return;}const raw=lines[0].split(',').map(h=>h.trim().replace(/^"|"$/g,'').toLowerCase());const col=kws=>raw.findIndex(h=>kws.some(k=>h.includes(k)));const nI=col(['name']),aI=col(['admission','adm','roll']),cI=col(['class','grade']),fI=col(['father']),mI=col(['mother']),bI=col(['bus']),phI=col(['phone','mobile','contact','whatsapp']);if(nI<0||aI<0){gpToast('⚠️ Need name & admissionNumber columns','err');return;}const map={};S.students.forEach(s=>s.admissionNumber&&(map[String(s.admissionNumber).trim()]=s));let added=0,updated=0;for(let i=1;i<lines.length;i++){const c=lines[i].split(',').map(v=>v.trim().replace(/^"|"$/g,''));const adm=(c[aI]||'').trim(),name=c[nI];if(!adm&&!name)continue;const phone=(phI>=0?(c[phI]||''):'').replace(/[^0-9]/g,'');const st={name,admissionNumber:adm,class:cI>=0?c[cI]:'',fatherName:fI>=0?c[fI]:'',motherName:mI>=0?c[mI]:'',busNumber:bI>=0?c[bI]:'',phone};if(adm&&map[adm]){Object.assign(map[adm],st);updated++;}else{map[adm||('_'+i)]=st;added++;}}S.students=Object.values(map);await push('students');gpToast(`✅ ${added} added · ${updated} updated · Total: ${S.students.length}`);document.getElementById('csvt').value='';togBulk();renderStu();}
 
 // ═══ RECORDS ═══
 function rcToday(){document.getElementById('rcdate').value=todayStr();renderRec();}
@@ -4514,29 +4514,28 @@ async function gpCSVUploadAndPush(input){
   st.textContent='📂 Reading file…';st.style.color='var(--blue)';
   try{
     const text=await file.text();
-    const lines=text.split('\n').filter(l=>l.trim());
+    const lines=text.split(/\r?\n/).filter(l=>l.trim());
     if(lines.length<2){st.textContent='⚠️ Need header + data rows';st.style.color='var(--amber)';return;}
     const raw=lines[0].split(',').map(h=>h.trim().replace(/^"|"$/g,'').toLowerCase());
     const col=kws=>raw.findIndex(h=>kws.some(k=>h.includes(k)));
     const nI=col(['name']),aI=col(['admission','adm','roll']),cI=col(['class','grade']),fI=col(['father']),mI=col(['mother']),bI=col(['bus']),phI=col(['phone','mobile','contact','whatsapp']);
     if(nI<0||aI<0){st.textContent='⚠️ Need name & admissionNumber columns';st.style.color='var(--red)';return;}
-    const map={};S.students.forEach(s=>map[s.admissionNumber]=s);
+    const map={};S.students.forEach(s=>s.admissionNumber&&(map[String(s.admissionNumber).trim()]=s));
     let added=0,updated=0;
     for(let i=1;i<lines.length;i++){
       const c=lines[i].split(',').map(v=>v.trim().replace(/^"|"$/g,''));
-      const adm=(c[aI]||'').trim().replace(/\s/g,'').slice(0,8),name=c[nI];
-      if(!adm||!name)continue;
+      const adm=(c[aI]||'').trim(),name=c[nI];
+      if(!adm&&!name)continue;
       const phone=(phI>=0?(c[phI]||''):'').replace(/[^0-9]/g,'');
       const stu={name,admissionNumber:adm,class:cI>=0?c[cI]:'',fatherName:fI>=0?c[fI]:'',motherName:mI>=0?c[mI]:'',busNumber:bI>=0?c[bI]:'',phone};
-      if(map[adm])updated++;else added++;
-      map[adm]=stu;
+      if(adm&&map[adm]){Object.assign(map[adm],stu);updated++;}else{map[adm||('_'+i)]=stu;added++;}
     }
     S.students=Object.values(map);
     await push('students');
     syncGpStudentsToRef();
     renderStu&&renderStu();
-    st.textContent=`✅ ${added} added · ${updated} updated — pushed to Firebase`;st.style.color='var(--green)';
-    gpToast(`✅ ${added+updated} students synced`);
+    st.textContent=`✅ ${added} added · ${updated} updated · Total: ${S.students.length} — pushed to Firebase`;st.style.color='var(--green)';
+    gpToast(`✅ ${S.students.length} students synced`);
   }catch(err){st.textContent='❌ Error: '+err.message;st.style.color='var(--red)';}
   input.value='';
 }
@@ -5288,15 +5287,21 @@ function loadStuFile(file){
         const text=new TextDecoder().decode(ev.target.result);const lines=text.split(/\r?\n/).filter(l=>l.trim());if(!lines.length){stEl.textContent='Empty file';return;}
         const headers=lines[0].split(',').map(h=>h.replace(/"/g,'').trim().toLowerCase());
         const gi=(k,ex=[])=>headers.findIndex(h=>h.includes(k)&&!ex.some(x=>h.includes(x)));
-        const nI=gi('name',['father','mother']),aI=gi('adm'),cI=gi('class'),pI=Math.max(gi('phone'),gi('mobile')),fI=gi('father'),mI=gi('mother');
-        for(let i=1;i<lines.length;i++){const cols=lines[i].split(',').map(c=>c.replace(/"/g,'').trim());const name=nI>=0?cols[nI]:'';if(!name)continue;rows.push({name,admNo:aI>=0?cols[aI]:'',cls:cI>=0?cols[cI]:'',phone:cleanPhone(pI>=0?cols[pI]:''),fatherName:fI>=0?cols[fI]:'',motherName:mI>=0?cols[mI]:''});}
+        const nI=gi('name',['father','mother']),aI=gi('adm'),cI=gi('class'),pI=Math.max(gi('phone'),gi('mobile')),fI=gi('father'),mI=gi('mother'),bI=gi('bus');
+        for(let i=1;i<lines.length;i++){const cols=lines[i].split(',').map(c=>c.replace(/"/g,'').trim());const admRaw=aI>=0?cols[aI]:'';const name=nI>=0?cols[nI]:'';if(!admRaw&&!name)continue;rows.push({name,admNo:admRaw,cls:cI>=0?cols[cI]:'',phone:cleanPhone(pI>=0?cols[pI]:''),fatherName:fI>=0?cols[fI]:'',motherName:mI>=0?cols[mI]:'',busNumber:bI>=0?cols[bI]:''});}
       } else {
         const data=new Uint8Array(ev.target.result);const wb=XLSX.read(data,{type:'array'});const ws=wb.Sheets[wb.SheetNames[0]];const raw=XLSX.utils.sheet_to_json(ws,{defval:''});
         raw.forEach(r=>{const keys=Object.keys(r).map(k=>k.toLowerCase());const get=(k,ex=[])=>{const i=keys.findIndex(key=>key.includes(k)&&!ex.some(x=>key.includes(x)));return i>=0?String(Object.values(r)[i]).trim():'';}
-        const name=get('name',['father','mother']);if(!name)return;rows.push({name,admNo:get('adm'),cls:get('class'),phone:cleanPhone(get('phone')||get('mobile')),fatherName:get('father'),motherName:get('mother')});});
+        const name=get('name',['father','mother']);const admNo=get('adm');if(!admNo&&!name)return;rows.push({name,admNo,cls:get('class'),phone:cleanPhone(get('phone')||get('mobile')),fatherName:get('father'),motherName:get('mother'),busNumber:get('bus')});});
       }
       let added=0,updated=0;
-      rows.forEach(row=>{const ex=STUDENTS.find(s=>(row.admNo&&s.admNo===row.admNo)||(s.name.toLowerCase()===row.name.toLowerCase()));if(ex){Object.assign(ex,row);updated++;}else{STUDENTS.push({...row,id:uid()});added++;}});
+      // Deduplicate strictly by admNo only — admNo is the unique key
+      const admMap={};STUDENTS.forEach(s=>{if(s.admNo)admMap[String(s.admNo).trim()]=s;});
+      rows.forEach(row=>{
+        const key=String(row.admNo||'').trim();
+        if(key&&admMap[key]){Object.assign(admMap[key],row);updated++;}
+        else{const newStu={...row,id:uid()};STUDENTS.push(newStu);if(key)admMap[key]=newStu;added++;}
+      });
       stEl.textContent=`Done! ${added} added, ${updated} updated. Total: ${STUDENTS.length}`;stEl.style.color='var(--green)';
       fbStuPush();renderStudentList();populateDataLists();toast(rows.length+' students loaded');
     }catch(err){stEl.textContent='Error: '+err.message;stEl.style.color='var(--red)';}
