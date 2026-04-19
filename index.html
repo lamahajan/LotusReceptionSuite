@@ -206,7 +206,7 @@ body.dark .mt-screen-name{color:#f4ede0;}
 
 /* ─── Bottom nav ─── */
 #bottom-nav{display:none;position:fixed;bottom:0;left:0;right:0;height:58px;z-index:300;background:var(--surf);border-top:1.5px solid var(--bdr);}
-.bn-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;background:none;border:none;color:var(--mut);cursor:pointer;font-family:var(--sans);font-size:9px;font-weight:700;letter-spacing:.3px;transition:color .15s}
+.bn-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;background:none;border:none;color:var(--mut);cursor:pointer;font-family:var(--sans);font-size:8px;font-weight:700;letter-spacing:.3px;transition:color .15s}
 .bn-icon{font-size:19px}
 .bn-btn.active{color:#b5883e}
 
@@ -1678,6 +1678,27 @@ Reason: {reason}"></textarea>
             <button class="btn" onclick="exportExcel()" style="background:var(--green-l);border:1.5px solid var(--green);color:var(--green);font-size:13px;padding:10px 16px;flex:1;min-width:120px">📊 Download Excel (CSV)</button>
             <button class="btn" onclick="exportPDF()" style="background:var(--red-l);border:1.5px solid var(--red);color:var(--red);font-size:13px;padding:10px 16px;flex:1;min-width:120px">📄 Download PDF</button>
           </div>
+        </div>
+      </div>
+
+      <!-- ── SETTINGS EXPORT / IMPORT ── -->
+      <div class="gset-acc" id="gacc-settings-bk">
+        <button class="gset-hdr" onclick="gpToggleAcc('gacc-settings-bk')">
+          <span style="font-size:16px">🗂️</span>
+          <span class="gset-title">Settings Backup</span>
+          <span class="gset-sub">Export · Import all app settings</span>
+          <span class="gset-chev">▼</span>
+        </button>
+        <div class="gset-body">
+          <div style="font-size:11px;color:var(--sub);margin-bottom:12px;line-height:1.6">Export all settings — Firebase URLs, Telegram tokens &amp; chat IDs, Print config, Signature, WhatsApp templates — as one JSON. Import on any device to restore instantly.</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button onclick="exportAllSettings()" class="btn bp flex1" style="font-size:13px;padding:10px 14px">⬇️ Export Settings</button>
+            <label class="btn bgh flex1" style="cursor:pointer;justify-content:center;font-size:13px;padding:10px 14px">
+              ⬆️ Import Settings
+              <input type="file" accept=".json" style="display:none" onchange="importAllSettings(this)">
+            </label>
+          </div>
+          <div id="settings-backup-status" style="font-size:11px;color:var(--sub);margin-top:8px;min-height:14px"></div>
         </div>
       </div>
 
@@ -3760,7 +3781,7 @@ function renderRec(){
         </div>
         <div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex-shrink:0;margin-left:8px">
           <span class="ob ${lk?'done':'pend'}" style="font-size:9px;padding:2px 6px">${lk?'OUT '+p.gateOutTime:'PENDING'}</span>
-          ${TGCfg.approveEnabled?(p.tgApproved===true?'<span style="font-size:9px;padding:2px 6px;border-radius:5px;background:#dcfce7;color:#15803d;border:1px solid #86efac;font-weight:700">✅ Approved</span>':p.tgApproved===false?'<span style="font-size:9px;padding:2px 6px;border-radius:5px;background:#fee2e2;color:#dc2626;border:1px solid #fca5a5;font-weight:700">❌ Denied</span>':'<span style="font-size:9px;padding:2px 6px;border-radius:5px;background:var(--amber-l);color:var(--amber);border:1px solid var(--amber);font-weight:700">⏳ Pending</span>'):''}
+          ${TGCfg.approveEnabled?(p.tgApproved===true?`<span style="font-size:9px;padding:2px 6px;border-radius:5px;background:#dcfce7;color:#15803d;border:1px solid #86efac;font-weight:700">✅ Approved${p.tgApprovedBy?' by '+p.tgApprovedBy:''}</span>`:p.tgApproved===false?`<span style="font-size:9px;padding:2px 6px;border-radius:5px;background:#fee2e2;color:#dc2626;border:1px solid #fca5a5;font-weight:700">❌ Denied${p.tgApprovedBy?' by '+p.tgApprovedBy:''}</span>`:'<span style="font-size:9px;padding:2px 6px;border-radius:5px;background:var(--amber-l);color:var(--amber);border:1px solid var(--amber);font-weight:700">⏳ Pending</span>'):''}
           <span class="pid" style="font-size:9px">#${p.id.substr(-4).toUpperCase()}</span>
           <span class="chev" id="c-${p.id}">▼</span>
         </div>
@@ -4268,10 +4289,10 @@ function gpPrintA6Slip(p){
     +'.val{font-size:'+fBase+'pt;font-weight:700;color:#1a1035;margin-top:.5mm;overflow-wrap:break-word;word-break:break-word}'
     +'.rsn{background:#fef3c7;border:1px solid #d97706;border-radius:4px;padding:1.5mm 2mm;font-size:'+(fBase-1)+'pt;color:#92400e}'
     +'.spacer{flex:1}'
-    +'.foot{display:flex;justify-content:space-between;align-items:flex-end;padding-top:3mm;border-top:1px solid #e4ddf5}'
+    +'.foot{display:flex;justify-content:space-between;align-items:flex-end;padding-top:1.5mm;border-top:1px solid #e4ddf5}'
     +'.fi{text-align:center}'
-    +'.fl{font-size:5.5pt;color:#9080c0;text-transform:uppercase;letter-spacing:.5px}'
-    +'.fv{font-size:'+fBase+'pt;font-weight:700;color:#1a1035;font-family:monospace;margin-top:.5mm}'
+    +'.fl{font-size:5.5pt;color:#9080c0;text-transform:uppercase;letter-spacing:.5px;margin-top:1mm}'
+    +'.fv{font-size:'+fBase+'pt;font-weight:700;color:#1a1035;font-family:monospace}'
     +'.chip{font-size:6pt;padding:2px 6px;border-radius:20px;font-weight:700}'
     +'.out{background:#dcfce7;color:#15803d;border:1px solid #86efac}'
     +'.pend{background:#fef3c7;color:#d97706;border:1px solid #fcd34d}'
@@ -4297,7 +4318,7 @@ function gpPrintA6Slip(p){
     +'<div class="fi"><div class="fv">'+xEsc(gpFmtPrintDate(p.date))+'</div><div class="fl">Date</div></div>'
     +'<div class="fi"><div class="fv">'+xEsc(gpFmtPrintTime(p.time))+'</div><div class="fl">Time</div></div>'
     +(p.gateOutTime?'<div class="fi"><div class="fv">'+xEsc(p.gateOutTime)+'</div><div class="fl">Gate Out</div></div>':'')
-    +(()=>{const showSig=_gpSignatureData&&(!TGCfg.approveEnabled||_gpPrintCfg.signatureMode==='approved'||p.tgApproved===true);const sigH=(_gpPrintCfg.sigH||9)+'mm';const sigW=(_gpPrintCfg.sigW||22)+'mm';return '<div class="fi" style="text-align:right">'+(showSig?'<img src="'+_gpSignatureData+'" style="height:'+sigH+';max-width:'+sigW+';display:block;margin-left:auto">':'<div style="width:18mm;border-bottom:1px solid #9080c0;height:7mm"></div>')+'<div class="fl" style="margin-top:1mm">'+(showSig?'Principal':'Signature')+'</div></div>';})() 
+    +(()=>{const showSig=_gpSignatureData&&(!TGCfg.approveEnabled||_gpPrintCfg.signatureMode==='approved'||p.tgApproved===true);const sigH=(_gpPrintCfg.sigH||9)+'mm';const sigW=(_gpPrintCfg.sigW||22)+'mm';return '<div class="fi" style="text-align:right">'+(showSig?'<img src="'+_gpSignatureData+'" style="height:'+sigH+';max-width:'+sigW+';display:block;margin:0 0 0 auto">':'<div style="width:18mm;border-bottom:1px solid #9080c0;height:7mm"></div>')+'<div class="fl">'+(showSig?'Principal':'Signature')+'</div></div>';})() 
     +'</div></div>'
     +'<script>window.onload=function(){window.print();setTimeout(function(){window.close();},1200);}<\/script>'
     +'</body></html>';
@@ -6149,8 +6170,9 @@ function handleTGApproval(passId,approved,from){
   const pass=S.passes.find(p=>p.id===passId);
   if(!pass){gpToast('Pass not found for approval','err');return;}
   pass.tgApproved=approved;
+  const byName=from?(from.first_name+(from.last_name?' '+from.last_name:'')+(from.username?' (@'+from.username+')':'')).trim():'Unknown';
+  pass.tgApprovedBy=byName;
   push('passes');
-  const byName=from?from.first_name+(from.last_name?' '+from.last_name:''):'Unknown';
   // Always remove the inline keyboard buttons after any action
   if(pass.tgMsgId){
     fetch(`https://api.telegram.org/bot${TGCfg.token}/editMessageReplyMarkup`,{
@@ -7157,13 +7179,13 @@ window.fqFetchFromFirebase=async function(){
     const mapped=arr.filter(Boolean).map((s,i)=>({
       uid:'fb'+(Date.now()+i),
       name:String(s.name||s.studentName||s.fullName||'').trim(),
-      cls:String(s.class||s.cls||s.grade||s.standard||'').trim(),
-      id:String(s.admissionNumber||s.admNo||s.id||s.rollNo||'').trim(),
+      cls:String(s.class||s.cls||s.grade||s.standard||s.className||'').trim(),
+      id:String(s.admissionNumber||s.admNo||s.id||s.rollNo||s.adm||'').trim(),
       section:String(s.section||s.div||'').trim(),
       phone:String(s.phone||s.mobile||s.whatsapp||s.contact||'').trim(),
       amount:String(s.feeAmount||s.amount||s.fee||s.fees||'').trim(),
       source:'firebase'
-    })).filter(s=>s.name&&s.cls);
+    })).filter(s=>s.name); // only name required — class can be empty
     if(!mapped.length){ fqToast('No valid students found in Firebase','err'); return; }
     if(!confirm(`Import ${mapped.length} students from Firebase? (This will replace current list)`))return;
     fqStudents=mapped; _fqClsUserCleared=false; fqLsSave(); fqUpdateStats(); fqBuildClsList(); fqRenderStudentTable(); fqRenderGrid();
@@ -7594,6 +7616,62 @@ function pwaInstall(){
   });
 }
 window.addEventListener('appinstalled',()=>pwaDismiss());
+</script>
+
+<!-- ═══ SETTINGS EXPORT / IMPORT ═══ -->
+<script>
+const SETTINGS_EXPORT_KEYS=[
+  // Gatepass
+  'gp_url','gp_code','gp_tg_cfg','gp_ptg_cfg','gp_wa_cfg','gp_print_cfg',
+  'gp_signature','gp_stu_url','gp_stu_code','gp_od_cfg','gp_qp_thresh','gp_qp_window',
+  // Reference Register
+  'ref_fb_url','ref_fb_code','ref_fb_stu_url','ref_fb_stu_code','ref_tg_cfg',
+  'ref_cfg','ref_fs_cfg','ref_od_cfg','ref_wix_cfg',
+  // Fee QR
+  'feeqr_fb','feeqr_settings','feeqr_wa_enabled',
+  // Theme
+  'lis_theme'
+];
+
+function exportAllSettings(){
+  const out={exported:new Date().toISOString(),version:1,settings:{}};
+  SETTINGS_EXPORT_KEYS.forEach(k=>{
+    const v=localStorage.getItem(k);
+    if(v!==null)out.settings[k]=v;
+  });
+  const count=Object.keys(out.settings).length;
+  const blob=new Blob([JSON.stringify(out,null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download='lotus_settings_'+new Date().toISOString().split('T')[0]+'.json';
+  document.body.appendChild(a);a.click();
+  setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},2000);
+  const st=document.getElementById('settings-backup-status');
+  if(st){st.textContent='✅ Exported '+count+' settings keys';st.style.color='var(--green,#16a34a)';}
+  if(typeof toast==='function')toast('✅ Settings exported ('+count+' keys)');
+}
+
+function importAllSettings(input){
+  const file=input.files[0];if(!file)return;
+  const st=document.getElementById('settings-backup-status');
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      const data=JSON.parse(e.target.result);
+      if(!data.settings||typeof data.settings!=='object')throw new Error('Invalid settings file');
+      const keys=Object.keys(data.settings);
+      if(!confirm('Import '+keys.length+' settings from backup?\n\nThis will overwrite current Firebase URLs, Telegram tokens, Print config, Signature, etc.\n\nPage will reload to apply changes.'))return;
+      keys.forEach(k=>{
+        if(SETTINGS_EXPORT_KEYS.includes(k))localStorage.setItem(k,data.settings[k]);
+      });
+      if(st){st.textContent='✅ Imported '+keys.length+' settings — reloading…';st.style.color='var(--green,#16a34a)';}
+      setTimeout(()=>location.reload(),800);
+    }catch(err){
+      if(st){st.textContent='❌ '+err.message;st.style.color='var(--red,#dc2626)';}
+    }
+    input.value='';
+  };
+  reader.readAsText(file);
+}
 </script>
 
 <!-- PWA Install Banner -->
