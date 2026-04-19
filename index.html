@@ -1205,6 +1205,12 @@ body.dark .fq-mtitle{color:#f4ede0}
             <input id="newbus" class="inp flex1" placeholder="Bus 4 / Route A / Van…" onkeydown="if(event.key==='Enter')addBus()">
             <button class="btn bg" onclick="addBus()">Add</button>
           </div>
+          <!-- Bulk add -->
+          <div style="margin-bottom:10px">
+            <div style="font-size:10px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px">Bulk Add (one per line)</div>
+            <textarea id="bus-bulk-ta" class="inp" style="font-size:12px;font-family:var(--mono);min-height:70px;resize:vertical" placeholder="Bus 1&#10;Bus 2&#10;Route A&#10;Van 3"></textarea>
+            <button class="btn bgh" style="font-size:11px;margin-top:5px;width:100%" onclick="addBusBulk()">➕ Add All Buses</button>
+          </div>
           <div id="buslist"></div>
         </div>
       </div>
@@ -1433,6 +1439,45 @@ Reason: {reason}"></textarea>
       </div>
 
       <!-- Delete Records -->
+      <!-- ── FORCE PUSH + JSON BACKUP ── -->
+      <div class="gset-acc" id="gacc-backup">
+        <button class="gset-hdr" onclick="gpToggleAcc('gacc-backup')">
+          <span style="font-size:16px">💾</span>
+          <span class="gset-title">Backup &amp; Force Sync</span>
+          <span class="gset-sub">JSON backup · Force push to Firebase</span>
+          <span class="gset-chev">▼</span>
+        </button>
+        <div class="gset-body">
+          <!-- Force Push -->
+          <div style="background:var(--amber-l);border:1.5px solid var(--amber);border-radius:var(--rs);padding:11px 13px;margin-bottom:14px">
+            <div style="font-size:12px;font-weight:800;color:var(--amber);margin-bottom:4px">🔥 Force Push to Firebase</div>
+            <div style="font-size:11px;color:var(--sub);margin-bottom:10px;line-height:1.5">Clears Firebase completely and pushes your current local data. Use when another device deleted records but they still show here.</div>
+            <div id="gp-fp-status" style="font-size:11px;min-height:14px;margin-bottom:8px;color:var(--sub)"></div>
+            <button class="btn bp" style="background:var(--amber);border-color:var(--amber)" onclick="gpForcePushFirebase()">🔥 Clear Firebase &amp; Push Local Data</button>
+          </div>
+          <!-- JSON Backup -->
+          <div style="font-size:12px;font-weight:800;color:var(--text);margin-bottom:8px">📦 JSON Backup</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+            <button class="btn bgh flex1" onclick="gpExportJSON()">⬇️ Download Backup</button>
+            <label class="btn bgh flex1" style="cursor:pointer;justify-content:center">
+              ⬆️ Restore from JSON
+              <input type="file" accept=".json" style="display:none" onchange="gpImportJSON(this)">
+            </label>
+          </div>
+          <div id="gp-backup-status" style="font-size:11px;color:var(--sub);min-height:14px"></div>
+          <!-- CSV Upload → auto push -->
+          <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border)">
+            <div style="font-size:12px;font-weight:800;color:var(--text);margin-bottom:4px">📋 CSV Student Upload → Auto Sync</div>
+            <div style="font-size:11px;color:var(--sub);margin-bottom:8px">CSV upload karega aur turant Firebase push bhi karega.</div>
+            <label class="btn bgh" style="cursor:pointer;display:inline-flex;align-items:center;gap:6px">
+              📂 Upload Students CSV (with auto-push)
+              <input type="file" accept=".csv,.xlsx" style="display:none" onchange="gpCSVUploadAndPush(this)">
+            </label>
+            <div id="gp-csv-push-status" style="font-size:11px;color:var(--sub);margin-top:6px;min-height:14px"></div>
+          </div>
+        </div>
+      </div>
+
       <div class="gset-acc" id="gacc-del">
         <button class="gset-hdr" onclick="gpToggleAcc('gacc-del')">
           <span style="font-size:16px">🗑</span>
@@ -1502,9 +1547,10 @@ Reason: {reason}"></textarea>
             <div style="font-size:11px;color:var(--muted);margin-top:3px">Get from @BotFather — see setup guide below</div>
           </div>
           <div class="field">
-            <label class="lbl">Chat ID</label>
-            <input id="tg-chatid" class="inp" placeholder="-1001234567890" style="font-family:var(--mono)">
-            <div style="font-size:11px;color:var(--muted);margin-top:3px">Your private school channel or group ID</div>
+            <label class="lbl">Chat IDs <span style="font-weight:400;text-transform:none;font-size:10px;color:var(--muted)">(add upto 10 — all receive every message simultaneously)</span></label>
+            <div id="tg-chatids-list" style="display:flex;flex-direction:column;gap:6px;margin-bottom:6px"></div>
+            <button class="btn bgh" style="font-size:11px;padding:5px 12px" onclick="tgAddChatIdRow()">＋ Add Chat ID</button>
+            <div style="font-size:11px;color:var(--muted);margin-top:5px">Channel / group / personal chat ID — use @userinfobot to find yours</div>
           </div>
           <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;font-weight:600;margin-bottom:10px">
             <input type="checkbox" id="tg-enabled" style="accent-color:#2196F3;width:16px;height:16px">
@@ -2367,6 +2413,32 @@ Reason: {reason}"></textarea>
           </div>
           <button class="btn bpink" style="flex-shrink:0;padding:10px 16px" onclick="addFYFromSettings()">+ Add FY</button>
         </div>
+      </div>
+    </div>
+
+    <!-- ── BACKUP & FORCE PUSH ── -->
+    <div class="acc-section" id="acc-backup">
+      <div class="acc-header" onclick="toggleAcc('acc-backup')">
+        <span class="acc-title">💾 Backup &amp; Force Sync</span><span class="acc-arrow">▼</span>
+      </div>
+      <div class="acc-body">
+        <!-- Force Push -->
+        <div style="background:var(--amber-l);border:1.5px solid var(--amber);border-radius:var(--rs);padding:11px 13px;margin-bottom:14px">
+          <div style="font-size:12px;font-weight:800;color:var(--amber);margin-bottom:4px">🔥 Force Push to Firebase</div>
+          <div style="font-size:11px;color:var(--sub);margin-bottom:10px;line-height:1.5">Clears Firebase completely and pushes current local data. Use when another device deleted entries but they still show here.</div>
+          <div id="ref-fp-status" style="font-size:11px;min-height:14px;margin-bottom:8px;color:var(--sub)"></div>
+          <button class="btn bpink" style="background:var(--amber);border-color:var(--amber)" onclick="refForcePushFirebase()">🔥 Clear Firebase &amp; Push Local Data</button>
+        </div>
+        <!-- JSON Backup -->
+        <div style="font-size:12px;font-weight:800;color:var(--txt);margin-bottom:8px">📦 JSON Backup</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">
+          <button class="btn bgreen flex1" onclick="refExportJSON()">⬇️ Download Backup</button>
+          <label class="btn bgh flex1" style="cursor:pointer;justify-content:center">
+            ⬆️ Restore from JSON
+            <input type="file" accept=".json" style="display:none" onchange="refImportJSON(this)">
+          </label>
+        </div>
+        <div id="ref-backup-status" style="font-size:11px;color:var(--sub);min-height:14px"></div>
       </div>
     </div>
 
@@ -4006,6 +4078,17 @@ function cfgSt(m,c){const el=document.getElementById('cfg-status');el.textConten
 // ═══ BUSES ═══
 function renderBuses(){document.getElementById('buslist').innerHTML=S.buses.length?S.buses.map((b,i)=>`<div style="background:var(--bg3);border:1.5px solid var(--border);border-radius:var(--rs);padding:10px 12px;display:flex;align-items:center;gap:9px;margin-bottom:6px"><div style="display:flex;flex-direction:column;gap:2px"><button onclick="mvBus(${i},-1)" ${i===0?'disabled':''} style="background:none;border:none;color:${i===0?'var(--muted)':'var(--sub)'};cursor:pointer;font-size:11px;padding:1px 3px">▲</button><button onclick="mvBus(${i},1)" ${i===S.buses.length-1?'disabled':''} style="background:none;border:none;color:${i===S.buses.length-1?'var(--muted)':'var(--sub)'};cursor:pointer;font-size:11px;padding:1px 3px">▼</button></div><div style="background:var(--green-l);color:var(--green);border-radius:5px;padding:2px 7px;font-family:var(--mono);font-size:11px;font-weight:700">${i+1}</div><span style="flex:1;font-weight:700;font-size:13px">${e(b)}</span><button onclick="rmBus('${e(b)}')" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;padding:4px" onmouseover="this.style.color='var(--red)'" onmouseout="this.style.color='var(--muted)'">🗑</button></div>`).join(''):'<div class="empty"><div class="ei">🚌</div>No buses yet.</div>';}
 async function addBus(){setTimeout(gpUpdateSettingsSubs,50);const b=document.getElementById('newbus').value.trim();if(!b)return;if(S.buses.includes(b)){gpToast('⚠️ Already exists','err');return;}S.buses.push(b);await push('buses');document.getElementById('newbus').value='';renderBuses();popBusSel();gpToast('✅ Bus added');}
+async function addBusBulk(){
+  const ta=document.getElementById('bus-bulk-ta');
+  const lines=(ta.value||'').split('\n').map(l=>l.trim()).filter(Boolean);
+  if(!lines.length){gpToast('⚠️ Enter at least one bus name','err');return;}
+  let added=0,skipped=0;
+  lines.forEach(b=>{if(S.buses.includes(b)){skipped++;return;}S.buses.push(b);added++;});
+  await push('buses');renderBuses();popBusSel();
+  ta.value='';
+  gpToast(`✅ ${added} added${skipped?' · '+skipped+' skipped (duplicate)':''}`);
+  setTimeout(gpUpdateSettingsSubs,50);
+}
 async function rmBus(n){S.buses=S.buses.filter(x=>x!==n);await push('buses');renderBuses();popBusSel();gpToast('🗑 Removed');}
 async function mvBus(i,d){const j=i+d;if(j<0||j>=S.buses.length)return;[S.buses[i],S.buses[j]]=[S.buses[j],S.buses[i]];await push('buses');renderBuses();}
 
@@ -4170,7 +4253,7 @@ function gpPrintA6Slip(p){
     +'/* @page handled in body style */'
     +'*{box-sizing:border-box;margin:0;padding:0}'
     +(_gpPrintCfg.bw?'body,*{color:#000!important;background:#fff!important;border-color:#555!important}':'')+'*{-webkit-print-color-adjust:exact;print-color-adjust:exact}'
-    +(()=>{const lp=_gpPrintCfg.logoPos||'left';let bodyStyle='@page{size:'+pageDecl+';margin:0}body{width:'+cW+';min-height:'+cH+';font-family:"Segoe UI",Arial,sans-serif;color:#1a1035;background:#fff;position:absolute;top:0;';if(lp==='center')bodyStyle+='left:50%;transform:translateX(-50%);}';else if(lp==='right')bodyStyle+='right:0;left:auto;}';else bodyStyle+='left:0;}';return bodyStyle;})()
+    +(()=>{const lp=_gpPrintCfg.logoPos||'left';let bodyStyle='@page{size:'+pageDecl+';margin:0}body{width:'+cW+';min-height:'+cH+';font-family:"Segoe UI",Arial,sans-serif;color:#1a1035;background:#fff;';if(lp==='center')bodyStyle+='margin:0 auto;}';else if(lp==='right')bodyStyle+='margin-left:auto;margin-right:0;}';else bodyStyle+='margin:0;}';return bodyStyle;})()
     +'.wrap{width:'+cW+';min-height:'+cH+';padding:'+pad+';padding-bottom:4mm;display:flex;flex-direction:column;gap:1.5mm}'
     +'.top{display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:3mm}'
     +'.divider{border:none;border-top:2px solid #7c3aed;margin:0;width:100%}'
@@ -4369,6 +4452,93 @@ function _gpBatchPrint(passes){
 
   _gpOpenPrintWindow(html);
   gpToast('🖨️ '+passes.length+' pass'+(passes.length>1?'es':'')+' sent to print');
+}
+
+// ═══ GATEPASS BACKUP & FORCE PUSH ═══
+async function gpForcePushFirebase(){
+  const hasGP=cfg.url&&cfg.code;
+  const hasStu=gpStuCfg.url&&gpStuCfg.code;
+  if(!hasGP&&!hasStu){gpToast('⚠️ No Firebase DB connected','err');return;}
+  if(!confirm('This will CLEAR the Student DB on Firebase and push current local students.\n\nStudents: '+S.students.length+'\n\nContinue?'))return;
+  const st=document.getElementById('gp-fp-status');
+  st.textContent='🔥 Pushing to Student DB…';st.style.color='var(--amber)';
+  try{
+    if(hasStu){
+      // Wipe student DB path then push all students
+      await fetch(`${gpStuCfg.url}/${gpStuCfg.code}.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:'null'});
+      const sVal=S.students.length===0?{'__empty':true}:S.students;
+      const lastMod=Date.now();
+      await fetch(`${gpStuCfg.url}/${gpStuCfg.code}.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({students:sVal,lastMod})});
+      st.textContent='✅ Student DB updated — '+S.students.length+' students pushed';st.style.color='var(--green)';
+    } else {
+      st.textContent='⚠️ Student DB not connected (configure in Students DB settings)';st.style.color='var(--amber)';
+      return;
+    }
+    gpToast('✅ Students force-pushed to Firebase');
+  }catch(e){st.textContent='❌ Failed: '+e.message;st.style.color='var(--red)';}
+}
+
+function gpExportJSON(){
+  const data={exported:new Date().toISOString(),version:2,passes:S.passes,students:S.students,buses:S.buses};
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download='gatepass_backup_'+new Date().toISOString().split('T')[0]+'.json';
+  document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},2000);
+  gpToast('📦 Backup downloaded');
+}
+
+function gpImportJSON(input){
+  const file=input.files[0];if(!file)return;
+  const st=document.getElementById('gp-backup-status');
+  const reader=new FileReader();
+  reader.onload=async e=>{
+    try{
+      const data=JSON.parse(e.target.result);
+      if(!confirm('This will REPLACE all current gatepass data with the backup.\n\nPasses: '+(data.passes||[]).length+'\nStudents: '+(data.students||[]).length+'\n\nContinue?'))return;
+      if(Array.isArray(data.passes))S.passes=data.passes;
+      if(Array.isArray(data.students))S.students=data.students;
+      if(Array.isArray(data.buses))S.buses=data.buses;
+      saveLocal();renderAll();popBusSel();renderStu&&renderStu();updBadge();
+      await push('passes');
+      st.textContent='✅ Restored: '+S.passes.length+' passes, '+S.students.length+' students';st.style.color='var(--green)';
+      gpToast('✅ Backup restored');
+    }catch(err){st.textContent='❌ Invalid JSON file';st.style.color='var(--red)';}
+    input.value='';
+  };
+  reader.readAsText(file);
+}
+
+async function gpCSVUploadAndPush(input){
+  const file=input.files[0];if(!file)return;
+  const st=document.getElementById('gp-csv-push-status');
+  st.textContent='📂 Reading file…';st.style.color='var(--blue)';
+  try{
+    const text=await file.text();
+    const lines=text.split('\n').filter(l=>l.trim());
+    if(lines.length<2){st.textContent='⚠️ Need header + data rows';st.style.color='var(--amber)';return;}
+    const raw=lines[0].split(',').map(h=>h.trim().replace(/^"|"$/g,'').toLowerCase());
+    const col=kws=>raw.findIndex(h=>kws.some(k=>h.includes(k)));
+    const nI=col(['name']),aI=col(['admission','adm','roll']),cI=col(['class','grade']),fI=col(['father']),mI=col(['mother']),bI=col(['bus']),phI=col(['phone','mobile','contact','whatsapp']);
+    if(nI<0||aI<0){st.textContent='⚠️ Need name & admissionNumber columns';st.style.color='var(--red)';return;}
+    const map={};S.students.forEach(s=>map[s.admissionNumber]=s);
+    let added=0,updated=0;
+    for(let i=1;i<lines.length;i++){
+      const c=lines[i].split(',').map(v=>v.trim().replace(/^"|"$/g,''));
+      const adm=(c[aI]||'').trim().replace(/\s/g,'').slice(0,8),name=c[nI];
+      if(!adm||!name)continue;
+      const phone=(phI>=0?(c[phI]||''):'').replace(/[^0-9]/g,'');
+      const stu={name,admissionNumber:adm,class:cI>=0?c[cI]:'',fatherName:fI>=0?c[fI]:'',motherName:mI>=0?c[mI]:'',busNumber:bI>=0?c[bI]:'',phone};
+      if(map[adm])updated++;else added++;
+      map[adm]=stu;
+    }
+    S.students=Object.values(map);
+    await push('students');
+    syncGpStudentsToRef();
+    renderStu&&renderStu();
+    st.textContent=`✅ ${added} added · ${updated} updated — pushed to Firebase`;st.style.color='var(--green)';
+    gpToast(`✅ ${added+updated} students synced`);
+  }catch(err){st.textContent='❌ Error: '+err.message;st.style.color='var(--red)';}
+  input.value='';
 }
 
 </script>
@@ -5268,7 +5438,7 @@ function renderSettingsPage(){
   document.getElementById('gpod-enabled').checked=GPODCfg.enabled||false;
   // Telegram Bot
   document.getElementById('tg-token').value=TGCfg.token||'';
-  document.getElementById('tg-chatid').value=TGCfg.chatId||'';
+  _tgRenderChatIdRows();
   document.getElementById('tg-enabled').checked=TGCfg.enabled||false;
   const tgApprEl=document.getElementById('tg-approve-enabled');if(tgApprEl)tgApprEl.checked=!!TGCfg.approveEnabled;
   if(document.getElementById('ptg-token')){
@@ -5798,16 +5968,46 @@ async function testGPOD(){
 }
 
 // ─── TELEGRAM BOT CONFIG ──────────────────────────────────
-let TGCfg={token:'',chatId:'',enabled:false};
-function loadTGCfg(){try{const d=localStorage.getItem('gp_tg_cfg');if(d)TGCfg=JSON.parse(d);}catch(e){}}
+let TGCfg={token:'',chatId:'',chatIds:[],enabled:false};
+function loadTGCfg(){
+  try{const d=localStorage.getItem('gp_tg_cfg');if(d)TGCfg=JSON.parse(d);}catch(e){}
+  // Migrate old single chatId to array
+  if(!TGCfg.chatIds||!TGCfg.chatIds.length){
+    TGCfg.chatIds=TGCfg.chatId?[TGCfg.chatId]:[];
+  }
+}
+function _tgGetChatIds(){
+  // Returns deduplicated non-empty array of chat IDs from UI rows
+  return [...document.querySelectorAll('.tg-chatid-inp')]
+    .map(i=>i.value.trim()).filter(Boolean)
+    .filter((v,i,a)=>a.indexOf(v)===i);
+}
+function tgAddChatIdRow(val=''){
+  const list=document.getElementById('tg-chatids-list');
+  if(!list)return;
+  if(list.children.length>=10){gpToast('Max 10 Chat IDs','err');return;}
+  const row=document.createElement('div');
+  row.style.cssText='display:flex;gap:6px;align-items:center';
+  row.innerHTML=`<input class="inp tg-chatid-inp flex1" placeholder="-1001234567890" style="font-family:var(--mono);font-size:12px" value="${val}">
+    <button onclick="this.parentNode.remove()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:18px;padding:4px;line-height:1" onmouseover="this.style.color='var(--red)'" onmouseout="this.style.color='var(--muted)'">✕</button>`;
+  list.appendChild(row);
+}
+function _tgRenderChatIdRows(){
+  const list=document.getElementById('tg-chatids-list');
+  if(!list)return;
+  list.innerHTML='';
+  const ids=TGCfg.chatIds&&TGCfg.chatIds.length?TGCfg.chatIds:[''];
+  ids.forEach(id=>tgAddChatIdRow(id));
+}
 function saveTGCfg(){
   TGCfg.token=document.getElementById('tg-token').value.trim();
-  TGCfg.chatId=document.getElementById('tg-chatid').value.trim();
+  TGCfg.chatIds=_tgGetChatIds();
+  TGCfg.chatId=TGCfg.chatIds[0]||''; // keep backward compat
   TGCfg.enabled=document.getElementById('tg-enabled').checked;
   TGCfg.approveEnabled=document.getElementById('tg-approve-enabled')?document.getElementById('tg-approve-enabled').checked:false;
   localStorage.setItem('gp_tg_cfg',JSON.stringify(TGCfg));
   const st=document.getElementById('tg-status');
-  st.textContent='\u2713 Telegram settings saved';st.style.color='var(--green)';
+  st.textContent='✓ Saved — '+TGCfg.chatIds.length+' chat ID'+(TGCfg.chatIds.length!==1?'s':'');st.style.color='var(--green)';
   gpUpdateSettingsSubs();
   toast('Telegram Bot settings saved.');
   startTGApprovalPolling();
@@ -5815,59 +6015,74 @@ function saveTGCfg(){
 async function testTGCfg(){
   const st=document.getElementById('tg-status');
   const token=document.getElementById('tg-token').value.trim();
-  const chatId=document.getElementById('tg-chatid').value.trim();
-  if(!token||!chatId){st.textContent='Fill Bot Token & Chat ID first';st.style.color='var(--red)';return;}
-  st.textContent='Sending test message\u2026';st.style.color='var(--amber)';
-  try{
-    const r=await fetch(`https://api.telegram.org/bot${token}/sendMessage`,{
+  const ids=_tgGetChatIds();
+  if(!token||!ids.length){st.textContent='Fill Bot Token & at least one Chat ID first';st.style.color='var(--red)';return;}
+  st.textContent='Sending test to '+ids.length+' chat(s)…';st.style.color='var(--amber)';
+  const results=await Promise.allSettled(ids.map(chatId=>
+    fetch(`https://api.telegram.org/bot${token}/sendMessage`,{
       method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({chat_id:chatId,text:'\u2705 Lotus Gate Pass Bot connected successfully!\n\nPicker photos will be sent here automatically.'})
-    });
-    const d=await r.json();
-    if(!d.ok)throw new Error(d.description||'Failed');
-    st.textContent='\u2713 Test message sent! Check your Telegram.';st.style.color='var(--green)';
-  }catch(e){st.textContent='\u274c '+e.message;st.style.color='var(--red)';}
+      body:JSON.stringify({chat_id:chatId,text:'✅ Lotus Gate Pass Bot connected!\n\nChat ID: '+chatId+'\nPicker photos will be sent here automatically.'})
+    }).then(r=>r.json()).then(d=>{if(!d.ok)throw new Error(d.description);return chatId;})
+  ));
+  const ok=results.filter(r=>r.status==='fulfilled').length;
+  const fail=results.filter(r=>r.status==='rejected');
+  if(fail.length){
+    st.textContent=ok+' ok · '+fail.length+' failed: '+fail.map(f=>f.reason.message).join(', ');
+    st.style.color=ok?'var(--amber)':'var(--red)';
+  } else {
+    st.textContent='✓ Test sent to all '+ok+' chat(s)!';st.style.color='var(--green)';
+  }
 }
 async function sendToTelegramLog(pass){
-  if(!TGCfg.enabled||!TGCfg.token||!TGCfg.chatId)return;
+  const ids=TGCfg.chatIds&&TGCfg.chatIds.length?TGCfg.chatIds:(TGCfg.chatId?[TGCfg.chatId]:[]);
+  if(!TGCfg.enabled||!TGCfg.token||!ids.length)return;
   try{
     const caption=`\ud83d\udeaa *Gate Pass Issued*\n\n\ud83d\udc64 *${pass.studentName}* (${pass.class||'\u2014'})\n\ud83d\udccb Adm: ${pass.admissionNumber||'\u2014'}\n\ud83e\uddd1 Picked by: *${pass.pickedUpBy}* (${pass.relation||'\u2014'})\n\ud83d\udcdd Reason: ${pass.reason||'\u2014'}\n\ud83d\ude8c Bus: ${pass.busNumber||'\u2014'}\n\ud83d\udd50 Time: ${pass.time} | \ud83d\udcc5 ${pass.date}\n\ud83c\udd94 Pass: #${pass.id.substr(-6).toUpperCase()}`;
-    let msgId=null;
     const inlineKb=TGCfg.approveEnabled?{inline_keyboard:[[
       {text:'\u2705 Approve',callback_data:'APPROVE_'+pass.id},
       {text:'\u274c Deny',callback_data:'DENY_'+pass.id}
     ]]}:null;
-    if(pass.pickerPhoto){
-      const b64=pass.pickerPhoto.split(',')[1]||pass.pickerPhoto;
-      const mime=(pass.pickerPhoto.match(/data:([^;]+)/)||[])[1]||'image/jpeg';
-      const bytes=Uint8Array.from(atob(b64),c2=>c2.charCodeAt(0));
-      const blob=new Blob([bytes],{type:mime});
-      const form=new FormData();
-      form.append('chat_id',TGCfg.chatId);
-      form.append('photo',blob,'gatepass.jpg');
-      form.append('caption',caption);
-      form.append('parse_mode','Markdown');
-      if(inlineKb)form.append('reply_markup',JSON.stringify(inlineKb));
-      const r=await fetch(`https://api.telegram.org/bot${TGCfg.token}/sendPhoto`,{method:'POST',body:form});
-      const d=await r.json();
-      if(!d.ok)throw new Error(d.description||'Photo send failed');
-      msgId=d.result&&d.result.message_id;
-      gpToast('\u2708\ufe0f Gate pass photo sent to Admin');
-    } else {
-      const payload={chat_id:TGCfg.chatId,text:caption,parse_mode:'Markdown'};
-      if(inlineKb)payload.reply_markup=inlineKb;
-      const r=await fetch(`https://api.telegram.org/bot${TGCfg.token}/sendMessage`,{
-        method:'POST',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify(payload)
-      });
-      const d=await r.json();
-      if(!d.ok)throw new Error(d.description||'Message send failed');
-      msgId=d.result&&d.result.message_id;
-      gpToast('\u2708\ufe0f Gate pass logged to Telegram');
-    }
-    // Save message_id so we can delete it if pass is deleted
-    const pidx=S.passes.findIndex(p=>p.id===pass.id);
-    if(pidx>-1){S.passes[pidx].tgMsgId=msgId;push('passes');}
+
+    // Send to all chat IDs simultaneously
+    const results=await Promise.allSettled(ids.map(async chatId=>{
+      let msgId=null;
+      if(pass.pickerPhoto){
+        const b64=pass.pickerPhoto.split(',')[1]||pass.pickerPhoto;
+        const mime=(pass.pickerPhoto.match(/data:([^;]+)/)||[])[1]||'image/jpeg';
+        const bytes=Uint8Array.from(atob(b64),c2=>c2.charCodeAt(0));
+        const blob=new Blob([bytes],{type:mime});
+        const form=new FormData();
+        form.append('chat_id',chatId);
+        form.append('photo',blob,'gatepass.jpg');
+        form.append('caption',caption);
+        form.append('parse_mode','Markdown');
+        if(inlineKb)form.append('reply_markup',JSON.stringify(inlineKb));
+        const r=await fetch(`https://api.telegram.org/bot${TGCfg.token}/sendPhoto`,{method:'POST',body:form});
+        const d=await r.json();
+        if(!d.ok)throw new Error(d.description||'Photo send failed');
+        msgId=d.result&&d.result.message_id;
+      } else {
+        const payload={chat_id:chatId,text:caption,parse_mode:'Markdown'};
+        if(inlineKb)payload.reply_markup=inlineKb;
+        const r=await fetch(`https://api.telegram.org/bot${TGCfg.token}/sendMessage`,{
+          method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)
+        });
+        const d=await r.json();
+        if(!d.ok)throw new Error(d.description||'Message send failed');
+        msgId=d.result&&d.result.message_id;
+      }
+      return {chatId,msgId};
+    }));
+
+    // Save first successful msgId (used for delete/approve)
+    const firstOk=results.find(r=>r.status==='fulfilled');
+    const msgId=firstOk?firstOk.value.msgId:null;
+    const failCount=results.filter(r=>r.status==='rejected').length;
+    if(msgId){const pidx=S.passes.findIndex(p=>p.id===pass.id);if(pidx>-1){S.passes[pidx].tgMsgId=msgId;push('passes');}}
+    const okCount=results.length-failCount;
+    if(pass.pickerPhoto)gpToast('\u2708\ufe0f Gate pass photo sent to Admin'+(okCount>1?' ('+okCount+' chats)':''));
+    else gpToast('\u2708\ufe0f Gate pass logged to Telegram'+(okCount>1?' ('+okCount+' chats)':''));
+    if(failCount)gpToast('⚠️ '+failCount+' chat(s) failed','err');
   }catch(e){gpToast('Telegram error: '+e.message,'err');console.error('TG:',e);}
 }
 
@@ -7271,6 +7486,59 @@ async function updateRefTGMessage(entry){
       await sendRefTGNotification('updated',entry);
     }
   }catch(e){console.error('RefTG update:',e);}
+}
+
+// ═══ REFERENCE REGISTER BACKUP & FORCE PUSH ═══
+async function refForcePushFirebase(){
+  const hasStu=fbStuCfg.url&&fbStuCfg.code;
+  if(!hasStu){toast('⚠️ Student DB not connected — configure in Settings → Student DB','err');return;}
+  if(!confirm('This will CLEAR the Student DB on Firebase and push your current local students.\n\nStudents: '+STUDENTS.length+'\n\nContinue?'))return;
+  const st=document.getElementById('ref-fp-status');
+  st.textContent='🔥 Pushing to Student DB…';st.style.color='var(--amber)';
+  try{
+    await fetch(`${fbStuCfg.url}/${fbStuCfg.code}.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:'null'});
+    const sVal=STUDENTS.length===0?{'__empty':true}:STUDENTS;
+    const lastMod=Date.now();
+    await fetch(`${fbStuCfg.url}/${fbStuCfg.code}.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({students:sVal,lastMod})});
+    st.textContent='✅ Student DB updated — '+STUDENTS.length+' students pushed';st.style.color='var(--green)';
+    toast('✅ Students force-pushed to Firebase');
+  }catch(e){st.textContent='❌ Failed: '+e.message;st.style.color='var(--red)';}
+}
+
+function refExportJSON(){
+  const data={exported:new Date().toISOString(),version:2,entries:R.entries,nextSeq:R.nextSeq,overrideSeq:R.overrideSeq||{},reclaimedSeqs:R.reclaimedSeqs||{},students:STUDENTS,config:CFG};
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download='reference_backup_'+new Date().toISOString().split('T')[0]+'.json';
+  document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},2000);
+  toast('📦 Backup downloaded');
+}
+
+function refImportJSON(input){
+  const file=input.files[0];if(!file)return;
+  const st=document.getElementById('ref-backup-status');
+  const reader=new FileReader();
+  reader.onload=async e=>{
+    try{
+      const data=JSON.parse(e.target.result);
+      const entryCnt=(data.entries||[]).length;
+      const stuCnt=(data.students||[]).length;
+      if(!confirm('This will REPLACE all current Reference Register data.\n\nEntries: '+entryCnt+'\nStudents: '+stuCnt+'\n\nContinue?'))return;
+      if(Array.isArray(data.entries))R.entries=data.entries;
+      if(data.nextSeq)R.nextSeq=data.nextSeq;
+      if(data.overrideSeq)R.overrideSeq=data.overrideSeq;
+      if(data.reclaimedSeqs)R.reclaimedSeqs=data.reclaimedSeqs;
+      if(Array.isArray(data.students))STUDENTS=data.students;
+      if(data.config)Object.assign(CFG,data.config);
+      saveLocal();saveCFG();
+      renderFYSelect();renderDashboard();renderRegister();renderStudentList&&renderStudentList();
+      await fbPush();
+      st.textContent='✅ Restored: '+entryCnt+' entries, '+stuCnt+' students';st.style.color='var(--green)';
+      toast('✅ Backup restored');
+    }catch(err){st.textContent='❌ Invalid JSON file';st.style.color='var(--red)';}
+    input.value='';
+  };
+  reader.readAsText(file);
 }
 
 </script>
