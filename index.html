@@ -2697,13 +2697,13 @@ Reason: {reason}"></textarea>
         <div class="fq-sec">
           <div class="fq-sec-hdr"><span class="fq-sec-icon">🔥</span><div class="fq-sec-title">Firebase Student Database</div><span class="fq-sec-sub" id="fq-fb-status-badge" style="color:#a89f92">Not connected</span></div>
           <div class="fq-sec-body">
-            <div style="font-size:12px;color:#a89f92;margin-bottom:10px;line-height:1.6">Connect to Firebase Realtime DB to auto-fetch student list. Path: <code style="background:rgba(181,136,62,.1);color:#b5883e;padding:1px 5px;border-radius:4px;font-size:11px">/students</code> mein data hona chahiye.</div>
+            <div style="font-size:12px;color:#a89f92;margin-bottom:8px;line-height:1.6">Gatepass Student DB se automatically students fetch karo. URL aur Path wahi use karo jo Gatepass → Settings → Student DB mein set hai.</div>
+            <button onclick="fqAutoFillFromGatepass()" class="fq-btn fq-btn-outline" style="margin-bottom:10px;font-size:12px;width:100%;justify-content:center">⚡ Auto-fill from Gatepass Student DB</button>
             <div class="fq-grid2" style="margin-bottom:10px">
               <div style="grid-column:1/-1"><label class="fq-lbl">Firebase RTDB URL</label><input class="fq-inp" id="fq-fb-url" placeholder="https://your-project-default-rtdb.firebaseio.com" style="font-family:'JetBrains Mono',monospace;font-size:12px"/></div>
-              <div><label class="fq-lbl">DB Path</label><input class="fq-inp" id="fq-fb-path" placeholder="students" value="students" style="font-family:'JetBrains Mono',monospace"/></div>
-              <div><label class="fq-lbl">Access Code / Secret</label><input class="fq-inp" id="fq-fb-secret" placeholder="optional — for private DB" type="password"/></div>
+              <div><label class="fq-lbl">DB Path <span style="font-weight:400;font-size:10px">(e.g. SYNC_CODE or SYNC_CODE/students)</span></label><input class="fq-inp" id="fq-fb-path" placeholder="e.g. LOTUS_STU" style="font-family:'JetBrains Mono',monospace"/></div>
+              <div><label class="fq-lbl">Access Code / Secret</label><input class="fq-inp" id="fq-fb-secret" placeholder="optional" type="password"/></div>
             </div>
-            <div style="font-size:11px;color:#a89f92;margin-bottom:10px">💡 Fields expected: <code style="font-size:11px">name</code>, <code style="font-size:11px">class</code> (required) · <code style="font-size:11px">admissionNumber/id</code>, <code style="font-size:11px">section</code>, <code style="font-size:11px">phone/mobile</code>, <code style="font-size:11px">feeAmount/amount</code> (optional)</div>
             <div id="fq-fb-test-result" style="font-size:12px;min-height:16px;margin-bottom:10px"></div>
             <div style="display:flex;gap:8px;flex-wrap:wrap">
               <button class="fq-btn fq-btn-gold" onclick="fqSaveFBConfig()">💾 Save &amp; Connect</button>
@@ -7148,6 +7148,16 @@ window.fqDisconnectFB=function(){
   fqToast('Firebase disconnected','inf');
 };
 function fqGetFBCfg(){ try{ const d=localStorage.getItem('feeqr_fb'); return d?JSON.parse(d):null; }catch(e){return null;} }
+function fqAutoFillFromGatepass(){
+  const url=localStorage.getItem('gp_stu_url')||'';
+  const code=localStorage.getItem('gp_stu_code')||'';
+  if(!url||!code){fqToast('Gatepass Student DB not configured yet — set it in Gatepass → Settings → Student DB first','err');return;}
+  const urlEl=document.getElementById('fq-fb-url');
+  const pathEl=document.getElementById('fq-fb-path');
+  if(urlEl)urlEl.value=url;
+  if(pathEl)pathEl.value=code; // path = sync code, data is at CODE.json with {students:[...]}
+  fqToast('✅ Auto-filled from Gatepass Student DB — tap Save & Connect');
+}
 function fqShowFBSyncBar(){
   const cfg=fqGetFBCfg(); const bar=document.getElementById('fq-fb-sync-bar');
   if(bar) bar.style.display=cfg&&cfg.url?'flex':'none';
@@ -7175,8 +7185,21 @@ window.fqFetchFromFirebase=async function(){
     if(cfg.secret) url+='?auth='+encodeURIComponent(cfg.secret);
     const r=await fetch(url); const d=await r.json();
     if(!r.ok||d===null){ fqToast('No data found at path','err'); return; }
-    const arr=Array.isArray(d)?d:Object.values(d);
-    const mapped=arr.filter(Boolean).map((s,i)=>({
+    // Smart extraction — handles multiple Firebase data formats:
+    // 1. Direct array: [{...}, {...}]
+    // 2. Gatepass Student DB format: {students:[...], lastMod:123}
+    // 3. Firebase object (numeric keys): {"0":{...}, "1":{...}}
+    let arr;
+    if(Array.isArray(d)){
+      arr=d;
+    } else if(d.students&&Array.isArray(d.students)){
+      arr=d.students; // gatepass/reference student DB format
+    } else {
+      // try to find any array value, else use object values
+      const arrVal=Object.values(d).find(v=>Array.isArray(v));
+      arr=arrVal||Object.values(d);
+    }
+    const mapped=arr.filter(s=>s&&typeof s==='object').map((s,i)=>({
       uid:'fb'+(Date.now()+i),
       name:String(s.name||s.studentName||s.fullName||'').trim(),
       cls:String(s.class||s.cls||s.grade||s.standard||s.className||'').trim(),
@@ -7185,7 +7208,7 @@ window.fqFetchFromFirebase=async function(){
       phone:String(s.phone||s.mobile||s.whatsapp||s.contact||'').trim(),
       amount:String(s.feeAmount||s.amount||s.fee||s.fees||'').trim(),
       source:'firebase'
-    })).filter(s=>s.name); // only name required — class can be empty
+    })).filter(s=>s.name);
     if(!mapped.length){ fqToast('No valid students found in Firebase','err'); return; }
     if(!confirm(`Import ${mapped.length} students from Firebase? (This will replace current list)`))return;
     fqStudents=mapped; _fqClsUserCleared=false; fqLsSave(); fqUpdateStats(); fqBuildClsList(); fqRenderStudentTable(); fqRenderGrid();
