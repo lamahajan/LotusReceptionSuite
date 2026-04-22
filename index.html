@@ -245,6 +245,18 @@ body.dark .app-card:hover{border-color:#3c3628;}
 </style>
 
 <style>
+/* ═══ CUT PASS BUS SUMMARY CARDS ═══ */
+.cp-buscard{background:var(--bg2);border:1.5px solid var(--border2);border-radius:8px;padding:6px 7px;cursor:pointer;transition:all .2s;text-align:center;box-shadow:var(--sha);}
+.cp-buscard:hover{border-color:var(--blue);transform:translateY(-2px);box-shadow:var(--sha-md);}
+.cp-buscard.active{border-color:var(--blue);background:var(--blue-l);}
+.cp-buscard-num{font-size:15px;font-weight:800;font-family:var(--mono);color:var(--blue);line-height:1;}
+.cp-buscard-name{font-size:9px;font-weight:700;color:var(--text);margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.cp-buscard-sub{font-size:8.5px;color:var(--sub);margin-top:1px;font-family:var(--mono);}
+.cp-pass-row{background:var(--bg2);border:1.5px solid var(--border);border-radius:var(--rs);padding:10px 12px;margin-bottom:7px;}
+.cp-pass-name{font-size:14px;font-weight:800;color:var(--text);}
+.cp-pass-meta{font-size:11px;color:var(--sub);margin-top:2px;line-height:1.5;}
+.cp-pass-time{font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:3px;}
+
 /* ═══ GATEPASS SETTINGS ACCORDION ═══ */
 #screen-rec .gset-acc{background:var(--bg2);border:1.5px solid var(--border);border-radius:var(--r);margin-bottom:8px;overflow:hidden;box-shadow:var(--sha)}
 #screen-rec .gset-hdr{display:flex;align-items:center;gap:10px;width:100%;background:none;border:none;padding:13px 15px;cursor:pointer;text-align:left;color:var(--text);font-family:var(--sans);transition:background .15s}
@@ -1016,6 +1028,7 @@ body.dark .fq-mtitle{color:#f4ede0}
 
   <!-- ══ CUT PASS TAB ══ -->
   <div id="tab-cut" class="inn">
+
     <div class="field sw">
       <label class="lbl">Search Student</label>
       <input id="cpq" class="inp" placeholder="Name · Admission No · Class…" oninput="cpSearch()" autocomplete="off">
@@ -1059,6 +1072,23 @@ body.dark .fq-mtitle{color:#f4ede0}
       <div id="phprev" class="phwrap" style="display:none"><img id="phimg" src="" alt="Photo"><button class="phdel" onclick="clrPhoto()">✕</button></div>
     </div>
     <button class="btn bp bfull" onclick="issuePass()">✂️ Issue Gate Pass</button>
+
+    <!-- ── Today's Bus Summary (bottom) ── -->
+    <div id="cp-bus-summary" style="margin-top:16px;display:none">
+      <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--blue);margin-bottom:8px;display:flex;align-items:center;gap:8px">
+        <span>🚌 Today's Passes by Bus</span>
+        <span id="cp-total-badge" style="background:var(--blue-l);color:var(--blue);border:1px solid var(--blue);border-radius:20px;padding:1px 8px;font-size:10px;font-family:var(--mono)">0</span>
+      </div>
+      <div id="cp-bus-cards" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:6px"></div>
+      <!-- Expanded list for selected bus -->
+      <div id="cp-bus-list" style="display:none;margin-top:10px;background:var(--bg3);border:1.5px solid var(--border);border-radius:var(--r);padding:12px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <div style="font-size:12px;font-weight:800;color:var(--blue)" id="cp-bus-list-title">Bus Passes</div>
+          <button onclick="cpCloseBusList()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;line-height:1">✕</button>
+        </div>
+        <div id="cp-bus-list-items"></div>
+      </div>
+    </div>
   </div>
 
   <!-- ══ RECORDS TAB ══ -->
@@ -3288,7 +3318,7 @@ function setSS(st){
   if(st==='ok')ti.textContent=new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',hour12:true});
 }
 function startSync(){setSS('ing');fetchAll();if(syncIv)clearInterval(syncIv);syncIv=setInterval(fetchAll,6000);}
-function renderAll(){popBusSel();updBadge();const a=document.querySelector('.tb.active');if(!a)return;const f=a.getAttribute('onclick')||'';if(f.includes('rec'))renderRec();if(f.includes('set')&&document.getElementById('set-ct').style.display!=='none'){renderBuses();renderStu();}renderQGSidebar();}
+function renderAll(){popBusSel();updBadge();const a=document.querySelector('.tb.active');if(!a)return;const f=a.getAttribute('onclick')||'';if(f.includes('rec'))renderRec();if(f.includes('cut'))renderCpBusSummary();if(f.includes('set')&&document.getElementById('set-ct').style.display!=='none'){renderBuses();renderStu();}renderQGSidebar();}
 
 // ═══ UTILS ═══
 function todayStr(){return new Date().toISOString().split('T')[0];}
@@ -3316,7 +3346,7 @@ function recGoTab(n,btn){
   sidebar.style.display=(n==='cut')?'':'none';
   if(n==='rec'){renderRec();initExpMonth();}
   if(n==='set'&&document.getElementById('set-ct').style.display!=='none'){renderBuses();renderStu();}
-  if(n==='cut'){renderQGSidebar();updReasonSugs();}
+  if(n==='cut'){renderQGSidebar();updReasonSugs();renderCpBusSummary();}
 }
 function initExpMonth(){const el=document.getElementById('exp-month');if(el&&!el.value){const now=new Date();el.value=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');}updExpPreview();}
 
@@ -4560,6 +4590,76 @@ async function gpCSVUploadAndPush(input){
     gpToast(`✅ ${S.students.length} students synced`);
   }catch(err){st.textContent='❌ Error: '+err.message;st.style.color='var(--red)';}
   input.value='';
+}
+
+// ═══ CUT PASS — BUS SUMMARY ═══
+let _cpActiveBus = null;
+
+function renderCpBusSummary(){
+  const today = todayStr();
+  const todayPasses = S.passes.filter(p => p.date === today);
+  const wrap = document.getElementById('cp-bus-summary');
+  const cardsEl = document.getElementById('cp-bus-cards');
+  const badge = document.getElementById('cp-total-badge');
+  if(!wrap||!cardsEl)return;
+  if(!todayPasses.length){wrap.style.display='none';return;}
+  wrap.style.display='block';
+  badge.textContent = todayPasses.length + ' total';
+  const byBus = {};
+  todayPasses.forEach(p=>{const k=p.busNumber||'Walk / Other';if(!byBus[k])byBus[k]=[];byBus[k].push(p);});
+  cardsEl.innerHTML = Object.entries(byBus).sort((a,b)=>b[1].length-a[1].length).map(([bus,passes])=>{
+    const pending = passes.filter(p=>!p.gateOutTime).length;
+    const isActive = _cpActiveBus === bus;
+    return `<div class="cp-buscard${isActive?' active':''}" onclick="cpToggleBus('${e(bus)}')">
+      <div class="cp-buscard-num">${passes.length}</div>
+      <div class="cp-buscard-name">${e(bus)}</div>
+      <div class="cp-buscard-sub">${pending ? pending+' pending' : '✅ all out'}</div>
+    </div>`;
+  }).join('');
+  if(_cpActiveBus && byBus[_cpActiveBus]) cpRenderBusList(_cpActiveBus, byBus[_cpActiveBus]);
+  else if(_cpActiveBus && !byBus[_cpActiveBus]) cpCloseBusList();
+}
+
+function cpToggleBus(bus){
+  if(_cpActiveBus === bus){cpCloseBusList();return;}
+  _cpActiveBus = bus;
+  const today = todayStr();
+  const passes = S.passes.filter(p=>p.date===today&&(p.busNumber||'Walk / Other')===bus);
+  cpRenderBusList(bus, passes);
+  renderCpBusSummary();
+}
+
+function cpRenderBusList(bus, passes){
+  const listEl = document.getElementById('cp-bus-list');
+  const itemsEl = document.getElementById('cp-bus-list-items');
+  const titleEl = document.getElementById('cp-bus-list-title');
+  if(!listEl||!itemsEl)return;
+  titleEl.textContent = '🚌 ' + bus + ' — ' + passes.length + ' pass' + (passes.length!==1?'es':'');
+  listEl.style.display = 'block';
+  const sorted = [...passes].sort((a,b)=>(a.gateOutTime?1:0)-(b.gateOutTime?1:0));
+  itemsEl.innerHTML = sorted.map(p=>{
+    const isOut = !!p.gateOutTime;
+    return `<div class="cp-pass-row">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+        <div style="flex:1;min-width:0">
+          <div class="cp-pass-name">${e(p.studentName)}</div>
+          <div class="cp-pass-meta">Class ${e(p.class||'—')} · Adm: <span style="font-family:var(--mono)">${e(p.admissionNumber||'—')}</span><br>👤 ${e(p.pickedUpBy||'—')}${p.relation?' ('+e(p.relation)+')':''}</div>
+          ${p.reason?`<div class="cp-pass-time" style="color:var(--amber)">📝 ${e(p.reason)}</div>`:''}
+          <div class="cp-pass-time">⏰ ${e(p.time||'')}</div>
+        </div>
+        <span style="flex-shrink:0;font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px;${isOut?'background:var(--blue-l);color:var(--blue);border:1px solid var(--blue)':'background:var(--amber-l);color:var(--amber);border:1px solid var(--amber)'}">
+          ${isOut?'OUT '+e(p.gateOutTime):'PENDING'}
+        </span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function cpCloseBusList(){
+  _cpActiveBus = null;
+  const listEl = document.getElementById('cp-bus-list');
+  if(listEl) listEl.style.display = 'none';
+  renderCpBusSummary();
 }
 
 </script>
