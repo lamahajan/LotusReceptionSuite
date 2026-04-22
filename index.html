@@ -2568,7 +2568,7 @@ Reason: {reason}"></textarea>
         <div id="fq-sel-badge" class="fq-badge">0 selected</div>
         <button class="fq-btn fq-btn-outline" onclick="fqDeselectAll()" style="font-size:11px;padding:5px 10px">Clear</button>
         <button class="fq-btn fq-btn-green" onclick="fqBulkWA()" id="fq-wa-btn" disabled style="font-size:12px">💬 WhatsApp</button>
-        <button class="fq-btn fq-btn-gold" onclick="fqOpenPreview()" id="fq-gen-btn" disabled style="font-size:12px">Preview</button>
+        <button class="fq-btn fq-btn-gold" onclick="fqOpenPreview()" id="fq-gen-btn" disabled style="font-size:12px">🎴 Preview</button>
       </div>
 
       <!-- TABS -->
@@ -3090,7 +3090,7 @@ function goTo(name){
 function openMobileDrawer(){document.getElementById('mobile-drawer').classList.add('open');}
 function closeMobileDrawer(){document.getElementById('mobile-drawer').classList.remove('open');}
 function updateHomeStats(){
-  try{var today=new Date().toISOString().split('T')[0];var cnt=(window.S&&window.S.passes||[]).filter(function(p){return (p.time||'').startsWith(today);}).length;document.getElementById('home-rec-stat').textContent=cnt+' passes today';}catch(e){}
+  try{var today=new Date().toISOString().split('T')[0];var cnt=(window.S&&window.S.passes||[]).filter(function(p){return p.date===today;}).length;document.getElementById('home-rec-stat').textContent=cnt+' passes today';}catch(e){}
   try{var fyCnt=(window.R&&window.R.entries||[]).length;document.getElementById('home-ref-stat').textContent=fyCnt+' entries this FY';}catch(e){}
 }
 function checkNav(){document.getElementById('bottom-nav').style.display=window.innerWidth<=768?'flex':'none';}
@@ -3146,6 +3146,7 @@ function gpUpdateSettingsSubs(){
 }
 // ═══ STATE ═══
 const S={students:[],passes:[],buses:['Bus 1','Bus 2','Bus 3','Walk'],lastMod:0};
+window.S=S;
 let localMod=0,cfg={url:'',code:''},syncIv=null;
 let camStream=null,photo=null,cpSel=null,isDark=false;
 let qpSel=null;
@@ -3296,7 +3297,7 @@ function uid(){return Date.now().toString(36)+Math.random().toString(36).substr(
 function e(s){return s?String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'):''}
 function fmtD(d){if(!d)return'';try{return new Date(d+'T00:00:00').toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'})}catch{return d}}
 let tT;function gpToast(m,t='ok'){const el=document.getElementById('toast');if(!el)return;el.textContent=m;el.className='show '+t;clearTimeout(tT);tT=setTimeout(()=>el.className='',3200);}
-function updBadge(){document.getElementById('tbadge').textContent=S.passes.filter(p=>p.date===todayStr()).length+' today';}
+function updBadge(){document.getElementById('tbadge').textContent=S.passes.filter(p=>p.date===todayStr()).length+' today';if(typeof updateHomeStats==='function')updateHomeStats();}
 function popBusSel(){['cpbus','sfb'].forEach(id=>{const el=document.getElementById(id);if(!el)return;const cur=el.value;el.innerHTML='<option value="">— Select —</option>'+S.buses.map(b=>`<option value="${e(b)}"${b===cur?' selected':''}>${e(b)}</option>`).join('');});}
 
 // ═══ TABS ═══
