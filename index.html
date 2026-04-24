@@ -1144,6 +1144,18 @@ body.dark .fq-mtitle{color:#f4ede0}
             <button class="btn bgh" onclick="disconnectFB()" style="font-size:12px;padding:8px 12px;color:var(--red)">✕</button>
           </div>
           <div id="sync-status-info" style="margin-top:8px;font-size:12px;color:var(--sub)"></div>
+          <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
+            <div style="font-size:11px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px">⏱ Sync Intervals <span style="font-weight:400;font-size:10px;color:var(--muted);text-transform:none;letter-spacing:0">(seconds · saved to all devices)</span></div>
+            <div class="g2" style="margin-bottom:8px">
+              <div class="field"><label class="lbl">Passes poll</label><input id="gp-sync-int" class="inp" type="number" min="5" max="600" placeholder="30" style="font-family:var(--mono)"></div>
+              <div class="field"><label class="lbl">Student DB poll</label><input id="gp-stu-sync-int" class="inp" type="number" min="10" max="600" placeholder="60" style="font-family:var(--mono)"></div>
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <button class="btn bp flex1" onclick="gpSaveSyncInt()" style="font-size:12px">💾 Save &amp; Push to All Devices</button>
+              <button class="btn bgh" onclick="gpFullSync()" style="font-size:12px;padding:8px 12px" title="Force full download, ignoring cache">🔄 Full Sync</button>
+            </div>
+            <div style="font-size:11px;color:var(--muted);margin-top:6px">Smart sync: only checks timestamp first (tiny request), full fetch only when data changed.</div>
+          </div>
         </div>
       </div>
 
@@ -1195,6 +1207,7 @@ body.dark .fq-mtitle{color:#f4ede0}
               <div class="field"><label class="lbl">Bus</label><select id="sfb" class="sel"><option value="">— None —</option></select></div>
               <div class="field"><label class="lbl">📱 Parent Phone <span style="font-weight:400;font-size:10px;color:var(--muted)">(WhatsApp)</span></label><input id="sfphone" class="inp" placeholder="e.g. 919876543210" style="font-family:var(--mono)" oninput="this.value=this.value.replace(/[^0-9]/g,'')"></div>
             </div>
+            <div class="field" style="margin-top:6px"><label class="lbl">🏠 Address <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:10px;color:var(--muted)">(bus stop / relation k paas)</span></label><textarea id="sfaddress" class="ta" placeholder="e.g. House No. 12, Street 5, Model Town" rows="2"></textarea></div>
             <div style="display:flex;gap:8px;margin-top:8px">
               <button class="btn bp flex1" onclick="saveStu()">Save</button>
               <button class="btn bgh" onclick="closeSF()">Cancel</button>
@@ -2359,6 +2372,7 @@ Reason: {reason}"></textarea>
             <div class="field"><label class="lbl">Class</label><input id="ns-class" class="inp" placeholder="e.g. 10-A"></div>
             <div class="field"><label class="lbl">Phone</label><input id="ns-phone" class="inp" placeholder="10-digit" style="font-family:var(--mono)"></div>
           </div>
+          <div class="field"><label class="lbl">🏠 Address <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:10px;color:var(--muted)">(printed on gate pass)</span></label><textarea id="ns-address" class="inp" placeholder="e.g. House No. 12, Street 5, Model Town" rows="2" style="resize:vertical;min-height:52px;font-family:var(--sans)"></textarea></div>
           <button class="btn bpink" style="font-size:12px" onclick="addSingleStudent()">➕ Add</button>
         </div>
         <div style="display:flex;gap:8px;margin-bottom:10px">
@@ -2429,6 +2443,18 @@ Reason: {reason}"></textarea>
           <div style="margin-top:8px;display:flex;gap:6px">
             <button class="btn bgh" style="font-size:11px;padding:5px 10px" onclick="fbPushPublic().then(()=>gpToast('Public board refreshed'))">🔄 Refresh Now</button>
           </div>
+        </div>
+        <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
+          <div style="font-size:11px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px">⏱ Sync Intervals <span style="font-weight:400;font-size:10px;color:var(--muted);text-transform:none;letter-spacing:0">(seconds · saved to all devices)</span></div>
+          <div class="g2" style="margin-bottom:8px">
+            <div class="field"><label class="lbl">Entries poll</label><input id="ref-sync-int" class="inp" type="number" min="5" max="600" placeholder="30" style="font-family:var(--mono)"></div>
+            <div class="field"><label class="lbl">Student DB poll</label><input id="ref-stu-sync-int" class="inp" type="number" min="10" max="600" placeholder="60" style="font-family:var(--mono)"></div>
+          </div>
+          <div class="row" style="gap:8px">
+            <button class="btn bpink flex1" onclick="refSaveSyncInt()" style="font-size:12px">💾 Save &amp; Push to All Devices</button>
+            <button class="btn bgh" onclick="refFullSync()" style="font-size:12px;padding:8px 12px" title="Force full download, ignoring cache">🔄 Full Sync</button>
+          </div>
+          <div style="font-size:11px;color:var(--muted);margin-top:6px">Smart sync: only fetches a tiny timestamp first — full download only when data changed.</div>
         </div>
       </div>
     </div>
@@ -3230,7 +3256,7 @@ function mergeRefStudents(){
         if(!ex.name&&rs.name)ex.name=rs.name;
         updated++;
       } else {
-        S.students.push({name:rs.name,admissionNumber:adm,class:rs.cls||rs.class||'',fatherName:rs.fatherName||'',motherName:rs.motherName||'',busNumber:''});
+        S.students.push({name:rs.name,admissionNumber:adm,class:rs.cls||rs.class||'',fatherName:rs.fatherName||'',motherName:rs.motherName||'',busNumber:'',address:rs.address||''});
         map[key]=S.students[S.students.length-1];
         added++;
       }
@@ -3251,21 +3277,78 @@ async function fetchAll(){
   if(!cfg.url||!cfg.code)return;
   setSS('ing');
   try{
+    // Lightweight lastMod check first — avoids downloading full doc when nothing changed
+    const mr=await fetch(`${cfg.url}/${cfg.code}/lastMod.json`);
+    if(!mr.ok)throw 0;
+    const sm=(await mr.json())||0;
+    if(sm===localMod){setSS('ok');return;} // no change — skip full fetch
+    // Changed — fetch full document
     const r=await fetch(`${cfg.url}/${cfg.code}.json`);
     if(!r.ok)throw 0;
     const d=await r.json();
     if(d){
-      const sm=d.lastMod||0;
-      if(sm!==localMod){
-        const toArr=v=>Array.isArray(v)?v:(v&&v.__empty)?[]:(v!=null?v:null);
-        const ps=toArr(d.passes);if(ps!==null)S.passes=ps;
-        // Students are loaded from dedicated Student DB only — not from gatepass Firebase path
-        if(d.buses&&!d.buses.__empty&&d.buses.length)S.buses=d.buses;
-        localMod=sm;saveLocal();renderAll();
-      }
+      const toArr=v=>Array.isArray(v)?v:(v&&v.__empty)?[]:(v!=null?v:null);
+      const ps=toArr(d.passes);if(ps!==null)S.passes=ps;
+      // Students are loaded from dedicated Student DB only — not from gatepass Firebase path
+      if(d.buses&&!d.buses.__empty&&d.buses.length)S.buses=d.buses;
+      localMod=sm;saveLocal();renderAll();
+      // Check if remote settings changed and apply them
+      if(d._cfg)gpApplyRemoteCfg(d._cfg);
     }
     setSS('ok');
   }catch{setSS('err');}
+}
+
+// Apply remote settings (sync intervals, etc.) from Firebase _cfg node
+function gpApplyRemoteCfg(rc){
+  if(!rc)return;
+  const si=rc.syncIntervals||{};
+  let changed=false;
+  if(si.gpPasses&&si.gpPasses!==gpSyncInt()){localStorage.setItem('gp_sync_int',si.gpPasses);changed=true;}
+  if(si.gpStu&&si.gpStu!==gpStuSyncInt()){localStorage.setItem('gp_stu_sync_int',si.gpStu);changed=true;}
+  if(changed){
+    // Restart intervals with new values
+    if(syncIv){clearInterval(syncIv);syncIv=setInterval(fetchAll,gpSyncInt()*1000);}
+    if(gpStuIv){clearInterval(gpStuIv);gpStuIv=setInterval(gpStuFetchShared,gpStuSyncInt()*1000);}
+    // Update UI if settings tab open
+    const piEl=document.getElementById('gp-sync-int');if(piEl)piEl.value=gpSyncInt();
+    const siEl=document.getElementById('gp-stu-sync-int');if(siEl)siEl.value=gpStuSyncInt();
+  }
+}
+
+// Get sync intervals from localStorage with defaults
+function gpSyncInt(){return parseInt(localStorage.getItem('gp_sync_int')||'30',10)||30;}
+function gpStuSyncInt(){return parseInt(localStorage.getItem('gp_stu_sync_int')||'60',10)||60;}
+
+// Push settings to Firebase so other devices pick them up
+async function gpPushRemoteCfg(){
+  if(!cfg.url||!cfg.code)return;
+  const c={syncIntervals:{gpPasses:gpSyncInt(),gpStu:gpStuSyncInt()}};
+  try{await fetch(`${cfg.url}/${cfg.code}/_cfg.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(c)});}catch(e){}
+  // Also bump lastMod so other devices pick up the _cfg change
+  try{await fetch(`${cfg.url}/${cfg.code}/lastMod.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(Date.now())});}catch(e){}
+}
+
+// Save sync interval setting and restart interval
+async function gpSaveSyncInt(){
+  const v=parseInt(document.getElementById('gp-sync-int').value,10);
+  const sv=parseInt(document.getElementById('gp-stu-sync-int').value,10);
+  if(v<5||v>600){gpToast('⚠️ Passes interval must be 5–600s','err');return;}
+  if(sv<10||sv>600){gpToast('⚠️ Student interval must be 10–600s','err');return;}
+  localStorage.setItem('gp_sync_int',v);
+  localStorage.setItem('gp_stu_sync_int',sv);
+  if(syncIv){clearInterval(syncIv);syncIv=setInterval(fetchAll,v*1000);}
+  if(gpStuIv){clearInterval(gpStuIv);gpStuIv=setInterval(gpStuFetchShared,sv*1000);}
+  await gpPushRemoteCfg();
+  gpToast('✅ Sync intervals saved & pushed to all devices');
+}
+
+// Full sync — ignore lastMod cache and force-download everything
+async function gpFullSync(){
+  localMod=-1; // force mismatch so full fetch runs
+  setSS('ing');
+  await fetchAll();
+  gpToast('🔄 Full sync complete');
 }
 async function push(k){
   saveLocal();
@@ -3293,7 +3376,7 @@ function syncGpStudentsToRef(){
     if(!adm||!gs.name)return;
     var key=adm.toLowerCase();
     if(!map[key]){
-      STUDENTS.push({id:'gp_'+adm,name:gs.name,admNo:adm,cls:gs.class||'',fatherName:gs.fatherName||'',motherName:gs.motherName||''});
+      STUDENTS.push({id:'gp_'+adm,name:gs.name,admNo:adm,cls:gs.class||'',fatherName:gs.fatherName||'',motherName:gs.motherName||'',phone:gs.phone||'',address:gs.address||''});
       map[key]=STUDENTS[STUDENTS.length-1];
       added++;
     } else {
@@ -3302,6 +3385,8 @@ function syncGpStudentsToRef(){
       if(!ex.fatherName&&gs.fatherName)ex.fatherName=gs.fatherName;
       if(!ex.motherName&&gs.motherName)ex.motherName=gs.motherName;
       if(!ex.cls&&gs.class)ex.cls=gs.class;
+      if(!ex.phone&&gs.phone)ex.phone=gs.phone;
+      if(!ex.address&&gs.address)ex.address=gs.address;
     }
   });
   if(added){
@@ -3317,7 +3402,7 @@ function setSS(st){
   t.textContent=msgs[st]||'';
   if(st==='ok')ti.textContent=new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',hour12:true});
 }
-function startSync(){setSS('ing');fetchAll();if(syncIv)clearInterval(syncIv);syncIv=setInterval(fetchAll,6000);}
+function startSync(){setSS('ing');fetchAll();if(syncIv)clearInterval(syncIv);syncIv=setInterval(fetchAll,gpSyncInt()*1000);}
 function renderAll(){popBusSel();updBadge();const a=document.querySelector('.tb.active');if(!a)return;const f=a.getAttribute('onclick')||'';if(f.includes('rec'))renderRec();if(f.includes('cut'))renderCpBusSummary();if(f.includes('set')&&document.getElementById('set-ct').style.display!=='none'){renderBuses();renderStu();}renderQGSidebar();}
 
 // ═══ UTILS ═══
@@ -3503,7 +3588,49 @@ async function openCam(){
 }
 function capPhoto(){const v=document.getElementById('cam-vid'),c=document.createElement('canvas');c.width=v.videoWidth||640;c.height=v.videoHeight||480;c.getContext('2d').drawImage(v,0,0);photo=c.toDataURL('image/jpeg',0.75);stopCam();document.getElementById('phimg').src=photo;document.getElementById('phprev').style.display='inline-block';}
 function stopCam(){if(camStream){camStream.getTracks().forEach(t=>t.stop());camStream=null;}document.getElementById('cam-wrap').style.display='none';document.getElementById('cam-ctrl').style.display='none';document.getElementById('cam-btn').style.display='block';}
-function filePhoto(ev){const f=ev.target.files[0];if(!f)return;const r=new FileReader();r.onload=e2=>{photo=e2.target.result;document.getElementById('phimg').src=photo;document.getElementById('phprev').style.display='inline-block';};r.readAsDataURL(f);}
+function filePhoto(ev){
+  const f=ev.target.files[0];if(!f)return;
+  const r=new FileReader();
+  r.onload=e2=>{
+    const dataUrl=e2.target.result;
+    const img=new Image();
+    img.onload=function(){
+      // Read EXIF orientation from raw bytes to auto-rotate portrait shots
+      let orientation=1;
+      try{
+        const arr=new Uint8Array(ev.target._rawBuf||[]);
+        if(arr[0]===0xFF&&arr[1]===0xD8){
+          let i=2;while(i<arr.length-1){if(arr[i]===0xFF&&arr[i+1]===0xE1){const len=(arr[i+2]<<8)|arr[i+3];const seg=arr.slice(i+4,i+4+len);const te=new TextDecoder('ascii',{fatal:false}).decode(seg.slice(0,4));if(te==='Exif'){const little=seg[6]===0x49;const get16=(o)=>little?(seg[o+1]<<8)|seg[o]:(seg[o]<<8)|seg[o+1];const get32=(o)=>little?(seg[o+3]<<24|seg[o+2]<<16|seg[o+1]<<8|seg[o])>>>0:(seg[o]<<24|seg[o+1]<<16|seg[o+2]<<8|seg[o+3])>>>0;const ifdOff=get32(10)+8;const entries=get16(ifdOff);for(let j=0;j<entries;j++){const tag=get16(ifdOff+2+j*12);if(tag===0x0112){orientation=get16(ifdOff+2+j*12+8);break;}}}break;}i+=(arr[i+2]<<8)|arr[i+3];i+=2;}}
+      }catch(ex){}
+      const w=img.naturalWidth,h=img.naturalHeight;
+      const swapped=orientation>=5&&orientation<=8;
+      const c=document.createElement('canvas');
+      c.width=swapped?h:w;c.height=swapped?w:h;
+      const ctx=c.getContext('2d');
+      // Apply EXIF transform
+      switch(orientation){
+        case 2:ctx.transform(-1,0,0,1,w,0);break;
+        case 3:ctx.transform(-1,0,0,-1,w,h);break;
+        case 4:ctx.transform(1,0,0,-1,0,h);break;
+        case 5:ctx.transform(0,1,1,0,0,0);break;
+        case 6:ctx.transform(0,1,-1,0,h,0);break;
+        case 7:ctx.transform(0,-1,-1,0,h,w);break;
+        case 8:ctx.transform(0,-1,1,0,0,w);break;
+        default:break;
+      }
+      ctx.drawImage(img,0,0);
+      photo=c.toDataURL('image/jpeg',0.80);
+      document.getElementById('phimg').src=photo;
+      document.getElementById('phprev').style.display='inline-block';
+    };
+    img.src=dataUrl;
+  };
+  // Also read as ArrayBuffer in parallel for EXIF parsing
+  const r2=new FileReader();
+  r2.onload=e3=>{ev.target._rawBuf=new Uint8Array(e3.target.result);};
+  r2.readAsArrayBuffer(f);
+  r.readAsDataURL(f);
+}
 function clrPhoto(){photo=null;document.getElementById('phprev').style.display='none';document.getElementById('phimg').src='';}
 
 // ═══ ISSUE PASS ═══
@@ -3512,7 +3639,7 @@ async function issuePass(){
   const by=document.getElementById('cpby').value.trim();if(!by){gpToast('⚠️ Enter picker name','err');return;}
   const existing=S.passes.find(p=>p.admissionNumber===cpSel.admissionNumber&&p.date===todayStr());
   if(existing){gpToast(`🚫 Pass already issued for ${cpSel.name} today (${existing.time})`,'err');return;}
-  const pass={id:uid(),date:todayStr(),time:nowT(),gateOutTime:null,studentName:cpSel.name,admissionNumber:cpSel.admissionNumber,class:cpSel.class||'',fatherName:cpSel.fatherName||'',motherName:cpSel.motherName||'',pickedUpBy:by,relation:document.getElementById('cprel').value,reason:document.getElementById('cpreason').value.trim(),busNumber:document.getElementById('cpbus').value||cpSel.busNumber||'',pickerPhoto:photo};
+  const pass={id:uid(),date:todayStr(),time:nowT(),gateOutTime:null,studentName:cpSel.name,admissionNumber:cpSel.admissionNumber,class:cpSel.class||'',fatherName:cpSel.fatherName||'',motherName:cpSel.motherName||'',address:cpSel.address||'',pickedUpBy:by,relation:document.getElementById('cprel').value,reason:document.getElementById('cpreason').value.trim(),busNumber:document.getElementById('cpbus').value||cpSel.busNumber||'',pickerPhoto:photo};
   S.passes.unshift(pass);
   await push('passes');
   gpToast(`✅ Pass issued for ${pass.studentName}`);
@@ -3676,7 +3803,7 @@ async function issueQuickPass(){
   const stu=qpSel.stu||S.students.find(s=>s.admissionNumber===qpSel.adm);
   const existing=S.passes.find(p=>p.admissionNumber===qpSel.adm&&p.date===todayStr());
   if(existing){gpToast(`🚫 Pass already issued for ${qpSel.name} today`,'err');return;}
-  const pass={id:uid(),date:todayStr(),time:nowT(),gateOutTime:null,studentName:qpSel.name,admissionNumber:qpSel.adm,class:qpSel.cls||'',fatherName:stu?stu.fatherName||'':'',motherName:stu?stu.motherName||'':'',pickedUpBy:by,relation:document.getElementById('qprel').value,reason:document.getElementById('qpreason').value.trim(),busNumber:stu?stu.busNumber||'':'',pickerPhoto:null};
+  const pass={id:uid(),date:todayStr(),time:nowT(),gateOutTime:null,studentName:qpSel.name,admissionNumber:qpSel.adm,class:qpSel.cls||'',fatherName:stu?stu.fatherName||'':'',motherName:stu?stu.motherName||'':'',address:stu?stu.address||'':'',pickedUpBy:by,relation:document.getElementById('qprel').value,reason:document.getElementById('qpreason').value.trim(),busNumber:stu?stu.busNumber||'':'',pickerPhoto:null};
   S.passes.unshift(pass);
   await push('passes');
   gpToast(`⚡ Quick pass issued for ${pass.studentName}`);
@@ -3697,7 +3824,7 @@ async function issueQuickPass(){
 }
 
 // ═══ STUDENTS ═══
-function openSF(){['sfn','sfa','sfc','sff','sfm','sfphone'].forEach(id=>document.getElementById(id).value='');document.getElementById('sfb').value='';document.getElementById('sf-form').style.display='block';document.getElementById('bulk-form').style.display='none';}
+function openSF(){['sfn','sfa','sfc','sff','sfm','sfphone','sfaddress'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});document.getElementById('sfb').value='';document.getElementById('sf-form').style.display='block';document.getElementById('bulk-form').style.display='none';}
 function closeSF(){document.getElementById('sf-form').style.display='none';}
 function togBulk(){const f=document.getElementById('bulk-form');f.style.display=f.style.display==='block'?'none':'block';document.getElementById('sf-form').style.display='none';}
 async function saveStu(){
@@ -3705,7 +3832,7 @@ async function saveStu(){
   const a=document.getElementById('sfa').value.trim().replace(/\s/g,'');
   if(!n||!a){gpToast('Name and Adm No required','err');return;}
   if(!/^[a-zA-Z0-9]{1,8}$/.test(a)){gpToast('Adm No must be 1–8 alphanumeric characters','err');return;}
-  const st={name:n,admissionNumber:a,class:document.getElementById('sfc').value.trim(),fatherName:document.getElementById('sff').value.trim(),motherName:document.getElementById('sfm').value.trim(),busNumber:document.getElementById('sfb').value,phone:document.getElementById('sfphone').value.trim()};
+  const st={name:n,admissionNumber:a,class:document.getElementById('sfc').value.trim(),fatherName:document.getElementById('sff').value.trim(),motherName:document.getElementById('sfm').value.trim(),busNumber:document.getElementById('sfb').value,phone:document.getElementById('sfphone').value.trim(),address:(document.getElementById('sfaddress').value||'').trim()};
   const idx=S.students.findIndex(s=>s.admissionNumber===a);
   if(idx>=0){S.students[idx]=st;gpToast('Student updated');}else{S.students.unshift(st);gpToast('Student added');}
   await push('students');gpStuPushShared();closeSF();renderStu();
@@ -3741,6 +3868,7 @@ function gpRenderStuPage(){
     '<th style="padding:8px 6px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--sub)">Father</th>'+
     '<th style="padding:8px 6px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--sub)">Bus</th>'+
     '<th style="padding:8px 6px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--sub)">📱 Phone</th>'+
+    '<th style="padding:8px 6px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--sub)">🏠 Address</th>'+
     '<th style="padding:8px 6px;width:60px"></th>'+
     '</tr></thead><tbody>'+
     pg.map((s,i)=>`<tr style="border-bottom:1px solid var(--border);${i%2===1?'background:var(--bg3)':''}">
@@ -3750,6 +3878,7 @@ function gpRenderStuPage(){
       <td style="padding:8px 6px;font-size:11px;color:var(--sub)">${e(s.fatherName||'—')}</td>
       <td style="padding:8px 6px;font-size:11px;color:var(--green)">${e(s.busNumber||'—')}</td>
       <td style="padding:8px 6px;font-family:var(--mono);font-size:11px;color:${s.phone?'var(--wa)':'var(--muted)'}">${s.phone?s.phone.slice(-10):'—'}</td>
+      <td style="padding:8px 6px;font-size:11px;color:var(--sub);max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${e(s.address||'')}">${e(s.address||'—')}</td>
       <td style="padding:6px">
         <div style="display:flex;gap:3px;justify-content:flex-end">
           <button onclick="editStu('${e(s.admissionNumber)}')" style="background:none;border:1px solid var(--border);border-radius:6px;color:var(--sub);cursor:pointer;font-size:12px;padding:3px 7px" title="Edit">✏️</button>
@@ -3771,9 +3900,85 @@ function gpRenderStuPage(){
 }
 function gpStuPrev(){if(gpStuPage>1){gpStuPage--;gpRenderStuPage();}}
 function gpStuNext(){const p=Math.ceil(gpStuFiltered.length/GP_STU_PAGE);if(gpStuPage<p){gpStuPage++;gpRenderStuPage();}}
-function editStu(adm){const s=S.students.find(x=>x.admissionNumber===adm);if(!s)return;document.getElementById('sfn').value=s.name||'';document.getElementById('sfa').value=s.admissionNumber||'';document.getElementById('sfc').value=s.class||'';document.getElementById('sff').value=s.fatherName||'';document.getElementById('sfm').value=s.motherName||'';document.getElementById('sfb').value=s.busNumber||'';document.getElementById('sfphone').value=s.phone||'';document.getElementById('sf-form').style.display='block';document.getElementById('bulk-form').style.display='none';document.getElementById('sf-form').scrollIntoView({behavior:'smooth'});}
+function editStu(adm){const s=S.students.find(x=>x.admissionNumber===adm);if(!s)return;document.getElementById('sfn').value=s.name||'';document.getElementById('sfa').value=s.admissionNumber||'';document.getElementById('sfc').value=s.class||'';document.getElementById('sff').value=s.fatherName||'';document.getElementById('sfm').value=s.motherName||'';document.getElementById('sfb').value=s.busNumber||'';document.getElementById('sfphone').value=s.phone||'';const sfad=document.getElementById('sfaddress');if(sfad)sfad.value=s.address||'';document.getElementById('sf-form').style.display='block';document.getElementById('bulk-form').style.display='none';document.getElementById('sf-form').scrollIntoView({behavior:'smooth'});}
 function loadCSV(ev){const f=ev.target.files[0];if(!f)return;const r=new FileReader();r.onload=e2=>document.getElementById('csvt').value=e2.target.result;r.readAsText(f);}
-async function procBulk(){const text=document.getElementById('csvt').value.trim();if(!text){gpToast('⚠️ No data','err');return;}const lines=text.split(/\r?\n/).filter(l=>l.trim());if(lines.length<2){gpToast('⚠️ Need header + data rows','err');return;}const raw=lines[0].split(',').map(h=>h.trim().replace(/^"|"$/g,'').toLowerCase());const col=kws=>raw.findIndex(h=>kws.some(k=>h.includes(k)));const nI=col(['name']),aI=col(['admission','adm','roll']),cI=col(['class','grade']),fI=col(['father']),mI=col(['mother']),bI=col(['bus']),phI=col(['phone','mobile','contact','whatsapp']);if(nI<0||aI<0){gpToast('⚠️ Need name & admissionNumber columns','err');return;}const map={};S.students.forEach(s=>s.admissionNumber&&(map[String(s.admissionNumber).trim()]=s));let added=0,updated=0;for(let i=1;i<lines.length;i++){const c=lines[i].split(',').map(v=>v.trim().replace(/^"|"$/g,''));const adm=(c[aI]||'').trim(),name=c[nI];if(!adm&&!name)continue;const phone=(phI>=0?(c[phI]||''):'').replace(/[^0-9]/g,'');const st={name,admissionNumber:adm,class:cI>=0?c[cI]:'',fatherName:fI>=0?c[fI]:'',motherName:mI>=0?c[mI]:'',busNumber:bI>=0?c[bI]:'',phone};if(adm&&map[adm]){Object.assign(map[adm],st);updated++;}else{map[adm||('_'+i)]=st;added++;}}S.students=Object.values(map);await push('students');gpToast(`✅ ${added} added · ${updated} updated · Total: ${S.students.length}`);document.getElementById('csvt').value='';togBulk();renderStu();}
+// ── Column Mapping Modal ──────────────────────────────────
+let _gpColData=null; // {headers, rows}
+function gpShowColMap(headers,rows){
+  _gpColData={headers,rows};
+  const fields=[
+    {key:'name',label:'Student Name',req:true},
+    {key:'adm',label:'Adm / Roll No',req:true},
+    {key:'cls',label:'Class',req:false},
+    {key:'father',label:'Father Name',req:false},
+    {key:'mother',label:'Mother Name',req:false},
+    {key:'bus',label:'Bus No',req:false},
+    {key:'phone',label:'Phone / WhatsApp',req:false},
+    {key:'address',label:'Address',req:false},
+  ];
+  // Auto-detect best matching column for each field
+  const kws={name:['name','student'],adm:['adm','roll','no','id','enroll'],cls:['class','grade','std','section'],father:['father','dad'],mother:['mother','mom'],bus:['bus','route'],phone:['phone','mobile','contact','whatsapp','num'],address:['address','addr','location','house','street']};
+  function best(kw){const lc=headers.map(h=>(h||'').toLowerCase());let bi=-1,bs=0;lc.forEach((h,i)=>{const s=kw.filter(k=>h.includes(k)).length;if(s>bs){bs=s;bi=i;}});return bi;}
+  const detected={};Object.keys(kws).forEach(k=>{detected[k]=best(kws[k]);});
+  const opts=headers.map((h,i)=>`<option value="${i}">${h||'(col '+(i+1)+')'}</option>`).join('');
+  const noneOpt='<option value="-1">— skip —</option>';
+  const rows2=fields.map(f=>`<tr>
+    <td style="padding:6px 10px;font-size:12px;font-weight:${f.req?'700':'400'};color:var(--text)">${f.label}${f.req?' <span style="color:var(--red)">*</span>':''}</td>
+    <td style="padding:6px 8px"><select id="gpmap-${f.key}" class="sel" style="width:100%;font-size:12px">${noneOpt}${opts}</select></td>
+  </tr>`).join('');
+  let m=document.getElementById('gp-col-map-modal');
+  if(!m){m=document.createElement('div');m.id='gp-col-map-modal';m.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px';document.body.appendChild(m);}
+  m.innerHTML=`<div style="background:var(--bg);border-radius:14px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.35);padding:20px">
+    <div style="font-size:15px;font-weight:800;color:var(--text);margin-bottom:4px">📊 Map Excel Columns</div>
+    <div style="font-size:12px;color:var(--sub);margin-bottom:14px">Detected ${headers.length} columns · ${rows.length} data rows. Map each field to the correct column.</div>
+    <table style="width:100%;border-collapse:collapse;margin-bottom:16px">
+      <thead><tr><th style="padding:6px 10px;font-size:10px;text-transform:uppercase;letter-spacing:.7px;color:var(--sub);text-align:left">Field</th><th style="padding:6px 8px;font-size:10px;text-transform:uppercase;letter-spacing:.7px;color:var(--sub);text-align:left">Column in your file</th></tr></thead>
+      <tbody>${rows2}</tbody>
+    </table>
+    <div style="display:flex;gap:8px">
+      <button class="btn bp flex1" onclick="gpApplyColMap()">✅ Import ${rows.length} Students</button>
+      <button class="btn bgh" onclick="document.getElementById('gp-col-map-modal').style.display='none'">Cancel</button>
+    </div>
+  </div>`;
+  m.style.display='flex';
+  // Set detected defaults
+  Object.keys(kws).forEach(k=>{const el=document.getElementById('gpmap-'+k);if(el&&detected[k]>=0)el.value=detected[k];});
+}
+async function gpApplyColMap(){
+  if(!_gpColData)return;
+  const {headers,rows}=_gpColData;
+  const get=key=>{const el=document.getElementById('gpmap-'+key);return el?parseInt(el.value,10):-1;};
+  const nI=get('name'),aI=get('adm');
+  if(nI<0||aI<0){gpToast('⚠️ Name and Adm columns required','err');return;}
+  const cI=get('cls'),fI=get('father'),mI=get('mother'),bI=get('bus'),phI=get('phone'),addrI=get('address');
+  const map={};S.students.forEach(s=>s.admissionNumber&&(map[String(s.admissionNumber).trim()]=s));
+  let added=0,updated=0;
+  rows.forEach(c=>{
+    const adm=(c[aI]||'').toString().trim(),name=(c[nI]||'').toString().trim();
+    if(!adm&&!name)return;
+    const phone=phI>=0?((c[phI]||'').toString().replace(/[^0-9]/g,'')):'';
+    const st={name,admissionNumber:adm,class:cI>=0?(c[cI]||'').toString().trim():'',fatherName:fI>=0?(c[fI]||'').toString().trim():'',motherName:mI>=0?(c[mI]||'').toString().trim():'',busNumber:bI>=0?(c[bI]||'').toString().trim():'',phone,address:addrI>=0?(c[addrI]||'').toString().trim():''};
+    if(adm&&map[adm]){Object.assign(map[adm],st);updated++;}else{map[adm||('_r'+added)]=st;added++;}
+  });
+  S.students=Object.values(map);
+  await push('students');gpStuPushShared();
+  gpToast(`✅ ${added} added · ${updated} updated · Total: ${S.students.length}`);
+  document.getElementById('gp-col-map-modal').style.display='none';
+  document.getElementById('csvt').value='';
+  const bf=document.getElementById('bulk-form');if(bf)bf.style.display='none';
+  renderStu();
+  syncGpStudentsToRef();
+}
+
+async function procBulk(){
+  const text=document.getElementById('csvt').value.trim();
+  if(!text){gpToast('⚠️ No data','err');return;}
+  const lines=text.split(/\r?\n/).filter(l=>l.trim());
+  if(lines.length<2){gpToast('⚠️ Need header + data rows','err');return;}
+  const headers=lines[0].split(',').map(h=>h.trim().replace(/^"|"$/g,''));
+  const rows=lines.slice(1).map(l=>l.split(',').map(v=>v.trim().replace(/^"|"$/g,'')));
+  gpShowColMap(headers,rows);
+}
 
 // ═══ RECORDS ═══
 function rcToday(){document.getElementById('rcdate').value=todayStr();renderRec();}
@@ -3891,12 +4096,13 @@ function recCheckPW(){const v=document.getElementById('pw-inp').value;if(v===PAS
 // ═══ GATEPASS STUDENT DB SHARED SYNC ═══
 var gpStuCfg={url:'',code:''};
 var gpStuIv=null;
+var gpStuLocalMod=0;
 
 function gpLoadStuCfg(){
   var u=localStorage.getItem('gp_stu_url'),cd=localStorage.getItem('gp_stu_code');
   var urlEl=document.getElementById('gp-stu-url'),codeEl=document.getElementById('gp-stu-code'),stEl=document.getElementById('gp-stu-status');
   if(urlEl)urlEl.value=u||'';if(codeEl)codeEl.value=cd||'';
-  if(u&&cd){gpStuCfg={url:u,code:cd};if(stEl)stEl.textContent='Connected: '+cd;gpStuFetchShared();if(gpStuIv)clearInterval(gpStuIv);gpStuIv=setInterval(gpStuFetchShared,30000);}
+  if(u&&cd){gpStuCfg={url:u,code:cd};if(stEl)stEl.textContent='Connected: '+cd;gpStuFetchShared();if(gpStuIv)clearInterval(gpStuIv);gpStuIv=setInterval(gpStuFetchShared,gpStuSyncInt()*1000);}
   else{if(stEl)stEl.textContent='Not connected';}
   var sub=document.getElementById('gacc-studb-sub');if(sub)sub.textContent=u?'Connected':'Not connected';
 }
@@ -3913,7 +4119,7 @@ async function gpSaveStuCfg(){
     gpStuCfg={url,code};
     if(stEl)stEl.textContent='✅ Connected! Syncing…';
     var sub=document.getElementById('gacc-studb-sub');if(sub)sub.textContent='Connected';
-    gpStuFetchShared();if(gpStuIv)clearInterval(gpStuIv);gpStuIv=setInterval(gpStuFetchShared,30000);
+    gpStuFetchShared();if(gpStuIv)clearInterval(gpStuIv);gpStuIv=setInterval(gpStuFetchShared,gpStuSyncInt()*1000);
   }catch{if(stEl)stEl.textContent='❌ Connection failed';}
 }
 function gpDisconnStu(){
@@ -3927,6 +4133,11 @@ function gpDisconnStu(){
 async function gpStuFetchShared(){
   if(!gpStuCfg.url||!gpStuCfg.code)return;
   try{
+    // Lightweight lastMod check first
+    var mr=await fetch(gpStuCfg.url+'/'+gpStuCfg.code+'/lastMod.json');
+    if(!mr.ok)return;var sm=(await mr.json())||0;
+    if(sm===gpStuLocalMod)return; // no change
+    // Changed — fetch full doc
     var r=await fetch(gpStuCfg.url+'/'+gpStuCfg.code+'.json');
     if(!r.ok)return;var d=await r.json();
     if(!d||!d.students)return;
@@ -3939,9 +4150,10 @@ async function gpStuFetchShared(){
       if(!adm)return;
       var existingPhone=(map[adm]&&map[adm].phone)||'';
       var remotePhone=(rs.phone||rs.mobile||rs.contact||'').replace(/[^0-9]/g,'');
-      map[adm]={name:rs.name||'',admissionNumber:adm,class:rs.cls||rs.class||'',fatherName:rs.fatherName||'',motherName:rs.motherName||'',busNumber:rs.busNumber||rs.bus||'',phone:remotePhone||existingPhone};
+      map[adm]={name:rs.name||'',admissionNumber:adm,class:rs.cls||rs.class||'',fatherName:rs.fatherName||'',motherName:rs.motherName||'',busNumber:rs.busNumber||rs.bus||'',phone:remotePhone||existingPhone,address:rs.address||map[adm]?.address||''};
     });
     S.students=Object.values(map);
+    gpStuLocalMod=sm;
     saveLocal();renderStu();popBusSel();updBadge();
     // Also sync into ref register
     syncGpStudentsToRef();
@@ -4121,7 +4333,7 @@ function gpTestWA(){
 }
 
 function recLockSet(){document.getElementById('pw-gate').style.display='block';document.getElementById('set-ct').style.display='none';document.getElementById('pw-inp').value='';document.getElementById('pw-err').textContent='';document.getElementById('mdlist').style.display='none';document.getElementById('drlist').style.display='none';document.getElementById('mdui').style.display='flex';}
-function loadCfgF(){document.getElementById('cfg-url').value=localStorage.getItem('gp_url')||'';document.getElementById('cfg-code').value=localStorage.getItem('gp_code')||'';const connected=!!(localStorage.getItem('gp_url')&&localStorage.getItem('gp_code'));document.getElementById('sync-status-info').textContent=connected?`✅ Connected to: ${localStorage.getItem('gp_url')} / ${localStorage.getItem('gp_code')}`:'⚪ Not connected — fill in details and click Save & Connect.';}
+function loadCfgF(){document.getElementById('cfg-url').value=localStorage.getItem('gp_url')||'';document.getElementById('cfg-code').value=localStorage.getItem('gp_code')||'';const connected=!!(localStorage.getItem('gp_url')&&localStorage.getItem('gp_code'));document.getElementById('sync-status-info').textContent=connected?`✅ Connected to: ${localStorage.getItem('gp_url')} / ${localStorage.getItem('gp_code')}`:'⚪ Not connected — fill in details and click Save & Connect.';const piEl=document.getElementById('gp-sync-int');if(piEl)piEl.value=gpSyncInt();const siEl=document.getElementById('gp-stu-sync-int');if(siEl)siEl.value=gpStuSyncInt();}
 async function testCfg(){const url=document.getElementById('cfg-url').value.trim().replace(/\/$/,'');const code=document.getElementById('cfg-code').value.trim().replace(/[^a-zA-Z0-9_-]/g,'');if(!url||!code){cfgSt('⚠️ Fill in both fields first','var(--amber)');return;}cfgSt('Testing…','var(--blue)');try{const r=await fetch(`${url}/${code}/ping.json`,{method:'PUT',body:JSON.stringify(1)});if(!r.ok)throw 0;cfgSt('✅ Connection successful!','var(--green)');}catch{cfgSt('❌ Failed — check URL & Firebase rules','var(--red)');}}
 async function saveCfg(){const url=document.getElementById('cfg-url').value.trim().replace(/\/$/,'');const code=document.getElementById('cfg-code').value.trim().replace(/[^a-zA-Z0-9_-]/g,'');if(!url||!code){cfgSt('⚠️ Fill both fields','var(--amber)');return;}document.getElementById('cfg-save-btn').disabled=true;cfgSt('Testing & saving…','var(--blue)');try{const r=await fetch(`${url}/${code}/ping.json`,{method:'PUT',body:JSON.stringify(1)});if(!r.ok)throw 0;localStorage.setItem('gp_url',url);localStorage.setItem('gp_code',code);cfg={url,code};cfgSt('✅ Saved! Syncing now…','var(--green)');startSync();loadCfgF();}catch{cfgSt('❌ Connection failed','var(--red)');}document.getElementById('cfg-save-btn').disabled=false;}
 function disconnectFB(){if(!confirm('Disconnect Firebase?'))return;localStorage.removeItem('gp_url');localStorage.removeItem('gp_code');cfg={url:'',code:''};if(syncIv)clearInterval(syncIv);setSS('off');loadCfgF();gpToast('✕ Firebase disconnected','inf');}
@@ -4340,7 +4552,8 @@ function gpPrintA6Slip(p){
     +'<div class="grid">'
     +'<div class="box"><div class="lbl">Picked Up By</div><div class="val">'+xEsc(p.pickedUpBy||'—')+'</div></div>'
     +'<div class="box"><div class="lbl">Relation</div><div class="val">'+xEsc(p.relation||'—')+'</div></div>'
-    +(p.busNumber?'<div class="box"><div class="lbl">Bus</div><div class="val">'+xEsc(p.busNumber)+'</div></div>':'')
+    +(p.busNumber?'<div class="box"><div class="lbl">Bus</div><div class="val">'+xEsc(p.busNumber)+'</div></div>':'<div class="box" style="visibility:hidden"></div>')
+    +'<div class="box" style="overflow:hidden;max-height:11mm"><div class="lbl">Address</div><div style="font-size:6pt;font-weight:500;color:#1a1035;margin-top:.4mm;white-space:pre-wrap;word-break:break-word;line-height:1.3;overflow:hidden">'+xEsc(p.address||'—')+'</div></div>'
     +'</div>'
     +(p.reason?'<div class="rsn"><span style="font-weight:400;text-transform:uppercase;font-size:5.5pt;letter-spacing:.5px;color:#92400e">Reason: </span><b>'+xEsc(p.reason)+'</b></div>':'')
     +(_gpPrintCfg.printPhoto&&p.pickerPhoto?'<div style="margin:1mm 0;border:2px solid #c9bdf0;border-radius:6px;overflow:hidden;background:#f9f7ff;padding:2mm"><img src="'+p.pickerPhoto+'" style="width:100%;height:28mm;object-fit:cover;display:block;border-radius:3px"></div>':'')
@@ -4410,6 +4623,7 @@ function gpPrintThermalSlip(p, cfg){
     +'<div class="row"><span class="lbl">Picked By</span><span class="bold">'+xEsc(p.pickedUpBy||'—')+'</span></div>'
     +'<div class="row"><span class="lbl">Relation</span><span>'+xEsc(p.relation||'—')+'</span></div>'
     +(p.busNumber?'<div class="row"><span class="lbl">Bus</span><span>'+xEsc(p.busNumber)+'</span></div>':'')
+    +'<div style="margin:1.5mm 0;border:1px solid #ccc;border-radius:3px;padding:1.5mm 2mm;overflow:hidden;max-height:10mm"><span class="lbl">Address: </span><span style="font-size:6pt;font-weight:500;white-space:pre-wrap;word-break:break-word;line-height:1.3">'+xEsc(p.address||'—')+'</span></div>'
     +(p.reason?'<div class="reason"><span class="lbl">Reason: </span>'+xEsc(p.reason)+'</div>':'')
     +((_gpPrintCfg.printPhoto&&p.pickerPhoto)?'<div style="text-align:center;margin:2mm 0;border:1px solid #ccc;border-radius:3px;padding:1.5mm;background:#f9f9f9"><img src="'+p.pickerPhoto+'" style="max-width:100%;max-height:25mm;object-fit:contain;display:inline-block;border-radius:2px"></div>':'')
     +'<hr class="divider">'
@@ -4483,6 +4697,7 @@ function _gpBatchPrint(passes){
       +'<div style="font-size:'+(fBase-1)+'px;color:#6b5b95">'+xEsc(p.class||'—')+' · Adm: '+xEsc(p.admissionNumber||'—')+'</div>'
       +'<div style="font-size:'+fBase+'px;color:#3b4a6b;margin-top:1px">👤 <b>'+xEsc(p.pickedUpBy||'—')+'</b>'+(p.relation?' ('+xEsc(p.relation)+')':'')+'</div>'
       +(p.busNumber?'<div style="font-size:'+(fBase-1)+'px;color:#3b4a6b">🚌 '+xEsc(p.busNumber)+'</div>':'')
+      +(p.address?'<div style="font-size:'+(fBase-1)+'px;color:#6b5b95;white-space:pre-wrap;word-break:break-word">🏠 '+xEsc(p.address)+'</div>':'')
       +(p.reason?'<div style="font-size:'+(fBase-1)+'px;color:#6b5b95;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">📝 '+xEsc(p.reason)+'</div>':'')
       +'<div style="display:flex;justify-content:space-between;margin-top:auto;padding-top:2px;border-top:1px solid #ede9fe">'
       +'<span style="font-family:monospace;font-size:'+(fBase-1)+'px;color:#5b21b6;font-weight:700">'+xEsc(p.time||'')+'</span>'
@@ -4565,29 +4780,26 @@ async function gpCSVUploadAndPush(input){
   const st=document.getElementById('gp-csv-push-status');
   st.textContent='📂 Reading file…';st.style.color='var(--blue)';
   try{
-    const text=await file.text();
-    const lines=text.split(/\r?\n/).filter(l=>l.trim());
-    if(lines.length<2){st.textContent='⚠️ Need header + data rows';st.style.color='var(--amber)';return;}
-    const raw=lines[0].split(',').map(h=>h.trim().replace(/^"|"$/g,'').toLowerCase());
-    const col=kws=>raw.findIndex(h=>kws.some(k=>h.includes(k)));
-    const nI=col(['name']),aI=col(['admission','adm','roll']),cI=col(['class','grade']),fI=col(['father']),mI=col(['mother']),bI=col(['bus']),phI=col(['phone','mobile','contact','whatsapp']);
-    if(nI<0||aI<0){st.textContent='⚠️ Need name & admissionNumber columns';st.style.color='var(--red)';return;}
-    const map={};S.students.forEach(s=>s.admissionNumber&&(map[String(s.admissionNumber).trim()]=s));
-    let added=0,updated=0;
-    for(let i=1;i<lines.length;i++){
-      const c=lines[i].split(',').map(v=>v.trim().replace(/^"|"$/g,''));
-      const adm=(c[aI]||'').trim(),name=c[nI];
-      if(!adm&&!name)continue;
-      const phone=(phI>=0?(c[phI]||''):'').replace(/[^0-9]/g,'');
-      const stu={name,admissionNumber:adm,class:cI>=0?c[cI]:'',fatherName:fI>=0?c[fI]:'',motherName:mI>=0?c[mI]:'',busNumber:bI>=0?c[bI]:'',phone};
-      if(adm&&map[adm]){Object.assign(map[adm],stu);updated++;}else{map[adm||('_'+i)]=stu;added++;}
+    let headers,rows;
+    const name=file.name.toLowerCase();
+    if(name.endsWith('.xlsx')||name.endsWith('.xls')){
+      // Parse Excel via SheetJS
+      const ab=await file.arrayBuffer();
+      const wb=XLSX.read(ab,{type:'array'});
+      const ws=wb.Sheets[wb.SheetNames[0]];
+      const data=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+      if(data.length<2){st.textContent='⚠️ Need header + data rows';st.style.color='var(--amber)';return;}
+      headers=data[0].map(h=>(h||'').toString().trim());
+      rows=data.slice(1).map(r=>headers.map((_,i)=>(r[i]||'').toString().trim()));
+    } else {
+      const text=await file.text();
+      const lines=text.split(/\r?\n/).filter(l=>l.trim());
+      if(lines.length<2){st.textContent='⚠️ Need header + data rows';st.style.color='var(--amber)';return;}
+      headers=lines[0].split(',').map(h=>h.trim().replace(/^"|"$/g,''));
+      rows=lines.slice(1).map(l=>l.split(',').map(v=>v.trim().replace(/^"|"$/g,'')));
     }
-    S.students=Object.values(map);
-    await push('students');
-    syncGpStudentsToRef();
-    renderStu&&renderStu();
-    st.textContent=`✅ ${added} added · ${updated} updated · Total: ${S.students.length} — pushed to Firebase`;st.style.color='var(--green)';
-    gpToast(`✅ ${S.students.length} students synced`);
+    st.textContent=`📊 ${rows.length} rows detected — mapping columns…`;st.style.color='var(--blue)';
+    gpShowColMap(headers,rows);
   }catch(err){st.textContent='❌ Error: '+err.message;st.style.color='var(--red)';}
   input.value='';
 }
@@ -4712,9 +4924,9 @@ function _refInit(){
   initTheme();loadCFG();loadFSCfg();loadODCfg();loadGPODCfg();loadTGCfg();loadPTGCfg();loadRefTGCfg();loadWixCfg();_gpRestoreCfgFromStorage();startTGApprovalPolling();
   if(CFG.adminAlertEnabled===undefined)CFG.adminAlertEnabled=true;
   const fu=localStorage.getItem('ref_fb_url'),fc=localStorage.getItem('ref_fb_code');
-  if(fu&&fc){fbCfg={url:fu,code:fc};fbFetchAll();if(fbIv)clearInterval(fbIv);fbIv=setInterval(fbFetchAll,8000);}
+  if(fu&&fc){fbCfg={url:fu,code:fc};fbFetchAll();if(fbIv)clearInterval(fbIv);fbIv=setInterval(fbFetchAll,refSyncInt()*1000);}
   const su=localStorage.getItem('ref_fb_stu_url'),sc=localStorage.getItem('ref_fb_stu_code');
-  if(su&&sc){fbStuCfg={url:su,code:sc};fbStuFetch();if(fbStuIv)clearInterval(fbStuIv);fbStuIv=setInterval(fbStuFetch,15000);}
+  if(su&&sc){fbStuCfg={url:su,code:sc};fbStuFetch();if(fbStuIv)clearInterval(fbStuIv);fbStuIv=setInterval(fbStuFetch,refStuSyncInt()*1000);}
   loadLocal();curFY=getCurrentFY();applyLabels();renderFYSelect();renderDashboard();
   populateDataLists();document.getElementById('f-date').value=todayStr();renderStatusSelect();renderStudentList();
   const exS=document.getElementById('ex-scope');
@@ -5438,8 +5650,8 @@ function addSingleStudent(){
   const name=document.getElementById('ns-name').value.trim();const admNo=document.getElementById('ns-adm').value.trim();
   if(!name){toast('Name required','err');return;}
   if(admNo&&STUDENTS.find(s=>s.admNo===admNo)){toast('Admission No already exists','err');return;}
-  STUDENTS.push({id:uid(),name,admNo,cls:document.getElementById('ns-class').value.trim(),phone:cleanPhone(document.getElementById('ns-phone').value),fatherName:document.getElementById('ns-father').value.trim(),motherName:document.getElementById('ns-mother').value.trim()});
-  ['ns-name','ns-adm','ns-class','ns-phone','ns-father','ns-mother'].forEach(id=>document.getElementById(id).value='');
+  STUDENTS.push({id:uid(),name,admNo,cls:document.getElementById('ns-class').value.trim(),phone:cleanPhone(document.getElementById('ns-phone').value),fatherName:document.getElementById('ns-father').value.trim(),motherName:document.getElementById('ns-mother').value.trim(),address:(document.getElementById('ns-address').value||'').trim()});
+  ['ns-name','ns-adm','ns-class','ns-phone','ns-father','ns-mother','ns-address'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   fbStuPush();renderStudentList();populateDataLists();toast('Student added to database.');
 }
 function renderStudentList(){
@@ -5684,25 +5896,83 @@ async function fbPushPublic(){
 // ─── FIREBASE — REGISTER ─────────────────────────────────
 async function fbFetchAll(){
   if(!fbCfg.url||!fbCfg.code)return;
-  try{const r=await fetch(`${fbCfg.url}/${fbCfg.code}.json`);if(!r.ok)throw 0;const d=await r.json();
-  if(d){const sm=d.lastMod||0;if(sm!==fbLocalMod){const toArr=v=>Array.isArray(v)?v:(v&&v.__empty)?[]:(v!=null?v:null);const ents=toArr(d.entries);if(ents!==null)R.entries=ents;if(d.nextSeq)R.nextSeq=d.nextSeq;if(d.overrideSeq)R.overrideSeq=d.overrideSeq;if(d.reclaimedSeqs)R.reclaimedSeqs=d.reclaimedSeqs;fbLocalMod=sm;saveLocal();renderFYSelect();renderRegister();renderDashboard();populateDataLists();}}}catch(e){}
+  try{
+    // Lightweight lastMod check first
+    const mr=await fetch(`${fbCfg.url}/${fbCfg.code}/lastMod.json`);
+    if(!mr.ok)throw 0;const sm=(await mr.json())||0;
+    if(sm===fbLocalMod)return; // nothing changed
+    // Changed — fetch full document
+    const r=await fetch(`${fbCfg.url}/${fbCfg.code}.json`);if(!r.ok)throw 0;const d=await r.json();
+  if(d){const toArr=v=>Array.isArray(v)?v:(v&&v.__empty)?[]:(v!=null?v:null);const ents=toArr(d.entries);if(ents!==null)R.entries=ents;if(d.nextSeq)R.nextSeq=d.nextSeq;if(d.overrideSeq)R.overrideSeq=d.overrideSeq;if(d.reclaimedSeqs)R.reclaimedSeqs=d.reclaimedSeqs;fbLocalMod=sm;saveLocal();renderFYSelect();renderRegister();renderDashboard();populateDataLists();
+    // Check for remote config changes
+    if(d._cfg)refApplyRemoteCfg(d._cfg);
+  }}catch(e){}
+}
+
+// Apply remote config (sync intervals) from Firebase _cfg node
+function refApplyRemoteCfg(rc){
+  if(!rc)return;
+  const si=rc.syncIntervals||{};
+  let changed=false;
+  if(si.refEntries&&si.refEntries!==refSyncInt()){localStorage.setItem('ref_sync_int',si.refEntries);changed=true;}
+  if(si.refStu&&si.refStu!==refStuSyncInt()){localStorage.setItem('ref_stu_sync_int',si.refStu);changed=true;}
+  if(changed){
+    if(fbIv){clearInterval(fbIv);fbIv=setInterval(fbFetchAll,refSyncInt()*1000);}
+    if(fbStuIv){clearInterval(fbStuIv);fbStuIv=setInterval(fbStuFetch,refStuSyncInt()*1000);}
+    const ei=document.getElementById('ref-sync-int');if(ei)ei.value=refSyncInt();
+    const si2=document.getElementById('ref-stu-sync-int');if(si2)si2.value=refStuSyncInt();
+  }
+}
+
+function refSyncInt(){return parseInt(localStorage.getItem('ref_sync_int')||'30',10)||30;}
+function refStuSyncInt(){return parseInt(localStorage.getItem('ref_stu_sync_int')||'60',10)||60;}
+
+async function refPushRemoteCfg(){
+  if(!fbCfg.url||!fbCfg.code)return;
+  const c={syncIntervals:{refEntries:refSyncInt(),refStu:refStuSyncInt()}};
+  try{await fetch(`${fbCfg.url}/${fbCfg.code}/_cfg.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(c)});}catch(e){}
+  try{await fetch(`${fbCfg.url}/${fbCfg.code}/lastMod.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(Date.now())});}catch(e){}
+}
+
+async function refSaveSyncInt(){
+  const v=parseInt(document.getElementById('ref-sync-int').value,10);
+  const sv=parseInt(document.getElementById('ref-stu-sync-int').value,10);
+  if(v<5||v>600){toast('⚠️ Entries interval must be 5–600s','err');return;}
+  if(sv<10||sv>600){toast('⚠️ Student interval must be 10–600s','err');return;}
+  localStorage.setItem('ref_sync_int',v);
+  localStorage.setItem('ref_stu_sync_int',sv);
+  if(fbIv){clearInterval(fbIv);fbIv=setInterval(fbFetchAll,v*1000);}
+  if(fbStuIv){clearInterval(fbStuIv);fbStuIv=setInterval(fbStuFetch,sv*1000);}
+  await refPushRemoteCfg();
+  toast('✅ Sync intervals saved & pushed to all devices');
+}
+
+async function refFullSync(){
+  fbLocalMod=-1;fbStuLocalMod=-1;
+  await fbFetchAll();await fbStuFetch();
+  toast('🔄 Full sync complete');
 }
 async function fbPush(){
   R.lastMod=Date.now();fbLocalMod=R.lastMod;saveLocal();if(!fbCfg.url||!fbCfg.code)return;
   const eVal=R.entries.length===0?{'__empty':true}:R.entries;
   try{await fetch(`${fbCfg.url}/${fbCfg.code}.json`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({entries:eVal,nextSeq:R.nextSeq,overrideSeq:R.overrideSeq||{},reclaimedSeqs:R.reclaimedSeqs||{},lastMod:R.lastMod})});}catch(e){}
 }
-function loadFBCfg(){document.getElementById('fb-url').value=localStorage.getItem('ref_fb_url')||'';document.getElementById('fb-code').value=localStorage.getItem('ref_fb_code')||'';}
+function loadFBCfg(){document.getElementById('fb-url').value=localStorage.getItem('ref_fb_url')||'';document.getElementById('fb-code').value=localStorage.getItem('ref_fb_code')||'';const ei=document.getElementById('ref-sync-int');if(ei)ei.value=refSyncInt();const si=document.getElementById('ref-stu-sync-int');if(si)si.value=refStuSyncInt();}
 async function testFBCfg(){const url=document.getElementById('fb-url').value.trim().replace(/\/$/,'');const code=document.getElementById('fb-code').value.trim();if(!url||!code){fbSt('Fill both fields','var(--red)');return;}fbSt('Testing…','var(--amber)');try{const r=await fetch(`${url}/${code}/ping.json`,{method:'PUT',body:JSON.stringify(1)});if(!r.ok)throw 0;fbSt('Connected!','var(--green)');}catch{fbSt('Connection failed','var(--red)');}}
-async function saveFBCfg(){const url=document.getElementById('fb-url').value.trim().replace(/\/$/,'');const code=document.getElementById('fb-code').value.trim();if(!url||!code){fbSt('Fill both fields','var(--red)');return;}fbSt('Saving…','var(--amber)');try{const r=await fetch(`${url}/${code}/ping.json`,{method:'PUT',body:JSON.stringify(1)});if(!r.ok)throw 0;localStorage.setItem('ref_fb_url',url);localStorage.setItem('ref_fb_code',code);fbCfg={url,code};fbSt('Connected!','var(--green)');fbFetchAll();if(fbIv)clearInterval(fbIv);fbIv=setInterval(fbFetchAll,8000);}catch{fbSt('Connection failed','var(--red)');}}
+async function saveFBCfg(){const url=document.getElementById('fb-url').value.trim().replace(/\/$/,'');const code=document.getElementById('fb-code').value.trim();if(!url||!code){fbSt('Fill both fields','var(--red)');return;}fbSt('Saving…','var(--amber)');try{const r=await fetch(`${url}/${code}/ping.json`,{method:'PUT',body:JSON.stringify(1)});if(!r.ok)throw 0;localStorage.setItem('ref_fb_url',url);localStorage.setItem('ref_fb_code',code);fbCfg={url,code};fbSt('Connected!','var(--green)');fbFetchAll();if(fbIv)clearInterval(fbIv);fbIv=setInterval(fbFetchAll,refSyncInt()*1000);}catch{fbSt('Connection failed','var(--red)');}}
 function disconnFB(){if(!confirm('Disconnect from this database?'))return;localStorage.removeItem('ref_fb_url');localStorage.removeItem('ref_fb_code');fbCfg={url:'',code:''};if(fbIv)clearInterval(fbIv);fbSt('Disconnected','var(--muted)');toast('Database disconnected.','inf');}
 function fbSt(m,c){const el=document.getElementById('fb-status');el.textContent=m;el.style.color=c;}
 
 // ─── FIREBASE — STUDENTS ─────────────────────────────────
 async function fbStuFetch(){
   if(!fbStuCfg.url||!fbStuCfg.code)return;
-  try{const r=await fetch(`${fbStuCfg.url}/${fbStuCfg.code}.json`);if(!r.ok)throw 0;const d=await r.json();
-  if(d){const sm=d.lastMod||0;if(sm!==fbStuLocalMod){const toArr=v=>Array.isArray(v)?v:(v&&v.__empty)?[]:(v!=null?v:null);const stus=toArr(d.students);if(stus!==null){STUDENTS=stus;if(typeof syncRefStudentsToGp==='function')syncRefStudentsToGp();}fbStuLocalMod=sm;saveLocal();renderStudentList();populateDataLists();}}}catch(e){}
+  try{
+    // Lightweight lastMod check first
+    const mr=await fetch(`${fbStuCfg.url}/${fbStuCfg.code}/lastMod.json`);
+    if(!mr.ok)throw 0;const sm=(await mr.json())||0;
+    if(sm===fbStuLocalMod)return; // no change
+    const r=await fetch(`${fbStuCfg.url}/${fbStuCfg.code}.json`);if(!r.ok)throw 0;const d=await r.json();
+  if(d){const toArr=v=>Array.isArray(v)?v:(v&&v.__empty)?[]:(v!=null?v:null);const stus=toArr(d.students);if(stus!==null){STUDENTS=stus;if(typeof syncRefStudentsToGp==='function')syncRefStudentsToGp();}fbStuLocalMod=sm;saveLocal();renderStudentList();populateDataLists();}}catch(e){}
 }
 // Sync ref register students into gatepass S.students (same page)
 function syncRefStudentsToGp(){
@@ -5715,7 +5985,7 @@ function syncRefStudentsToGp(){
     if(!adm||!rs.name)return;
     const key=adm.toLowerCase();
     if(!map[key]){
-      S.students.push({name:rs.name,admissionNumber:adm,class:rs.cls||rs.class||'',fatherName:rs.fatherName||'',motherName:rs.motherName||'',busNumber:''});
+      S.students.push({name:rs.name,admissionNumber:adm,class:rs.cls||rs.class||'',fatherName:rs.fatherName||'',motherName:rs.motherName||'',busNumber:rs.busNumber||rs.bus||'',phone:rs.phone||'',address:rs.address||''});
       map[key]=S.students[S.students.length-1];
       added++;
     } else {
@@ -5723,6 +5993,9 @@ function syncRefStudentsToGp(){
       if(!ex.fatherName&&rs.fatherName)ex.fatherName=rs.fatherName;
       if(!ex.motherName&&rs.motherName)ex.motherName=rs.motherName;
       if(!ex.class&&(rs.cls||rs.class))ex.class=rs.cls||rs.class||'';
+      if(!ex.phone&&rs.phone)ex.phone=rs.phone;
+      if(!ex.busNumber&&(rs.busNumber||rs.bus))ex.busNumber=rs.busNumber||rs.bus||'';
+      if(!ex.address&&rs.address)ex.address=rs.address;
     }
   });
   if(added){
@@ -5739,7 +6012,7 @@ async function fbStuPush(){
 }
 function loadFBStuCfg(){document.getElementById('fb-stu-url').value=localStorage.getItem('ref_fb_stu_url')||'';document.getElementById('fb-stu-code').value=localStorage.getItem('ref_fb_stu_code')||'';}
 async function testFBStuCfg(){const url=document.getElementById('fb-stu-url').value.trim().replace(/\/$/,'');const code=document.getElementById('fb-stu-code').value.trim();if(!url||!code){fbStuSt('Fill both fields','var(--red)');return;}fbStuSt('Testing…','var(--amber)');try{const r=await fetch(`${url}/${code}/ping.json`,{method:'PUT',body:JSON.stringify(1)});if(!r.ok)throw 0;fbStuSt('Connected!','var(--green)');}catch{fbStuSt('Failed','var(--red)');}}
-async function saveFBStuCfg(){const url=document.getElementById('fb-stu-url').value.trim().replace(/\/$/,'');const code=document.getElementById('fb-stu-code').value.trim();if(!url||!code){fbStuSt('Fill both fields','var(--red)');return;}fbStuSt('Saving…','var(--amber)');try{const r=await fetch(`${url}/${code}/ping.json`,{method:'PUT',body:JSON.stringify(1)});if(!r.ok)throw 0;localStorage.setItem('ref_fb_stu_url',url);localStorage.setItem('ref_fb_stu_code',code);fbStuCfg={url,code};fbStuSt('Connected!','var(--green)');fbStuFetch();if(fbStuIv)clearInterval(fbStuIv);fbStuIv=setInterval(fbStuFetch,15000);}catch{fbStuSt('Failed','var(--red)');}}
+async function saveFBStuCfg(){const url=document.getElementById('fb-stu-url').value.trim().replace(/\/$/,'');const code=document.getElementById('fb-stu-code').value.trim();if(!url||!code){fbStuSt('Fill both fields','var(--red)');return;}fbStuSt('Saving…','var(--amber)');try{const r=await fetch(`${url}/${code}/ping.json`,{method:'PUT',body:JSON.stringify(1)});if(!r.ok)throw 0;localStorage.setItem('ref_fb_stu_url',url);localStorage.setItem('ref_fb_stu_code',code);fbStuCfg={url,code};fbStuSt('Connected!','var(--green)');fbStuFetch();if(fbStuIv)clearInterval(fbStuIv);fbStuIv=setInterval(fbStuFetch,refStuSyncInt()*1000);}catch{fbStuSt('Failed','var(--red)');}}
 function disconnFBStu(){if(!confirm('Disconnect the student database?'))return;localStorage.removeItem('ref_fb_stu_url');localStorage.removeItem('ref_fb_stu_code');fbStuCfg={url:'',code:''};if(fbStuIv)clearInterval(fbStuIv);fbStuSt('Disconnected','var(--muted)');toast('Student database disconnected.','inf');}
 function fbStuSt(m,c){const el=document.getElementById('fb-stu-status');el.textContent=m;el.style.color=c;}
 
@@ -6161,6 +6434,8 @@ async function testTGCfg(){
   }
 }
 async function sendToTelegramLog(pass){
+  // Guard: already sent for this pass (e.g. from a re-render or race condition)
+  if(pass.tgMsgId)return;
   const ids=TGCfg.chatIds&&TGCfg.chatIds.length?TGCfg.chatIds:(TGCfg.chatId?[TGCfg.chatId]:[]);
   if(!TGCfg.enabled||!TGCfg.token||!ids.length)return;
   try{
@@ -7748,9 +8023,11 @@ const SETTINGS_EXPORT_KEYS=[
   // Gatepass
   'gp_url','gp_code','gp_tg_cfg','gp_ptg_cfg','gp_wa_cfg','gp_print_cfg',
   'gp_signature','gp_stu_url','gp_stu_code','gp_od_cfg','gp_qp_thresh','gp_qp_window',
+  'gp_sync_int','gp_stu_sync_int',
   // Reference Register
   'ref_fb_url','ref_fb_code','ref_fb_stu_url','ref_fb_stu_code','ref_tg_cfg',
   'ref_cfg','ref_fs_cfg','ref_od_cfg','ref_wix_cfg',
+  'ref_sync_int','ref_stu_sync_int',
   // Fee QR
   'feeqr_fb','feeqr_settings','feeqr_wa_enabled',
   // Theme
