@@ -3282,6 +3282,7 @@ function startSync(){
   if(gpSSE){gpSSE.close();gpSSE=null;}
   if(gpSSERetry){clearTimeout(gpSSERetry);gpSSERetry=null;}
   setSS('ing');
+  fetchBuses(); // always fetch buses fresh on connect — independent of passes SSE
   _gpSSEOpen();
 }
 
@@ -3381,6 +3382,16 @@ async function _gpMigratePasses(){
 }
 
 // ── REST fallback (used by gpFullSync + SSE error fallback) ────────────────
+async function fetchBuses(){
+  if(!cfg.url||!cfg.code)return;
+  try{
+    const r=await fetch(`${cfg.url}/${cfg.code}/buses.json`);
+    if(!r.ok)return;
+    const d=await r.json();
+    if(d&&!d.__empty&&Array.isArray(d)&&d.length){S.buses=d;saveLocal();popBusSel();}
+  }catch(e){}
+}
+
 async function fetchAll(){
   if(!cfg.url||!cfg.code)return;
   setSS('ing');
@@ -3389,7 +3400,8 @@ async function fetchAll(){
     if(!r.ok)throw 0;
     const raw=await r.json();
     if(raw!==null){
-      const passes=Array.isArray(raw)?raw:(raw&&raw.__empty)?[]:Object.values(raw);
+      const passes=Array.isArray(raw)?raw:(raw&&raw.__empty)?[]:Object.values(raw).filter(p=>p&&p.id);
+      passes.sort((a,b)=>((b.date||'')+(b.time||'')).localeCompare((a.date||'')+(a.time||'')));
       S.passes=passes;saveLocal();renderAll();
     } else {
       await _gpMigratePasses();
@@ -3548,6 +3560,8 @@ async function push(k){
   const val=Array.isArray(S[k])&&S[k].length===0?{'__empty':true}:S[k];
   try{
     await fetch(`${cfg.url}/${cfg.code}/${k}.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(val)});
+    // Bump lastMod so other devices' fallback polling picks up the change
+    fetch(`${cfg.url}/${cfg.code}/lastMod.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(Date.now())}).catch(()=>{});
     setSS('ok');
   }catch{setSS('err');}
 }
@@ -3621,7 +3635,6 @@ function setSS(st){
   t.textContent=msgs[st]||'';
   if(st==='ok')ti.textContent=new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',hour12:true});
 }
-function startSync(){setSS('ing');fetchAll();if(syncIv)clearInterval(syncIv);syncIv=setInterval(fetchAll,gpSyncInt()*1000);}
 function renderAll(){popBusSel();updBadge();const a=document.querySelector('.tb.active');if(!a)return;const f=a.getAttribute('onclick')||'';if(f.includes('rec'))renderRec();if(f.includes('cut'))renderCpBusSummary();if(f.includes('set')&&document.getElementById('set-ct').style.display!=='none'){renderBuses();renderStu();}renderQGSidebar();}
 
 // ═══ UTILS ═══
