@@ -4552,10 +4552,10 @@ function gpPrintA6Slip(p){
     +'<div class="box"><div class="lbl">Picked Up By</div><div class="val">'+xEsc(p.pickedUpBy||'—')+'</div></div>'
     +'<div class="box"><div class="lbl">Relation</div><div class="val">'+xEsc(p.relation||'—')+'</div></div>'
     +(p.busNumber?'<div class="box"><div class="lbl">Bus</div><div class="val">'+xEsc(p.busNumber)+'</div></div>':'<div class="box" style="visibility:hidden"></div>')
-    +'<div class="box" style="overflow:hidden;max-height:11mm"><div class="lbl">Address</div><div style="font-size:6pt;font-weight:500;color:#1a1035;margin-top:.4mm;white-space:pre-wrap;word-break:break-word;line-height:1.3;overflow:hidden">'+xEsc(p.address||'—')+'</div></div>'
+    +'<div class="box" style="overflow:hidden;max-height:11mm"><div class="lbl">Address</div><div style="font-size:6pt;font-weight:700;color:#1a1035;margin-top:.4mm;white-space:pre-wrap;word-break:break-word;line-height:1.3;overflow:hidden">'+xEsc(p.address||'—')+'</div></div>'
     +'</div>'
     +(p.reason?'<div class="rsn"><span style="font-weight:400;text-transform:uppercase;font-size:5.5pt;letter-spacing:.5px;color:#92400e">Reason: </span><b>'+xEsc(p.reason)+'</b></div>':'')
-    +(_gpPrintCfg.printPhoto&&p.pickerPhoto?'<div style="margin:1mm 0;border:2px solid #c9bdf0;border-radius:6px;overflow:hidden;background:#f9f7ff;padding:2mm"><img src="'+p.pickerPhoto+'" style="width:100%;height:28mm;object-fit:cover;display:block;border-radius:3px"></div>':'')
+    +(_gpPrintCfg.printPhoto&&p.pickerPhoto?'<div style="margin:1mm 0;border:2px solid #c9bdf0;border-radius:6px;overflow:hidden;background:#f9f7ff;width:100%;height:28mm"><img src="'+p.pickerPhoto+'" style="width:100%;height:100%;object-fit:cover;object-position:center top;display:block"></div>':'')
     +'<div class="spacer"></div>'
     +'<div class="foot">'
     +'<div class="fi"><div class="fv">'+xEsc(gpFmtPrintDate(p.date))+'</div><div class="fl">Date</div></div>'
