@@ -3272,34 +3272,287 @@ function saveLocal(){
 function recToggleTheme(){window.toggleTheme();isDark=document.body.classList.contains('dark');document.getElementById('screen-rec').classList.toggle('dark',isDark);var b=document.getElementById('theme-btn');if(b)b.textContent=isDark?'☀️ Light':'🌙 Dark';}
 function recInitTheme(){isDark=document.body.classList.contains('dark');document.getElementById('screen-rec').classList.toggle('dark',isDark);var b=document.getElementById('theme-btn');if(b)b.textContent=isDark?'☀️ Light':'🌙 Dark';}
 
-// ═══ FIREBASE ═══
+// ═══ FIREBASE SSE ═══
+let gpSSE=null,gpStuSSE=null,gpSSERetry=null,gpStuSSERetry=null;
+
+// ── Passes SSE ─────────────────────────────────────────────────────────────
+function startSync(){
+  if(!cfg.url||!cfg.code)return;
+  if(syncIv){clearInterval(syncIv);syncIv=null;}
+  if(gpSSE){gpSSE.close();gpSSE=null;}
+  if(gpSSERetry){clearTimeout(gpSSERetry);gpSSERetry=null;}
+  setSS('ing');
+  _gpSSEOpen();
+}
+
+function _gpSSEOpen(){
+  if(!cfg.url||!cfg.code)return;
+  gpSSE=new EventSource(`${cfg.url}/${cfg.code}/passes.json`);
+  gpSSE.addEventListener('put',_gpSSEput);
+  gpSSE.addEventListener('patch',_gpSSEpatch);
+  gpSSE.addEventListener('keep-alive',()=>setSS('ok'));
+  gpSSE.addEventListener('cancel',()=>{setSS('err');_gpSSEFail();});
+  gpSSE.onerror=()=>{setSS('err');_gpSSEFail();};
+}
+
+function _gpSSEFail(){
+  if(gpSSE){gpSSE.close();gpSSE=null;}
+  // Fallback: poll every gpSyncInt() seconds
+  if(!syncIv)syncIv=setInterval(fetchAll,gpSyncInt()*1000);
+  fetchAll();
+  // Try reconnecting SSE after 30s
+  if(!gpSSERetry)gpSSERetry=setTimeout(()=>{gpSSERetry=null;if(!gpSSE)startSync();},30000);
+}
+
+function _gpSSEput(ev){
+  try{
+    const d=JSON.parse(ev.data);
+    const raw=d.data;
+    if(raw===null&&d.path==='/'){
+      _gpMigratePasses();return;
+    }
+    let passes=null;
+    if(Array.isArray(raw)){passes=raw;}
+    else if(raw&&raw.__empty){passes=[];}
+    else if(raw&&typeof raw==='object'){
+      passes=Object.values(raw).filter(p=>p&&p.id);
+      passes.forEach(p=>{
+        if(p.pickerPhoto==='__has_photo'){
+          const lp=S.passes.find(x=>x.id===p.id);
+          if(lp&&lp.pickerPhoto&&lp.pickerPhoto!=='__has_photo')p.pickerPhoto=lp.pickerPhoto;
+        }
+      });
+      passes.sort((a,b)=>((b.date||'')+(b.time||'')).localeCompare((a.date||'')+(a.time||'')));
+    }
+    if(passes!==null){S.passes=passes;saveLocal();renderAll();}
+    setSS('ok');
+  }catch(e){}
+}
+
+function _gpSSEpatch(ev){
+  try{
+    const d=JSON.parse(ev.data);
+    const updates=d.data;
+    if(!updates)return;
+    if(typeof updates==='object'&&!Array.isArray(updates)){
+      Object.entries(updates).forEach(([k,v])=>{
+        const byId=S.passes.findIndex(p=>p.id===k);
+        if(byId>-1){
+          if(v===null){S.passes.splice(byId,1);}
+          else{
+            if(v.pickerPhoto==='__has_photo'&&S.passes[byId].pickerPhoto&&S.passes[byId].pickerPhoto!=='__has_photo')
+              v.pickerPhoto=S.passes[byId].pickerPhoto;
+            Object.assign(S.passes[byId],v);
+          }
+          return;
+        }
+        const i=parseInt(k,10);
+        if(!isNaN(i)){
+          if(v===null){S.passes.splice(i,1);}
+          else if(i<S.passes.length){Object.assign(S.passes[i],v);}
+          else{S.passes.push(v);}
+        } else if(v&&v.id){
+          if(v.pickerPhoto==='__has_photo')v.pickerPhoto=null;
+          S.passes.unshift(v);
+        }
+      });
+    }
+    saveLocal();renderAll();setSS('ok');
+  }catch(e){}
+}
+
+async function _gpMigratePasses(){
+  // Old format: full doc at /{code}.json with {passes:[...], buses:[...]}
+  try{
+    const r=await fetch(`${cfg.url}/${cfg.code}.json`);
+    if(!r.ok)return;
+    const d=await r.json();
+    if(!d){setSS('ok');return;}
+    // Pull buses
+    if(d.buses&&!d.buses.__empty&&d.buses.length)S.buses=d.buses;
+    // Migrate passes to split node
+    const passVal=(d.passes&&d.passes.length)?d.passes:{'__empty':true};
+    await fetch(`${cfg.url}/${cfg.code}/passes.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(passVal)});
+    // Migrate _cfg if present
+    if(d._cfg)await fetch(`${cfg.url}/${cfg.code}/_cfg.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(d._cfg)});
+    gpApplyRemoteCfg(d._cfg);
+    setSS('ok');
+  }catch(e){setSS('err');}
+}
+
+// ── REST fallback (used by gpFullSync + SSE error fallback) ────────────────
 async function fetchAll(){
   if(!cfg.url||!cfg.code)return;
   setSS('ing');
   try{
-    // Lightweight lastMod check first — avoids downloading full doc when nothing changed
-    const mr=await fetch(`${cfg.url}/${cfg.code}/lastMod.json`);
-    if(!mr.ok)throw 0;
-    const sm=(await mr.json())||0;
-    if(sm===localMod){setSS('ok');return;} // no change — skip full fetch
-    // Changed — fetch full document
-    const r=await fetch(`${cfg.url}/${cfg.code}.json`);
+    const r=await fetch(`${cfg.url}/${cfg.code}/passes.json`);
     if(!r.ok)throw 0;
-    const d=await r.json();
-    if(d){
-      const toArr=v=>Array.isArray(v)?v:(v&&v.__empty)?[]:(v!=null?v:null);
-      const ps=toArr(d.passes);if(ps!==null)S.passes=ps;
-      // Students are loaded from dedicated Student DB only — not from gatepass Firebase path
-      if(d.buses&&!d.buses.__empty&&d.buses.length)S.buses=d.buses;
-      localMod=sm;saveLocal();renderAll();
-      // Check if remote settings changed and apply them
-      if(d._cfg)gpApplyRemoteCfg(d._cfg);
+    const raw=await r.json();
+    if(raw!==null){
+      const passes=Array.isArray(raw)?raw:(raw&&raw.__empty)?[]:Object.values(raw);
+      S.passes=passes;saveLocal();renderAll();
+    } else {
+      await _gpMigratePasses();
     }
+    // Fetch _cfg separately (infrequent)
+    try{const cr=await fetch(`${cfg.url}/${cfg.code}/_cfg.json`);if(cr.ok){const c=await cr.json();gpApplyRemoteCfg(c);}}catch(e){}
     setSS('ok');
   }catch{setSS('err');}
 }
 
-// Apply remote settings (sync intervals, etc.) from Firebase _cfg node
+// Full sync — close SSE, force full REST fetch, reopen SSE
+async function gpFullSync(){
+  if(gpSSE){gpSSE.close();gpSSE=null;}
+  if(syncIv){clearInterval(syncIv);syncIv=null;}
+  setSS('ing');
+  await fetchAll();
+  startSync(); // reopen SSE
+  gpToast('🔄 Full sync complete');
+}
+
+// ── Student DB SSE ─────────────────────────────────────────────────────────
+function startStuSSE(){
+  if(!gpStuCfg.url||!gpStuCfg.code)return;
+  if(gpStuIv){clearInterval(gpStuIv);gpStuIv=null;}
+  if(gpStuSSE){gpStuSSE.close();gpStuSSE=null;}
+  if(gpStuSSERetry){clearTimeout(gpStuSSERetry);gpStuSSERetry=null;}
+  _gpStuSSEOpen();
+}
+
+function _gpStuSSEOpen(){
+  if(!gpStuCfg.url||!gpStuCfg.code)return;
+  gpStuSSE=new EventSource(`${gpStuCfg.url}/${gpStuCfg.code}/students.json`);
+  gpStuSSE.addEventListener('put',_gpStuSSEput);
+  gpStuSSE.addEventListener('keep-alive',()=>{});
+  gpStuSSE.addEventListener('cancel',()=>_gpStuSSEFail());
+  gpStuSSE.onerror=()=>_gpStuSSEFail();
+}
+
+function _gpStuSSEFail(){
+  if(gpStuSSE){gpStuSSE.close();gpStuSSE=null;}
+  if(!gpStuIv)gpStuIv=setInterval(gpStuFetchShared,gpStuSyncInt()*1000);
+  gpStuFetchShared();
+  if(!gpStuSSERetry)gpStuSSERetry=setTimeout(()=>{gpStuSSERetry=null;if(!gpStuSSE)startStuSSE();},30000);
+}
+
+async function _gpStuSSEput(ev){
+  try{
+    const d=JSON.parse(ev.data);
+    const raw=d.data;
+    if(raw===null&&d.path==='/'){
+      // No split node yet — fall back to full-doc fetch and migrate
+      await gpStuFetchShared();
+      return;
+    }
+    if(raw===null)return;
+    const remote=Array.isArray(raw)?raw:(raw.__empty?[]:Object.values(raw));
+    const map={};
+    S.students.forEach(s=>{if(s.admissionNumber)map[String(s.admissionNumber).trim()]=s;});
+    remote.forEach(rs=>{
+      const adm=(rs.admNo||rs.admissionNumber||'').trim();if(!adm)return;
+      const existingPhone=(map[adm]&&map[adm].phone)||'';
+      const remotePhone=(rs.phone||rs.mobile||rs.contact||'').replace(/[^0-9]/g,'');
+      map[adm]={name:rs.name||'',admissionNumber:adm,class:rs.cls||rs.class||'',fatherName:rs.fatherName||'',motherName:rs.motherName||'',busNumber:rs.busNumber||rs.bus||'',phone:remotePhone||existingPhone,address:rs.address||map[adm]?.address||''};
+    });
+    S.students=Object.values(map);
+    saveLocal();renderStu();popBusSel();updBadge();
+    syncGpStudentsToRef();
+  }catch(e){}
+}
+
+// ── Push (split nodes) ─────────────────────────────────────────────────────
+// Photo cache — pickerPhoto blobs are NOT uploaded to Firebase (too big)
+// They're cached locally per device in sessionStorage
+const _photoCache={
+  set(id,dataUrl){try{sessionStorage.setItem('gp_photo_'+id,dataUrl);}catch(e){}},
+  get(id){return sessionStorage.getItem('gp_photo_'+id)||null},
+};
+
+// Resolve pickerPhoto — checks local cache first, then fetches from Firebase on demand
+async function _resolvePhotoAsync(p){
+  if(p.pickerPhoto&&p.pickerPhoto!=='__has_photo')return p.pickerPhoto;
+  if(p.pickerPhoto!=='__has_photo')return null;
+  const cached=_photoCache.get(p.id);if(cached)return cached;
+  if(!cfg.url||!cfg.code)return null;
+  try{
+    const r=await fetch(`${cfg.url}/${cfg.code}/photos/${p.id}.json`);
+    if(!r.ok)return null;
+    const data=await r.json();
+    if(data&&data.photo){_photoCache.set(p.id,data.photo);return data.photo;}
+  }catch(e){}
+  return null;
+}
+
+// Sync version — only returns if already cached
+function _resolvePhoto(p){
+  if(p.pickerPhoto&&p.pickerPhoto!=='__has_photo')return p.pickerPhoto;
+  if(p.pickerPhoto==='__has_photo')return _photoCache.get(p.id)||null;
+  return null;
+}
+
+// ═══ INCREMENTAL FIREBASE WRITES ═══
+// Each pass stored at /{code}/passes/{id}.json — photo at /{code}/photos/{id}.json
+
+async function pushOnePass(pass){
+  saveLocal();
+  if(!cfg.url||!cfg.code)return;
+  setSS('ing');
+  try{
+    const {pickerPhoto,...meta}=pass;
+    // 1. Write pass metadata (no photo blob — tiny)
+    await fetch(`${cfg.url}/${cfg.code}/passes/${pass.id}.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({...meta,pickerPhoto:pickerPhoto?'__has_photo':null})});
+    // 2. Write photo to separate node (so other devices can fetch it on demand for printing)
+    if(pickerPhoto&&pickerPhoto!=='__has_photo'){
+      fetch(`${cfg.url}/${cfg.code}/photos/${pass.id}.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({photo:pickerPhoto})}).catch(()=>{});
+    }
+    await fetch(`${cfg.url}/${cfg.code}/lastMod.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(Date.now())});
+    setSS('ok');
+  }catch{setSS('err');}
+}
+
+async function patchPassFields(id,fields){
+  saveLocal();
+  if(!cfg.url||!cfg.code)return;
+  try{
+    await fetch(`${cfg.url}/${cfg.code}/passes/${id}.json`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(fields)});
+    await fetch(`${cfg.url}/${cfg.code}/lastMod.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(Date.now())});
+  }catch(e){}
+}
+
+async function deletePassFB(id){
+  saveLocal();
+  if(!cfg.url||!cfg.code)return;
+  try{
+    await fetch(`${cfg.url}/${cfg.code}/passes/${id}.json`,{method:'DELETE'});
+    // Also clean up photo node
+    fetch(`${cfg.url}/${cfg.code}/photos/${id}.json`,{method:'DELETE'}).catch(()=>{});
+    await fetch(`${cfg.url}/${cfg.code}/lastMod.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(Date.now())});
+  }catch(e){}
+}
+
+async function push(k){
+  saveLocal();
+  if(k==='students'){syncGpStudentsToRef();gpStuPushShared();return;}
+  if(!cfg.url||!cfg.code)return;
+  setSS('ing');
+  if(k==='passes'){
+    // Full passes push — convert array to ID-keyed object
+    try{
+      const obj=S.passes.length===0?{'__empty':true}:Object.fromEntries(S.passes.map(p=>{const {pickerPhoto,...meta}=p;return [p.id,{...meta,pickerPhoto:pickerPhoto?'__has_photo':null}];}));
+      await fetch(`${cfg.url}/${cfg.code}/passes.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(obj)});
+      await fetch(`${cfg.url}/${cfg.code}/lastMod.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(Date.now())});
+      setSS('ok');
+    }catch{setSS('err');}
+    return;
+  }
+  const val=Array.isArray(S[k])&&S[k].length===0?{'__empty':true}:S[k];
+  try{
+    await fetch(`${cfg.url}/${cfg.code}/${k}.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(val)});
+    setSS('ok');
+  }catch{setSS('err');}
+}
+
+// Apply remote config (sync intervals) from Firebase _cfg node
 function gpApplyRemoteCfg(rc){
   if(!rc)return;
   const si=rc.syncIntervals||{};
@@ -3307,29 +3560,19 @@ function gpApplyRemoteCfg(rc){
   if(si.gpPasses&&si.gpPasses!==gpSyncInt()){localStorage.setItem('gp_sync_int',si.gpPasses);changed=true;}
   if(si.gpStu&&si.gpStu!==gpStuSyncInt()){localStorage.setItem('gp_stu_sync_int',si.gpStu);changed=true;}
   if(changed){
-    // Restart intervals with new values
-    if(syncIv){clearInterval(syncIv);syncIv=setInterval(fetchAll,gpSyncInt()*1000);}
-    if(gpStuIv){clearInterval(gpStuIv);gpStuIv=setInterval(gpStuFetchShared,gpStuSyncInt()*1000);}
-    // Update UI if settings tab open
     const piEl=document.getElementById('gp-sync-int');if(piEl)piEl.value=gpSyncInt();
     const siEl=document.getElementById('gp-stu-sync-int');if(siEl)siEl.value=gpStuSyncInt();
   }
 }
-
-// Get sync intervals from localStorage with defaults
 function gpSyncInt(){return parseInt(localStorage.getItem('gp_sync_int')||'30',10)||30;}
 function gpStuSyncInt(){return parseInt(localStorage.getItem('gp_stu_sync_int')||'60',10)||60;}
 
-// Push settings to Firebase so other devices pick them up
 async function gpPushRemoteCfg(){
   if(!cfg.url||!cfg.code)return;
   const c={syncIntervals:{gpPasses:gpSyncInt(),gpStu:gpStuSyncInt()}};
   try{await fetch(`${cfg.url}/${cfg.code}/_cfg.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(c)});}catch(e){}
-  // Also bump lastMod so other devices pick up the _cfg change
-  try{await fetch(`${cfg.url}/${cfg.code}/lastMod.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(Date.now())});}catch(e){}
 }
 
-// Save sync interval setting and restart interval
 async function gpSaveSyncInt(){
   const v=parseInt(document.getElementById('gp-sync-int').value,10);
   const sv=parseInt(document.getElementById('gp-stu-sync-int').value,10);
@@ -3337,33 +3580,8 @@ async function gpSaveSyncInt(){
   if(sv<10||sv>600){gpToast('⚠️ Student interval must be 10–600s','err');return;}
   localStorage.setItem('gp_sync_int',v);
   localStorage.setItem('gp_stu_sync_int',sv);
-  if(syncIv){clearInterval(syncIv);syncIv=setInterval(fetchAll,v*1000);}
-  if(gpStuIv){clearInterval(gpStuIv);gpStuIv=setInterval(gpStuFetchShared,sv*1000);}
   await gpPushRemoteCfg();
   gpToast('✅ Sync intervals saved & pushed to all devices');
-}
-
-// Full sync — ignore lastMod cache and force-download everything
-async function gpFullSync(){
-  localMod=-1; // force mismatch so full fetch runs
-  setSS('ing');
-  await fetchAll();
-  gpToast('🔄 Full sync complete');
-}
-async function push(k){
-  saveLocal();
-  // When students change, sync directly into Ref Register's STUDENTS array
-  if(k==='students'){
-    syncGpStudentsToRef();
-    gpStuPushShared(); // also push to shared Firebase student path
-  }
-  if(!cfg.url||!cfg.code)return;
-  S.lastMod=Date.now();localMod=S.lastMod;setSS('ing');
-  if(k==='students')return; // students live in their own DB, not gatepass Firebase
-  // Only passes and buses sync to gatepass Firebase — never students
-  const val=Array.isArray(S[k])&&S[k].length===0?{'__empty':true}:S[k];
-  try{await fetch(`${cfg.url}/${cfg.code}.json`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({[k]:val,lastMod:S.lastMod})});setSS('ok');}
-  catch{setSS('err');}
 }
 // Sync gatepass students directly into ref register STUDENTS array (same page)
 function syncGpStudentsToRef(){
@@ -3398,7 +3616,8 @@ function syncGpStudentsToRef(){
 function setSS(st){
   const b=document.getElementById('sbar'),d=document.getElementById('sdot'),t=document.getElementById('stxt'),ti=document.getElementById('stim');
   b.className=st;d.className='dot'+(st==='ing'?' pulse':'');
-  const msgs={ok:'🟢 Synced with Firebase',err:'🔴 Sync error',ing:'⏳ Syncing…',off:'⚪ Local mode — Firebase not connected'};
+  const live=gpSSE&&gpSSE.readyState===1;
+  const msgs={ok:live?'🟢 Live (SSE)':'🟢 Synced',err:'🔴 Sync error — retrying…',ing:'⏳ Syncing…',off:'⚪ Local mode — Firebase not connected'};
   t.textContent=msgs[st]||'';
   if(st==='ok')ti.textContent=new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',hour12:true});
 }
@@ -3641,13 +3860,14 @@ async function issuePass(){
   if(existing){gpToast(`🚫 Pass already issued for ${cpSel.name} today (${existing.time})`,'err');return;}
   const pass={id:uid(),date:todayStr(),time:nowT(),gateOutTime:null,studentName:cpSel.name,admissionNumber:cpSel.admissionNumber,class:cpSel.class||'',fatherName:cpSel.fatherName||'',motherName:cpSel.motherName||'',address:cpSel.address||'',pickedUpBy:by,relation:document.getElementById('cprel').value,reason:document.getElementById('cpreason').value.trim(),busNumber:document.getElementById('cpbus').value||cpSel.busNumber||'',pickerPhoto:photo};
   S.passes.unshift(pass);
-  await push('passes');
+  if(pass.pickerPhoto)_photoCache.set(pass.id,pass.pickerPhoto);
+  await pushOnePass(pass);
   gpToast(`✅ Pass issued for ${pass.studentName}`);
   if(_gpPrintCfg.enabled!==false)gpPrintA6Slip(pass);
   // Telegram school log — always fires (photo or text-only)
   if(TGCfg.enabled) sendToTelegramLog(pass);
   // OneDrive photo upload — only if photo exists
-  if(GPODCfg.enabled && pass.pickerPhoto) uploadGatePassPhotoToOneDrive(pass);
+  if(GPODCfg.enabled && _resolvePhoto(pass)) uploadGatePassPhotoToOneDrive(pass);
   clrSel();['cpby','cpreason'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('cprel').value='';document.getElementById('cpbus').value='';clrPhoto();updBadge();
   updReasonSugs();renderQGSidebar();
@@ -3805,7 +4025,7 @@ async function issueQuickPass(){
   if(existing){gpToast(`🚫 Pass already issued for ${qpSel.name} today`,'err');return;}
   const pass={id:uid(),date:todayStr(),time:nowT(),gateOutTime:null,studentName:qpSel.name,admissionNumber:qpSel.adm,class:qpSel.cls||'',fatherName:stu?stu.fatherName||'':'',motherName:stu?stu.motherName||'':'',address:stu?stu.address||'':'',pickedUpBy:by,relation:document.getElementById('qprel').value,reason:document.getElementById('qpreason').value.trim(),busNumber:stu?stu.busNumber||'':'',pickerPhoto:null};
   S.passes.unshift(pass);
-  await push('passes');
+  await pushOnePass(pass);
   gpToast(`⚡ Quick pass issued for ${pass.studentName}`);
   gpPrintA6Slip(pass);
   closeQP();updBadge();renderQGSidebar();
@@ -4004,7 +4224,10 @@ function renderRec(){
       p.gateOutTime?`✅ Out: ${p.gateOutTime}`:'',
       p.reason?`📝 ${e(p.reason)}`:'',
     ].filter(Boolean).join(' &nbsp;·&nbsp; ');
-    const photoEl=p.pickerPhoto?`<img src="${p.pickerPhoto}" style="max-height:80px;border-radius:6px;display:block;margin-top:6px">`:'';
+    const _rphoto=_resolvePhoto(p);
+    const photoEl=p.pickerPhoto==='__has_photo'&&!_rphoto
+      ?`<div id="ph-${p.id}" style="margin-top:6px;font-size:11px;color:var(--muted);cursor:pointer" onclick="_loadPassPhoto('${p.id}')">📷 Photo available — tap to load</div>`
+      :(_rphoto?`<img src="${_rphoto}" style="max-height:80px;border-radius:6px;display:block;margin-top:6px">`:'');
     const printBtn=`<button onclick="event.stopPropagation();gpPrintPassById('${p.id}')" class="btn bgh" style="font-size:12px;padding:6px 12px;background:var(--purple-l);border-color:var(--purple);color:var(--purple)">🖨️ Print</button>`;
     const expandBody=`${lockedMsg}${infoLine?`<div style="font-size:11px;color:var(--sub);line-height:1.7">${infoLine}</div>`:''}${photoEl}<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:7px">${waBtn}${printBtn}${delBtn}</div>`;
     return `<div class="card" onclick="tgCard('${p.id}')" style="cursor:pointer">
@@ -4039,7 +4262,7 @@ async function delPass(id){
   const pass=S.passes.find(p=>p.id===id);
   if(pass&&TGCfg.enabled&&pass.tgMsgId) deleteTGMessage(TGCfg.token,TGCfg.chatId,pass.tgMsgId);
   S.passes=S.passes.filter(p=>p.id!==id);
-  await push('passes');
+  await deletePassFB(id);
   gpToast('🗑 Pass deleted','err');
   renderRec();updBadge();
 }
@@ -4065,7 +4288,7 @@ async function execDel(){
   var msg='Delete '+ids.length+' record'+(ids.length>1?'s':'')+(exited?' ('+exited+' already exited)':'')+' — cannot be undone?';
   if(!confirm(msg))return;
   S.passes=S.passes.filter(function(p){return ids.indexOf(p.id)===-1;});
-  await push('passes');
+  await Promise.all(ids.map(id=>deletePassFB(id)));
   gpToast(ids.length+' record'+(ids.length>1?'s':'')+' deleted','err');
   closeMD();updBadge();renderRec();
 }
@@ -4088,7 +4311,7 @@ function drPreview(){
   Object.entries(byDate).sort((a,b)=>b[0].localeCompare(a[0])).forEach(([date,recs])=>{html+=`<div style="font-size:11px;font-weight:700;color:var(--sub);text-transform:uppercase;margin:8px 0 4px">${fmtD(date)} — ${recs.length} record${recs.length>1?'s':''}</div>`;recs.forEach(p=>{html+=`<div style="font-size:12px;padding:4px 6px;border-radius:5px;margin-bottom:3px;background:var(--bg4);display:flex;justify-content:space-between"><span style="font-weight:600">${e(p.studentName)}</span><span style="font-family:var(--mono);font-size:10px;color:${p.gateOutTime?'var(--green)':'var(--amber)'}">${p.gateOutTime?'EXITED':'PENDING'}</span></div>`;});});
   html+=`</div>`;prev.innerHTML=html;btn.textContent=`🗑 Delete ${hits.length} Record${hits.length>1?'s':''} (${fmtD(from)} → ${fmtD(to)})`;btn.style.display='flex';
 }
-async function execDR(){const from=document.getElementById('dr-from').value,to=document.getElementById('dr-to').value;if(!from||!to)return;const hits=S.passes.filter(p=>p.date>=from&&p.date<=to);if(!hits.length){gpToast('No records in range','inf');return;}const exited=hits.filter(p=>p.gateOutTime).length;if(!confirm(`Permanently delete ${hits.length} record${hits.length>1?'s':''} from ${fmtD(from)} to ${fmtD(to)}?\n(${exited} exited + ${hits.length-exited} pending)\n\nThis CANNOT be undone.`))return;S.passes=S.passes.filter(p=>!(p.date>=from&&p.date<=to));await push('passes');gpToast(`🗑 ${hits.length} records deleted`,'err');closeDR();updBadge();}
+async function execDR(){const from=document.getElementById('dr-from').value,to=document.getElementById('dr-to').value;if(!from||!to)return;const hits=S.passes.filter(p=>p.date>=from&&p.date<=to);if(!hits.length){gpToast('No records in range','inf');return;}const exited=hits.filter(p=>p.gateOutTime).length;if(!confirm(`Permanently delete ${hits.length} record${hits.length>1?'s':''} from ${fmtD(from)} to ${fmtD(to)}?\n(${exited} exited + ${hits.length-exited} pending)\n\nThis CANNOT be undone.`))return;const hitIds=hits.map(p=>p.id);S.passes=S.passes.filter(p=>!(p.date>=from&&p.date<=to));await Promise.all(hitIds.map(id=>deletePassFB(id)));gpToast(`🗑 ${hits.length} records deleted`,'err');closeDR();updBadge();}
 
 // ═══ PASSWORD ═══
 function recCheckPW(){const v=document.getElementById('pw-inp').value;if(v===PASS){document.getElementById('pw-gate').style.display='none';document.getElementById('set-ct').style.display='block';document.getElementById('pw-err').textContent='';loadCfgF();gpLoadStuCfg();gpLoadWACfg();gpLoadQPThresh();gpLoadPrintCfg();renderBuses();renderStu();gpUpdateSettingsSubs();var fb=document.getElementById('gacc-fb');if(fb&&!fb.classList.contains('open'))fb.classList.add('open');}else{document.getElementById('pw-err').textContent='❌ Wrong password';document.getElementById('pw-inp').value='';}}
@@ -4101,7 +4324,7 @@ function gpLoadStuCfg(){
   var u=localStorage.getItem('gp_stu_url'),cd=localStorage.getItem('gp_stu_code');
   var urlEl=document.getElementById('gp-stu-url'),codeEl=document.getElementById('gp-stu-code'),stEl=document.getElementById('gp-stu-status');
   if(urlEl)urlEl.value=u||'';if(codeEl)codeEl.value=cd||'';
-  if(u&&cd){gpStuCfg={url:u,code:cd};if(stEl)stEl.textContent='Connected: '+cd;gpStuFetchShared();if(gpStuIv)clearInterval(gpStuIv);gpStuIv=setInterval(gpStuFetchShared,gpStuSyncInt()*1000);}
+  if(u&&cd){gpStuCfg={url:u,code:cd};if(stEl)stEl.textContent='Connected: '+cd;if(gpStuIv){clearInterval(gpStuIv);gpStuIv=null;}startStuSSE();}
   else{if(stEl)stEl.textContent='Not connected';}
   var sub=document.getElementById('gacc-studb-sub');if(sub)sub.textContent=u?'Connected':'Not connected';
 }
@@ -4118,13 +4341,13 @@ async function gpSaveStuCfg(){
     gpStuCfg={url,code};
     if(stEl)stEl.textContent='✅ Connected! Syncing…';
     var sub=document.getElementById('gacc-studb-sub');if(sub)sub.textContent='Connected';
-    gpStuFetchShared();if(gpStuIv)clearInterval(gpStuIv);gpStuIv=setInterval(gpStuFetchShared,gpStuSyncInt()*1000);
+    if(gpStuIv){clearInterval(gpStuIv);gpStuIv=null;}startStuSSE();
   }catch{if(stEl)stEl.textContent='❌ Connection failed';}
 }
 function gpDisconnStu(){
   if(!confirm('Disconnect student DB sync?'))return;
   localStorage.removeItem('gp_stu_url');localStorage.removeItem('gp_stu_code');
-  gpStuCfg={url:'',code:''};if(gpStuIv)clearInterval(gpStuIv);
+  gpStuCfg={url:'',code:''};if(gpStuIv)clearInterval(gpStuIv);gpStuIv=null;if(gpStuSSE){gpStuSSE.close();gpStuSSE=null;}
   var stEl=document.getElementById('gp-stu-status');if(stEl)stEl.textContent='Disconnected';
   var sub=document.getElementById('gacc-studb-sub');if(sub)sub.textContent='Not connected';
   gpToast('Student sync disconnected','inf');
@@ -4132,16 +4355,17 @@ function gpDisconnStu(){
 async function gpStuFetchShared(){
   if(!gpStuCfg.url||!gpStuCfg.code)return;
   try{
-    // Lightweight lastMod check first
-    var mr=await fetch(gpStuCfg.url+'/'+gpStuCfg.code+'/lastMod.json');
-    if(!mr.ok)return;var sm=(await mr.json())||0;
-    if(sm===gpStuLocalMod)return; // no change
-    // Changed — fetch full doc
-    var r=await fetch(gpStuCfg.url+'/'+gpStuCfg.code+'.json');
-    if(!r.ok)return;var d=await r.json();
-    if(!d||!d.students)return;
-    var remote=Array.isArray(d.students)?d.students:(d.students.__empty?[]:Object.values(d.students));
-    // Merge: remote students override local by admissionNumber
+    var r=await fetch(gpStuCfg.url+'/'+gpStuCfg.code+'/students.json');
+    if(!r.ok)return;var raw=await r.json();
+    if(raw===null){
+      // Try old full-doc format and migrate
+      var r2=await fetch(gpStuCfg.url+'/'+gpStuCfg.code+'.json');
+      if(!r2.ok)return;var d2=await r2.json();
+      if(!d2||!d2.students)return;raw=d2.students;
+      // Migrate to split node
+      try{await fetch(gpStuCfg.url+'/'+gpStuCfg.code+'/students.json',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(raw)});}catch(e){}
+    }
+    var remote=Array.isArray(raw)?raw:(raw.__empty?[]:Object.values(raw));
     var map={};
     S.students.forEach(function(s){map[s.admissionNumber]=s;});
     remote.forEach(function(rs){
@@ -4161,7 +4385,7 @@ async function gpStuFetchShared(){
 async function gpStuPushShared(){
   if(!gpStuCfg.url||!gpStuCfg.code)return;
   var sVal=S.students.length===0?{'__empty':true}:S.students;
-  try{await fetch(gpStuCfg.url+'/'+gpStuCfg.code+'.json',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({students:sVal,lastMod:Date.now()})});}catch(e){}
+  try{await fetch(gpStuCfg.url+'/'+gpStuCfg.code+'/students.json',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(sVal)});}catch(e){}
 }
 
 // ═══ GATEPASS WHATSAPP ═══
@@ -4450,9 +4674,27 @@ function gpSaveSigSize(){
 }
 
 // ── Lookup pass by ID then print ──
-function gpPrintPassById(id){
+// On-demand photo load for pass cards on devices that didn't issue the pass
+async function _loadPassPhoto(id){
+  const el=document.getElementById('ph-'+id);
+  if(el)el.textContent='📷 Loading…';
+  const p=S.passes.find(x=>x.id===id);if(!p)return;
+  const photo=await _resolvePhotoAsync(p);
+  if(photo){
+    p.pickerPhoto=photo; // cache in memory
+    if(el){const img=document.createElement('img');img.src=photo;img.style.cssText='max-height:80px;border-radius:6px;display:block;margin-top:6px';el.replaceWith(img);}
+  }else{if(el)el.textContent='📷 Photo not available';}
+}
+
+async function gpPrintPassById(id){
   const p=S.passes.find(x=>x.id===id);
   if(!p){gpToast('Pass not found','err');return;}
+  // Fetch photo from Firebase if not cached (other device printing)
+  if(p.pickerPhoto==='__has_photo'&&!_photoCache.get(p.id)){
+    gpToast('📷 Fetching photo…','inf');
+    const photo=await _resolvePhotoAsync(p);
+    if(photo)p.pickerPhoto=photo; // store in pass object for this session
+  }
   gpPrintA6Slip(p);
 }
 
@@ -4555,7 +4797,7 @@ function gpPrintA6Slip(p){
     +'<div class="box" style="overflow:hidden;max-height:11mm"><div class="lbl">Address</div><div style="font-size:6pt;font-weight:500;color:#1a1035;margin-top:.4mm;white-space:pre-wrap;word-break:break-word;line-height:1.3;overflow:hidden">'+xEsc(p.address||'—')+'</div></div>'
     +'</div>'
     +(p.reason?'<div class="rsn"><span style="font-weight:400;text-transform:uppercase;font-size:5.5pt;letter-spacing:.5px;color:#92400e">Reason: </span><b>'+xEsc(p.reason)+'</b></div>':'')
-    +(_gpPrintCfg.printPhoto&&p.pickerPhoto?'<div style="margin:1mm 0;border:2px solid #c9bdf0;border-radius:6px;overflow:hidden;background:#f9f7ff;padding:2mm"><img src="'+p.pickerPhoto+'" style="width:100%;height:28mm;object-fit:cover;display:block;border-radius:3px"></div>':'')
+    +(_gpPrintCfg.printPhoto&&_resolvePhoto(p)?'<div style="margin:1mm 0;border:2px solid #c9bdf0;border-radius:6px;overflow:hidden;background:#f9f7ff;padding:2mm"><img src="'+_resolvePhoto(p)+'" style="width:100%;height:28mm;object-fit:cover;display:block;border-radius:3px"></div>':'')
     +'<div class="spacer"></div>'
     +'<div class="foot">'
     +'<div class="fi"><div class="fv">'+xEsc(gpFmtPrintDate(p.date))+'</div><div class="fl">Date</div></div>'
@@ -4624,7 +4866,7 @@ function gpPrintThermalSlip(p, cfg){
     +(p.busNumber?'<div class="row"><span class="lbl">Bus</span><span>'+xEsc(p.busNumber)+'</span></div>':'')
     +'<div style="margin:1.5mm 0;border:1px solid #ccc;border-radius:3px;padding:1.5mm 2mm;overflow:hidden;max-height:10mm"><span class="lbl">Address: </span><span style="font-size:6pt;font-weight:500;white-space:pre-wrap;word-break:break-word;line-height:1.3">'+xEsc(p.address||'—')+'</span></div>'
     +(p.reason?'<div class="reason"><span class="lbl">Reason: </span>'+xEsc(p.reason)+'</div>':'')
-    +((_gpPrintCfg.printPhoto&&p.pickerPhoto)?'<div style="text-align:center;margin:2mm 0;border:1px solid #ccc;border-radius:3px;padding:1.5mm;background:#f9f9f9"><img src="'+p.pickerPhoto+'" style="max-width:100%;max-height:25mm;object-fit:contain;display:inline-block;border-radius:2px"></div>':'')
+    +((_gpPrintCfg.printPhoto&&_resolvePhoto(p))?'<div style="text-align:center;margin:2mm 0;border:1px solid #ccc;border-radius:3px;padding:1.5mm;background:#f9f9f9"><img src="'+_resolvePhoto(p)+'" style="max-width:100%;max-height:25mm;object-fit:contain;display:inline-block;border-radius:2px"></div>':'')
     +'<hr class="divider">'
     +'<div class="row"><span class="lbl">Date</span><span>'+xEsc(p.date||'')+'</span></div>'
     +'<div class="row"><span class="lbl">Time</span><span>'+xEsc(p.time||'')+'</span></div>'
@@ -6446,9 +6688,10 @@ async function sendToTelegramLog(pass){
     // Send to all chat IDs simultaneously
     const results=await Promise.allSettled(ids.map(async chatId=>{
       let msgId=null;
-      if(pass.pickerPhoto){
-        const b64=pass.pickerPhoto.split(',')[1]||pass.pickerPhoto;
-        const mime=(pass.pickerPhoto.match(/data:([^;]+)/)||[])[1]||'image/jpeg';
+      const _tgPhoto=_resolvePhoto(pass);
+      if(_tgPhoto){
+        const b64=_tgPhoto.split(',')[1]||_tgPhoto;
+        const mime=(_tgPhoto.match(/data:([^;]+)/)||[])[1]||'image/jpeg';
         const bytes=Uint8Array.from(atob(b64),c2=>c2.charCodeAt(0));
         const blob=new Blob([bytes],{type:mime});
         const form=new FormData();
@@ -6478,9 +6721,9 @@ async function sendToTelegramLog(pass){
     const firstOk=results.find(r=>r.status==='fulfilled');
     const msgId=firstOk?firstOk.value.msgId:null;
     const failCount=results.filter(r=>r.status==='rejected').length;
-    if(msgId){const pidx=S.passes.findIndex(p=>p.id===pass.id);if(pidx>-1){S.passes[pidx].tgMsgId=msgId;push('passes');}}
+    if(msgId){const pidx=S.passes.findIndex(p=>p.id===pass.id);if(pidx>-1){S.passes[pidx].tgMsgId=msgId;patchPassFields(pass.id,{tgMsgId:msgId});}}
     const okCount=results.length-failCount;
-    if(pass.pickerPhoto)gpToast('\u2708\ufe0f Gate pass photo sent to Admin'+(okCount>1?' ('+okCount+' chats)':''));
+    if(_resolvePhoto(pass))gpToast('\u2708\ufe0f Gate pass photo sent to Admin'+(okCount>1?' ('+okCount+' chats)':''));
     else gpToast('\u2708\ufe0f Gate pass logged to Telegram'+(okCount>1?' ('+okCount+' chats)':''));
     if(failCount)gpToast('⚠️ '+failCount+' chat(s) failed','err');
   }catch(e){gpToast('Telegram error: '+e.message,'err');console.error('TG:',e);}
@@ -6546,7 +6789,7 @@ function handleTGApproval(passId,approved,from){
   pass.tgApproved=approved;
   const byName=from?(from.first_name+(from.last_name?' '+from.last_name:'')+(from.username?' (@'+from.username+')':'')).trim():'Unknown';
   pass.tgApprovedBy=byName;
-  push('passes');
+  patchPassFields(pass.id,{tgApproved:approved,tgApprovedBy:byName});
   // Always remove the inline keyboard buttons after any action
   if(pass.tgMsgId){
     fetch(`https://api.telegram.org/bot${TGCfg.token}/editMessageReplyMarkup`,{
@@ -6567,10 +6810,11 @@ function handleTGApproval(passId,approved,from){
 
 // ─── ONEDRIVE GATE PASS PHOTO UPLOAD ──────────────────────
 async function uploadGatePassPhotoToOneDrive(pass){
-  if(!GPODCfg.enabled||!GPODCfg.user||!GPODCfg.pass||!pass.pickerPhoto)return;
+  const _odPhoto=_resolvePhoto(pass);
+  if(!GPODCfg.enabled||!GPODCfg.user||!GPODCfg.pass||!_odPhoto)return;
   try{
     const token=await getGPODToken();
-    const ext=(pass.pickerPhoto.match(/data:[^/]+\/([^;]+)/)||[])[1]||'jpg';
+    const ext=(_odPhoto.match(/data:[^/]+\/([^;]+)/)||[])[1]||'jpg';
     const safeName=(pass.studentName||'Unknown').replace(/[/\\:*?"<>|]/g,'-');
     const safeDate=(pass.date||todayStr()).replace(/-/g,'');
     const safeTime=(pass.time||'').replace(/:/g,'').replace(/\s/g,'');
@@ -6578,7 +6822,7 @@ async function uploadGatePassPhotoToOneDrive(pass){
     const fileName=`GatePass_${safeName}_${pass.admissionNumber||'NA'}_${safeDate}_${safeTime}_${shortId}.${ext}`;
     const folder=GPODCfg.folder?GPODCfg.folder+'/GatePasses':'GatePasses';
     const path=`/me/drive/root:/${folder}/${fileName}:/content`;
-    const b64=pass.pickerPhoto.split(',')[1]||pass.pickerPhoto;
+    const b64=_odPhoto.split(',')[1]||_odPhoto;
     const bytes=Uint8Array.from(atob(b64),c=>c.charCodeAt(0));
     const up=await fetch('https://graph.microsoft.com/v1.0'+path,{
       method:'PUT',headers:{Authorization:'Bearer '+token,'Content-Type':'application/octet-stream'},body:bytes
