@@ -4001,7 +4001,6 @@ function renderRec(){
     const lockedMsg=lk?`<div style="font-size:11px;color:var(--red);font-weight:600;margin-bottom:6px">🔒 Locked — Delete via Settings → Master Delete</div>`:'';
     // Compact info line
     const infoLine=[
-      p.fatherName?`👨 ${e(p.fatherName)}`:'',
       p.gateOutTime?`✅ Out: ${p.gateOutTime}`:'',
       p.reason?`📝 ${e(p.reason)}`:'',
     ].filter(Boolean).join(' &nbsp;·&nbsp; ');
