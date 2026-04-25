@@ -1441,6 +1441,26 @@ Reason: {reason}"></textarea>
               </div>
             </label>
           </div>
+          <!-- Auto-load photo on this device -->
+          <div style="background:var(--bg3);border:1.5px solid var(--border);border-radius:var(--rs);padding:11px 13px;margin-bottom:10px">
+            <label style="display:flex;align-items:center;gap:9px;cursor:pointer">
+              <input type="checkbox" id="gp-auto-load-photo" style="accent-color:var(--purple);width:16px;height:16px" onchange="gpSaveAutoLoadPhoto()">
+              <div>
+                <div style="font-size:13px;font-weight:700;color:var(--text)">📷 Auto-load photos on this device</div>
+                <div style="font-size:11px;color:var(--muted);margin-top:1px">Enable on the printing device — photos fetch automatically when a new pass arrives so Print works instantly</div>
+              </div>
+            </label>
+          </div>
+          <!-- Auto-download photo -->
+          <div style="background:var(--bg3);border:1.5px solid var(--border);border-radius:var(--rs);padding:11px 13px;margin-bottom:10px">
+            <label style="display:flex;align-items:center;gap:9px;cursor:pointer">
+              <input type="checkbox" id="gp-auto-dl-photo" style="accent-color:var(--green);width:16px;height:16px" onchange="gpSaveAutoDLPhoto()">
+              <div>
+                <div style="font-size:13px;font-weight:700;color:var(--text)">📥 Auto-download picker photo</div>
+                <div style="font-size:11px;color:var(--muted);margin-top:1px">This device will auto-save the photo to Downloads when a pass is issued or synced</div>
+              </div>
+            </label>
+          </div>
           <!-- Principal signature -->
           <div style="background:var(--bg3);border:1.5px solid var(--border);border-radius:var(--rs);padding:11px 13px;margin-bottom:12px">
             <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:6px">✍️ Principal Signature</div>
@@ -3282,8 +3302,11 @@ function startSync(){
   if(gpSSE){gpSSE.close();gpSSE=null;}
   if(gpSSERetry){clearTimeout(gpSSERetry);gpSSERetry=null;}
   setSS('ing');
-  fetchBuses(); // always fetch buses fresh on connect — independent of passes SSE
+  fetchBuses();
   _gpSSEOpen();
+  // Polling fallback — runs even when SSE is connected; fetchAll is now cheap
+  // (only fetches /passes.json, no photos, tiny doc) so 6s is fine
+  syncIv=setInterval(fetchAll,gpSyncInt()*1000);
 }
 
 function _gpSSEOpen(){
@@ -3355,6 +3378,7 @@ function _gpSSEpatch(ev){
         const np={...updates};
         if(np.pickerPhoto==='__has_photo')np.pickerPhoto=null;
         S.passes.unshift(np);
+        _gpMaybeAutoDownload(np); // auto-dl photo if enabled on this device
       }
       saveLocal();renderAll();setSS('ok');
       return;
@@ -3423,17 +3447,21 @@ async function fetchAll(){
   if(!cfg.url||!cfg.code)return;
   setSS('ing');
   try{
+    // Cheap lastMod check — skip full fetch if nothing changed since last poll
+    const mr=await fetch(`${cfg.url}/${cfg.code}/lastMod.json`);
+    if(mr.ok){const sm=(await mr.json())||0;if(sm===localMod){setSS('ok');return;}localMod=sm;}
     const r=await fetch(`${cfg.url}/${cfg.code}/passes.json`);
     if(!r.ok)throw 0;
     const raw=await r.json();
     if(raw!==null){
-      const passes=Array.isArray(raw)?raw:(raw&&raw.__empty)?[]:Object.values(raw).filter(p=>p&&p.id);
-      passes.sort((a,b)=>((b.date||'')+(b.time||'')).localeCompare((a.date||'')+(a.time||'')));
+      let passes;
+      if(Array.isArray(raw)){passes=raw;}
+      else if(raw&&raw.__empty){passes=[];}
+      else{passes=Object.values(raw).filter(p=>p&&p.id);passes.sort((a,b)=>((b.date||'')+(b.time||'')).localeCompare((a.date||'')+(a.time||'')));}
       S.passes=passes;saveLocal();renderAll();
     } else {
       await _gpMigratePasses();
     }
-    // Fetch _cfg separately (infrequent)
     try{const cr=await fetch(`${cfg.url}/${cfg.code}/_cfg.json`);if(cr.ok){const c=await cr.json();gpApplyRemoteCfg(c);}}catch(e){}
     setSS('ok');
   }catch{setSS('err');}
@@ -3904,6 +3932,7 @@ async function issuePass(){
   const pass={id:uid(),date:todayStr(),time:nowT(),gateOutTime:null,studentName:cpSel.name,admissionNumber:cpSel.admissionNumber,class:cpSel.class||'',fatherName:cpSel.fatherName||'',motherName:cpSel.motherName||'',address:cpSel.address||'',pickedUpBy:by,relation:document.getElementById('cprel').value,reason:document.getElementById('cpreason').value.trim(),busNumber:document.getElementById('cpbus').value||cpSel.busNumber||'',pickerPhoto:photo};
   S.passes.unshift(pass);
   if(pass.pickerPhoto)_photoCache.set(pass.id,pass.pickerPhoto);
+  _gpMaybeAutoDownload(pass);
   await pushOnePass(pass);
   gpToast(`✅ Pass issued for ${pass.studentName}`);
   if(_gpPrintCfg.enabled!==false)gpPrintA6Slip(pass);
@@ -4303,7 +4332,16 @@ function cfmD(id){document.getElementById('dc-'+id).classList.add('show');}
 async function delPass(id){
   if(!confirm('Delete this gate pass record? This cannot be undone.'))return;
   const pass=S.passes.find(p=>p.id===id);
-  if(pass&&TGCfg.enabled&&pass.tgMsgId) deleteTGMessage(TGCfg.token,TGCfg.chatId,pass.tgMsgId);
+  if(pass&&TGCfg.enabled){
+    const ids=TGCfg.chatIds&&TGCfg.chatIds.length?TGCfg.chatIds:(TGCfg.chatId?[TGCfg.chatId]:[]);
+    if(pass.tgMsgIds){
+      // Delete from each chat using its own message ID
+      Object.entries(pass.tgMsgIds).forEach(([cid,mid])=>deleteTGMessage(TGCfg.token,cid,mid));
+    } else if(pass.tgMsgId){
+      // Legacy: try all chats with the single stored msgId
+      ids.forEach(cid=>deleteTGMessage(TGCfg.token,cid,pass.tgMsgId));
+    }
+  }
   S.passes=S.passes.filter(p=>p.id!==id);
   await deletePassFB(id);
   gpToast('🗑 Pass deleted','err');
@@ -4330,6 +4368,14 @@ async function execDel(){
   var exited=ids.filter(function(id){var p=S.passes.find(function(p){return p.id===id;});return !!(p&&p.gateOutTime);}).length;
   var msg='Delete '+ids.length+' record'+(ids.length>1?'s':'')+(exited?' ('+exited+' already exited)':'')+' — cannot be undone?';
   if(!confirm(msg))return;
+  if(TGCfg.enabled){
+    const tgIds=TGCfg.chatIds&&TGCfg.chatIds.length?TGCfg.chatIds:(TGCfg.chatId?[TGCfg.chatId]:[]);
+    ids.forEach(id=>{
+      const p=S.passes.find(x=>x.id===id);if(!p)return;
+      if(p.tgMsgIds){Object.entries(p.tgMsgIds).forEach(([cid,mid])=>deleteTGMessage(TGCfg.token,cid,mid));}
+      else if(p.tgMsgId){tgIds.forEach(cid=>deleteTGMessage(TGCfg.token,cid,p.tgMsgId));}
+    });
+  }
   S.passes=S.passes.filter(function(p){return ids.indexOf(p.id)===-1;});
   await Promise.all(ids.map(id=>deletePassFB(id)));
   gpToast(ids.length+' record'+(ids.length>1?'s':'')+' deleted','err');
@@ -4696,8 +4742,10 @@ function gpLoadPrintCfg(){
   if(dir)dir.checked=!!_gpPrintCfg.direct;
   gpApplyLogoPosButtons(_gpPrintCfg.logoPos||'left');
   const enEl=document.getElementById('gp-print-enabled');if(enEl)enEl.checked=_gpPrintCfg.enabled!==false;
+  gpLoadAutoDLSetting();
   const bwEl=document.getElementById('gp-print-bw');if(bwEl)bwEl.checked=!!_gpPrintCfg.bw;
   const phEl=document.getElementById('gp-print-photo');if(phEl)phEl.checked=!!_gpPrintCfg.printPhoto;
+  const alEl=document.getElementById('gp-auto-load-photo');if(alEl)alEl.checked=!!_gpPrintCfg.autoLoadPhoto;
   const sigHEl=document.getElementById('gp-sig-h');if(sigHEl)sigHEl.value=_gpPrintCfg.sigH||9;
   const sigWEl=document.getElementById('gp-sig-w');if(sigWEl)sigWEl.value=_gpPrintCfg.sigW||22;
   _updateSigPreview();
@@ -4746,6 +4794,14 @@ async function _loadPassPhoto(id){
     p.pickerPhoto=photo; // cache in memory
     if(el){const img=document.createElement('img');img.src=photo;img.style.cssText='max-height:80px;border-radius:6px;display:block;margin-top:6px';el.replaceWith(img);}
   }else{if(el)el.textContent='📷 Photo not available';}
+}
+
+// Auto-fetch photo when new pass arrives (if this device has autoLoadPhoto enabled)
+async function _gpMaybeAutoDownload(p){
+  if(!_gpPrintCfg.autoLoadPhoto)return;
+  if(!p||p.pickerPhoto!==null)return; // already resolved or no photo
+  const photo=await _resolvePhotoAsync(p);
+  if(photo){p.pickerPhoto=photo;saveLocal();}
 }
 
 async function gpPrintPassById(id){
@@ -4820,8 +4876,8 @@ function gpPrintA6Slip(p){
     +'/* @page handled in body style */'
     +'*{box-sizing:border-box;margin:0;padding:0}'
     +(_gpPrintCfg.bw?'body,*{color:#000!important;background:#fff!important;border-color:#555!important}':'')+'*{-webkit-print-color-adjust:exact;print-color-adjust:exact}'
-    +(()=>{const lp=_gpPrintCfg.logoPos||'left';let bodyStyle='@page{size:'+pageDecl+';margin:0}body{width:'+cW+';min-height:'+cH+';font-family:"Segoe UI",Arial,sans-serif;color:#1a1035;background:#fff;';if(lp==='center')bodyStyle+='margin:0 auto;}';else if(lp==='right')bodyStyle+='margin-left:auto;margin-right:0;}';else bodyStyle+='margin:0;}';return bodyStyle;})()
-    +'.wrap{width:'+cW+';min-height:'+cH+';padding:'+pad+';padding-bottom:4mm;display:flex;flex-direction:column;gap:1.5mm}'
+    +(()=>{const lp=_gpPrintCfg.logoPos||'left';let bodyStyle='@page{size:'+pageDecl+';margin:0}body{width:'+cW+';height:'+cH+';font-family:"Segoe UI",Arial,sans-serif;color:#1a1035;background:#fff;overflow:hidden;';if(lp==='center')bodyStyle+='margin:0 auto;}';else if(lp==='right')bodyStyle+='margin-left:auto;margin-right:0;}';else bodyStyle+='margin:0;}';return bodyStyle;})()
+    +'.wrap{width:'+cW+';height:'+cH+';padding:'+pad+';padding-bottom:4mm;display:flex;flex-direction:column;gap:1.5mm;overflow:hidden}'
     +'.top{display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:3mm}'
     +'.divider{border:none;border-top:2px solid #7c3aed;margin:0;width:100%}'
     +'.school{font-size:'+fSub+'pt;font-weight:900;color:#7c3aed;letter-spacing:.8px;text-transform:uppercase}'
@@ -6794,11 +6850,19 @@ async function sendToTelegramLog(pass){
       return {chatId,msgId};
     }));
 
-    // Save first successful msgId (used for delete/approve)
-    const firstOk=results.find(r=>r.status==='fulfilled');
-    const msgId=firstOk?firstOk.value.msgId:null;
+    // Save msgId per chatId so we can delete from all chats later
+    const tgMsgIds={};
+    results.forEach(r=>{if(r.status==='fulfilled'&&r.value.msgId)tgMsgIds[r.value.chatId]=r.value.msgId;});
+    const firstMsgId=Object.values(tgMsgIds)[0]||null;
     const failCount=results.filter(r=>r.status==='rejected').length;
-    if(msgId){const pidx=S.passes.findIndex(p=>p.id===pass.id);if(pidx>-1){S.passes[pidx].tgMsgId=msgId;patchPassFields(pass.id,{tgMsgId:msgId});}}
+    if(Object.keys(tgMsgIds).length){
+      const pidx=S.passes.findIndex(p=>p.id===pass.id);
+      if(pidx>-1){
+        S.passes[pidx].tgMsgId=firstMsgId; // legacy single field
+        S.passes[pidx].tgMsgIds=tgMsgIds;  // new: all chats
+        patchPassFields(pass.id,{tgMsgId:firstMsgId,tgMsgIds});
+      }
+    }
     const okCount=results.length-failCount;
     if(_resolvePhoto(pass))gpToast('\u2708\ufe0f Gate pass photo sent to Admin'+(okCount>1?' ('+okCount+' chats)':''));
     else gpToast('\u2708\ufe0f Gate pass logged to Telegram'+(okCount>1?' ('+okCount+' chats)':''));
@@ -8038,10 +8102,57 @@ function gpSavePrintEnabled(){
   _gpSavePrintCfg();
   gpToast(_gpPrintCfg.enabled?'Auto-print enabled':'Auto-print disabled');
 }
+function gpSaveAutoDLPhoto(){
+  const v=document.getElementById('gp-auto-dl-photo')?.checked||false;
+  localStorage.setItem('gp_auto_dl_photo',v?'1':'0');
+  gpToast(v?'📥 Auto-download enabled for this device':'Auto-download disabled');
+}
+
+function gpIsAutoDL(){return localStorage.getItem('gp_auto_dl_photo')==='1';}
+
+// Load auto-dl setting into checkbox
+function gpLoadAutoDLSetting(){
+  const el=document.getElementById('gp-auto-dl-photo');
+  if(el)el.checked=gpIsAutoDL();
+}
+
+// Download a photo blob to device as file
+function gpAutoDownloadPhoto(pass,photoDataUrl){
+  if(!photoDataUrl||photoDataUrl==='__has_photo')return;
+  try{
+    const ext=(photoDataUrl.match(/data:[^/]+\/([^;]+)/)||[])[1]||'jpg';
+    const name=`GP_${pass.studentName||pass.admissionNumber||pass.id}_${(pass.date||'').replace(/-/g,'')}_${(pass.time||'').replace(/:/g,'').replace(/\s/g,'')}.${ext}`;
+    const a=document.createElement('a');
+    a.href=photoDataUrl;
+    a.download=name;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(()=>document.body.removeChild(a),500);
+  }catch(e){}
+}
+
+// Called after a pass is received via SSE/polling — auto-dl photo if enabled
+async function _gpMaybeAutoDownload(pass){
+  if(!gpIsAutoDL())return;
+  if(!pass.pickerPhoto&&pass.pickerPhoto!=='__has_photo')return;
+  let photo=_resolvePhoto(pass);
+  if(!photo&&pass.pickerPhoto==='__has_photo'){
+    photo=await _resolvePhotoAsync(pass);
+    if(photo)pass.pickerPhoto=photo;
+  }
+  if(photo)gpAutoDownloadPhoto(pass,photo);
+}
+
 function gpSavePrintPhoto(){
   const el=document.getElementById('gp-print-photo');
   _gpPrintCfg.printPhoto=el?el.checked:false;
   _gpSavePrintCfg();
+}
+function gpSaveAutoLoadPhoto(){
+  const el=document.getElementById('gp-auto-load-photo');
+  _gpPrintCfg.autoLoadPhoto=el?el.checked:false;
+  _gpSavePrintCfg();
+  gpToast(_gpPrintCfg.autoLoadPhoto?'📷 Auto-load ON — photos will fetch automatically on new passes':'Auto-load OFF');
 }
 let _gpSignatureData='';
 function loadSignature(){
