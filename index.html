@@ -4334,23 +4334,23 @@ async function delPass(id){
   const pass=S.passes.find(p=>p.id===id);
   if(pass&&TGCfg.enabled&&TGCfg.token){
     const chatIds=TGCfg.chatIds&&TGCfg.chatIds.length?TGCfg.chatIds:(TGCfg.chatId?[TGCfg.chatId]:[]);
+    // Debug: show what we have
+    gpToast(`TG debug — chatIds:${chatIds.length} tgMsgId:${pass.tgMsgId||'none'} tgMsgIds:${pass.tgMsgIds?Object.keys(pass.tgMsgIds).length:'none'}`,'inf');
     if(!chatIds.length){gpToast('⚠️ No TG chat ID configured','err');}
     else{
       let deleted=0;
       if(pass.tgMsgIds&&Object.keys(pass.tgMsgIds).length){
-        // New format: each chat has its own message ID
-        await Promise.all(Object.entries(pass.tgMsgIds).map(async([cid,mid])=>{
-          await deleteTGMessage(TGCfg.token,cid,mid);deleted++;
-        }));
+        const results=await Promise.all(Object.entries(pass.tgMsgIds).map(([cid,mid])=>deleteTGMessage(TGCfg.token,cid,mid)));
+        deleted=results.filter(Boolean).length;
       } else if(pass.tgMsgId){
-        // Legacy: same msgId tried against all configured chats
-        await Promise.all(chatIds.map(async cid=>{
-          await deleteTGMessage(TGCfg.token,cid,pass.tgMsgId);deleted++;
-        }));
+        const results=await Promise.all(chatIds.map(cid=>deleteTGMessage(TGCfg.token,cid,pass.tgMsgId)));
+        deleted=results.filter(Boolean).length;
       } else {
-        gpToast('ℹ️ No TG message ID on this pass (may not have been sent)','inf');
+        gpToast('ℹ️ Pass has no TG msgId — was TG enabled when it was issued?','inf');
       }
-      if(deleted)gpToast(`🗑 Removed from ${deleted} TG chat${deleted>1?'s':''}`);}
+      if(deleted)gpToast(`✅ Removed from ${deleted} TG chat${deleted>1?'s':''}`);
+      else if(pass.tgMsgId||pass.tgMsgIds)gpToast('⚠️ TG delete failed — check console','err');
+    }
   }
   S.passes=S.passes.filter(p=>p.id!==id);
   await deletePassFB(id);
@@ -4925,7 +4925,7 @@ function gpPrintA6Slip(p){
     +'<div class="box" style="overflow:hidden;max-height:11mm"><div class="lbl">Address</div><div style="font-size:6pt;font-weight:500;color:#1a1035;margin-top:.4mm;white-space:pre-wrap;word-break:break-word;line-height:1.3;overflow:hidden">'+xEsc(p.address||'—')+'</div></div>'
     +'</div>'
     +(p.reason?'<div class="rsn"><span style="font-weight:400;text-transform:uppercase;font-size:5.5pt;letter-spacing:.5px;color:#92400e">Reason: </span><b>'+xEsc(p.reason)+'</b></div>':'')
-    +(_gpPrintCfg.printPhoto&&_resolvePhoto(p)?'<div style="margin:1mm 0;border:2px solid #c9bdf0;border-radius:6px;overflow:hidden;background:#f9f7ff;padding:2mm"><img src="'+_resolvePhoto(p)+'" style="width:100%;height:28mm;object-fit:cover;display:block;border-radius:3px"></div>':'')
+    +(_gpPrintCfg.printPhoto&&_resolvePhoto(p)?'<div style="margin:1mm 0;border:2px solid #c9bdf0;border-radius:6px;overflow:hidden;background:#fff;padding:2mm"><img src="'+_resolvePhoto(p)+'" style="width:100%;height:28mm;object-fit:contain;display:block"></div>':'')
     +'<div class="spacer"></div>'
     +'<div class="foot">'
     +'<div class="fi"><div class="fv">'+xEsc(gpFmtPrintDate(p.date))+'</div><div class="fl">Date</div></div>'
