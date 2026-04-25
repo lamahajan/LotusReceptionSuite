@@ -3333,8 +3333,34 @@ function _gpSSEput(ev){
 function _gpSSEpatch(ev){
   try{
     const d=JSON.parse(ev.data);
+    const path=d.path||'/';
     const updates=d.data;
-    if(!updates)return;
+    if(updates===undefined||updates===null)return;
+
+    // Case 1: path is "/{passId}" — Firebase sent update for one specific pass
+    if(path!=='/'&&path.split('/').length===2){
+      const passId=path.replace('/','');
+      const idx=S.passes.findIndex(p=>p.id===passId);
+      if(updates===null){
+        // Deleted
+        if(idx>-1)S.passes.splice(idx,1);
+      } else if(idx>-1){
+        // Update existing
+        const v=updates;
+        if(v.pickerPhoto==='__has_photo'&&S.passes[idx].pickerPhoto&&S.passes[idx].pickerPhoto!=='__has_photo')
+          updates.pickerPhoto=S.passes[idx].pickerPhoto;
+        Object.assign(S.passes[idx],updates);
+      } else {
+        // New pass from another device
+        const np={...updates};
+        if(np.pickerPhoto==='__has_photo')np.pickerPhoto=null;
+        S.passes.unshift(np);
+      }
+      saveLocal();renderAll();setSS('ok');
+      return;
+    }
+
+    // Case 2: path is "/" — bulk update, data is {passId: passObj, ...}
     if(typeof updates==='object'&&!Array.isArray(updates)){
       Object.entries(updates).forEach(([k,v])=>{
         const byId=S.passes.findIndex(p=>p.id===k);
@@ -3347,6 +3373,7 @@ function _gpSSEpatch(ev){
           }
           return;
         }
+        // Legacy numeric index
         const i=parseInt(k,10);
         if(!isNaN(i)){
           if(v===null){S.passes.splice(i,1);}
