@@ -3462,9 +3462,12 @@ async function _gpStuSSEput(ev){
     S.students.forEach(s=>{if(s.admissionNumber)map[String(s.admissionNumber).trim()]=s;});
     remote.forEach(rs=>{
       const adm=(rs.admNo||rs.admissionNumber||'').trim();if(!adm)return;
-      const existingPhone=(map[adm]&&map[adm].phone)||'';
+      const ex=map[adm]||{};
+      const existingPhone=(ex.phone)||'';
+      const existingBus=(ex.busNumber)||'';
       const remotePhone=(rs.phone||rs.mobile||rs.contact||'').replace(/[^0-9]/g,'');
-      map[adm]={name:rs.name||'',admissionNumber:adm,class:rs.cls||rs.class||'',fatherName:rs.fatherName||'',motherName:rs.motherName||'',busNumber:rs.busNumber||rs.bus||'',phone:remotePhone||existingPhone,address:rs.address||map[adm]?.address||''};
+      const remoteBus=(rs.busNumber||rs.bus||'').trim();
+      map[adm]={name:rs.name||ex.name||'',admissionNumber:adm,class:rs.cls||rs.class||ex.class||'',fatherName:rs.fatherName||ex.fatherName||'',motherName:rs.motherName||ex.motherName||'',busNumber:remoteBus||existingBus,phone:remotePhone||existingPhone,address:rs.address||ex.address||''};
     });
     S.students=Object.values(map);
     saveLocal();renderStu();popBusSel();updBadge();
@@ -4384,12 +4387,14 @@ async function gpStuFetchShared(){
     remote.forEach(function(rs){
       var adm=(rs.admNo||rs.admissionNumber||'').trim();
       if(!adm)return;
-      var existingPhone=(map[adm]&&map[adm].phone)||'';
+      var ex=map[adm]||{};
+      var existingPhone=(ex.phone)||'';
+      var existingBus=(ex.busNumber)||'';
       var remotePhone=(rs.phone||rs.mobile||rs.contact||'').replace(/[^0-9]/g,'');
-      map[adm]={name:rs.name||'',admissionNumber:adm,class:rs.cls||rs.class||'',fatherName:rs.fatherName||'',motherName:rs.motherName||'',busNumber:rs.busNumber||rs.bus||'',phone:remotePhone||existingPhone,address:rs.address||map[adm]?.address||''};
+      var remoteBus=(rs.busNumber||rs.bus||'').trim();
+      map[adm]={name:rs.name||ex.name||'',admissionNumber:adm,class:rs.cls||rs.class||ex.class||'',fatherName:rs.fatherName||ex.fatherName||'',motherName:rs.motherName||ex.motherName||'',busNumber:remoteBus||existingBus,phone:remotePhone||existingPhone,address:rs.address||ex.address||''};
     });
     S.students=Object.values(map);
-    gpStuLocalMod=sm;
     saveLocal();renderStu();popBusSel();updBadge();
     // Also sync into ref register
     syncGpStudentsToRef();
@@ -4397,8 +4402,25 @@ async function gpStuFetchShared(){
 }
 async function gpStuPushShared(){
   if(!gpStuCfg.url||!gpStuCfg.code)return;
-  var sVal=S.students.length===0?{'__empty':true}:S.students;
-  try{await fetch(gpStuCfg.url+'/'+gpStuCfg.code+'/students.json',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(sVal)});}catch(e){}
+  // Normalize: write both field name conventions so both apps can read correctly
+  const normalized=S.students.map(s=>({
+    admNo:s.admissionNumber||s.admNo||'',
+    admissionNumber:s.admissionNumber||s.admNo||'',
+    name:s.name||'',
+    cls:s.class||s.cls||'',
+    class:s.class||s.cls||'',
+    fatherName:s.fatherName||'',
+    motherName:s.motherName||'',
+    busNumber:s.busNumber||'',
+    bus:s.busNumber||'',
+    phone:s.phone||'',
+    address:s.address||''
+  }));
+  const sVal=normalized.length===0?{'__empty':true}:normalized;
+  try{
+    await fetch(gpStuCfg.url+'/'+gpStuCfg.code+'/students.json',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(sVal)});
+    fetch(gpStuCfg.url+'/'+gpStuCfg.code+'/lastMod.json',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(Date.now())}).catch(()=>{});
+  }catch(e){}
 }
 
 // ═══ GATEPASS WHATSAPP ═══
@@ -6258,9 +6280,24 @@ function syncRefStudentsToGp(){
 }
 async function fbStuPush(){
   const lastMod=Date.now();fbStuLocalMod=lastMod;saveLocal();
-  syncRefStudentsToGp(); // keep gatepass in sync
+  syncRefStudentsToGp();
   if(!fbStuCfg.url||!fbStuCfg.code)return;
-  const sVal=STUDENTS.length===0?{'__empty':true}:STUDENTS;
+  // Normalize field names so both Gatepass and Ref Register can read correctly
+  const normalized=STUDENTS.map(s=>({
+    admNo:s.admNo||s.admissionNumber||'',
+    admissionNumber:s.admNo||s.admissionNumber||'',
+    id:s.id||'',
+    name:s.name||'',
+    cls:s.cls||s.class||'',
+    class:s.cls||s.class||'',
+    fatherName:s.fatherName||'',
+    motherName:s.motherName||'',
+    busNumber:s.busNumber||s.bus||'',
+    bus:s.busNumber||s.bus||'',
+    phone:s.phone||'',
+    address:s.address||''
+  }));
+  const sVal=normalized.length===0?{'__empty':true}:normalized;
   try{await fetch(`${fbStuCfg.url}/${fbStuCfg.code}.json`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({students:sVal,lastMod})});}catch(e){}
 }
 function loadFBStuCfg(){document.getElementById('fb-stu-url').value=localStorage.getItem('ref_fb_stu_url')||'';document.getElementById('fb-stu-code').value=localStorage.getItem('ref_fb_stu_code')||'';}
