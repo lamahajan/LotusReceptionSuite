@@ -4332,15 +4332,25 @@ function cfmD(id){document.getElementById('dc-'+id).classList.add('show');}
 async function delPass(id){
   if(!confirm('Delete this gate pass record? This cannot be undone.'))return;
   const pass=S.passes.find(p=>p.id===id);
-  if(pass&&TGCfg.enabled){
-    const ids=TGCfg.chatIds&&TGCfg.chatIds.length?TGCfg.chatIds:(TGCfg.chatId?[TGCfg.chatId]:[]);
-    if(pass.tgMsgIds){
-      // Delete from each chat using its own message ID
-      Object.entries(pass.tgMsgIds).forEach(([cid,mid])=>deleteTGMessage(TGCfg.token,cid,mid));
-    } else if(pass.tgMsgId){
-      // Legacy: try all chats with the single stored msgId
-      ids.forEach(cid=>deleteTGMessage(TGCfg.token,cid,pass.tgMsgId));
-    }
+  if(pass&&TGCfg.enabled&&TGCfg.token){
+    const chatIds=TGCfg.chatIds&&TGCfg.chatIds.length?TGCfg.chatIds:(TGCfg.chatId?[TGCfg.chatId]:[]);
+    if(!chatIds.length){gpToast('⚠️ No TG chat ID configured','err');}
+    else{
+      let deleted=0;
+      if(pass.tgMsgIds&&Object.keys(pass.tgMsgIds).length){
+        // New format: each chat has its own message ID
+        await Promise.all(Object.entries(pass.tgMsgIds).map(async([cid,mid])=>{
+          await deleteTGMessage(TGCfg.token,cid,mid);deleted++;
+        }));
+      } else if(pass.tgMsgId){
+        // Legacy: same msgId tried against all configured chats
+        await Promise.all(chatIds.map(async cid=>{
+          await deleteTGMessage(TGCfg.token,cid,pass.tgMsgId);deleted++;
+        }));
+      } else {
+        gpToast('ℹ️ No TG message ID on this pass (may not have been sent)','inf');
+      }
+      if(deleted)gpToast(`🗑 Removed from ${deleted} TG chat${deleted>1?'s':''}`);}
   }
   S.passes=S.passes.filter(p=>p.id!==id);
   await deletePassFB(id);
@@ -8188,13 +8198,16 @@ function switchTGSubTab(tab){
 
 // ─── TELEGRAM MESSAGE DELETE (shared helper) ──────────────
 async function deleteTGMessage(token,chatId,msgId){
-  if(!token||!chatId||!msgId)return;
+  if(!token||!chatId||!msgId)return false;
   try{
-    await fetch(`https://api.telegram.org/bot${token}/deleteMessage`,{
+    const r=await fetch(`https://api.telegram.org/bot${token}/deleteMessage`,{
       method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({chat_id:chatId,message_id:msgId})
+      body:JSON.stringify({chat_id:String(chatId),message_id:Number(msgId)})
     });
-  }catch(e){console.error('TG delete error:',e);}
+    const d=await r.json();
+    if(!d.ok)console.warn('TG deleteMessage failed:',d.description,'chatId:',chatId,'msgId:',msgId);
+    return d.ok;
+  }catch(e){console.error('TG delete error:',e);return false;}
 }
 
 // ─── PARENT WHATSAPP DIRECT ───────────────────────────────
