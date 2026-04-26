@@ -3285,7 +3285,33 @@ function mergeRefStudents(){
   }catch(err){console.warn('mergeRefStudents:',err);}
 }
 function saveLocal(){
-  try{localStorage.setItem('gp_local',JSON.stringify({students:S.students,passes:S.passes,buses:S.buses}));}catch(err){}
+  try{
+    // ── STORAGE OPTIMISATION ──
+    // Photos are large (~50-100KB each). Store them ONLY in sessionStorage
+    // (keyed by pass id). localStorage gets just the `__has_photo` marker.
+    // This keeps each pass entry in localStorage at ~500B–2KB.
+    // Budget: 70 passes × 2KB = 140KB localStorage/day — well under 100MB.
+    const passesForStorage=S.passes.map(p=>{
+      if(p.pickerPhoto && p.pickerPhoto!=='__has_photo'){
+        // Cache photo in sessionStorage under this pass id
+        _photoCache.set(p.id, p.pickerPhoto);
+        // Save stripped copy (just marker)
+        return {...p, pickerPhoto:'__has_photo'};
+      }
+      return p;
+    });
+    localStorage.setItem('gp_local',JSON.stringify({
+      students:S.students,
+      passes:passesForStorage,
+      buses:S.buses
+    }));
+  }catch(err){
+    // If storage is still full, retry without photos entirely
+    try{
+      const stripped=S.passes.map(p=>({...p,pickerPhoto:p.pickerPhoto?'__has_photo':null}));
+      localStorage.setItem('gp_local',JSON.stringify({students:S.students,passes:stripped,buses:S.buses}));
+    }catch(e2){}
+  }
 }
 
 // ═══ THEME ═══
@@ -3304,16 +3330,9 @@ function startSync(){
   setSS('ing');
   fetchBuses();
   _gpSSEOpen();
-  // Polling only runs when SSE is NOT connected (fallback)
-  // _gpSSEFail() starts it; SSE open/message stops it
-}
-
-function _gpStartFallbackPoll(){
-  if(syncIv)return; // already running
+  // Polling fallback — runs even when SSE is connected; fetchAll is now cheap
+  // (only fetches /passes.json, no photos, tiny doc) so 6s is fine
   syncIv=setInterval(fetchAll,gpSyncInt()*1000);
-}
-function _gpStopFallbackPoll(){
-  if(syncIv){clearInterval(syncIv);syncIv=null;}
 }
 
 function _gpSSEOpen(){
@@ -3321,15 +3340,15 @@ function _gpSSEOpen(){
   gpSSE=new EventSource(`${cfg.url}/${cfg.code}/passes.json`);
   gpSSE.addEventListener('put',_gpSSEput);
   gpSSE.addEventListener('patch',_gpSSEpatch);
-  gpSSE.addEventListener('keep-alive',()=>{setSS('ok');_gpStopFallbackPoll();});
-  gpSSE.onopen=()=>{setSS('ok');_gpStopFallbackPoll();};
+  gpSSE.addEventListener('keep-alive',()=>setSS('ok'));
   gpSSE.addEventListener('cancel',()=>{setSS('err');_gpSSEFail();});
   gpSSE.onerror=()=>{setSS('err');_gpSSEFail();};
 }
 
 function _gpSSEFail(){
   if(gpSSE){gpSSE.close();gpSSE=null;}
-  _gpStartFallbackPoll(); // SSE down — fall back to polling
+  // Fallback: poll every gpSyncInt() seconds
+  if(!syncIv)syncIv=setInterval(fetchAll,gpSyncInt()*1000);
   fetchAll();
   // Try reconnecting SSE after 30s
   if(!gpSSERetry)gpSSERetry=setTimeout(()=>{gpSSERetry=null;if(!gpSSE)startSync();},30000);
@@ -3356,7 +3375,7 @@ function _gpSSEput(ev){
       passes.sort((a,b)=>((b.date||'')+(b.time||'')).localeCompare((a.date||'')+(a.time||'')));
     }
     if(passes!==null){S.passes=passes;saveLocal();renderAll();}
-    setSS('ok');_gpStopFallbackPoll();
+    setSS('ok');
   }catch(e){}
 }
 
@@ -3858,6 +3877,35 @@ document.addEventListener('click',ev=>{
   if(!ev.target.closest('#qp-modal .sug-wrap'))document.getElementById('qp-by-sug').style.display='none';
 });
 
+// ═══ PHOTO COMPRESSION ═══
+// Target: ≤100KB per photo (keeps 70 passes/day well under 10MB localStorage)
+// Logic: resize to max 400×320 then JPEG at quality 0.42
+function gpCompressPhoto(dataUrl, maxW, maxH, quality){
+  return new Promise(resolve=>{
+    const img=new Image();
+    img.onload=function(){
+      let w=img.naturalWidth, h=img.naturalHeight;
+      // Downscale keeping aspect ratio
+      if(w>maxW||h>maxH){
+        const ratio=Math.min(maxW/w, maxH/h);
+        w=Math.round(w*ratio); h=Math.round(h*ratio);
+      }
+      const c=document.createElement('canvas');
+      c.width=w; c.height=h;
+      c.getContext('2d').drawImage(img,0,0,w,h);
+      resolve(c.toDataURL('image/jpeg', quality));
+    };
+    img.onerror=()=>resolve(dataUrl); // fallback: return original
+    img.src=dataUrl;
+  });
+}
+// Compress and cache photo; returns compressed dataUrl
+async function gpStorePhoto(rawDataUrl){
+  // Max 400×320 @ quality 0.42 → ~50–90KB
+  const compressed=await gpCompressPhoto(rawDataUrl, 400, 320, 0.42);
+  return compressed;
+}
+
 // ═══ CAMERA ═══
 async function openCam(){
   const note=document.getElementById('cam-note'),fup=document.getElementById('file-up');
@@ -3883,58 +3931,46 @@ async function openCam(){
   }
   note.textContent='⚠️ Camera not supported.';note.style.display='block';fup.style.display='block';
 }
-function capPhoto(){
-  const v=document.getElementById('cam-vid');
-  const MAX=800;
-  let sw=v.videoWidth||640,sh=v.videoHeight||480;
-  if(sw>MAX){sh=Math.round(sh*MAX/sw);sw=MAX;}
-  const c=document.createElement('canvas');c.width=sw;c.height=sh;
-  c.getContext('2d').drawImage(v,0,0,sw,sh);
-  photo=c.toDataURL('image/jpeg',0.65);
-  stopCam();document.getElementById('phimg').src=photo;document.getElementById('phprev').style.display='inline-block';
+async function capPhoto(){
+  const vid=document.getElementById('cam-vid');
+  const c=document.createElement('canvas');
+  c.width=vid.videoWidth||640; c.height=vid.videoHeight||480;
+  c.getContext('2d').drawImage(vid,0,0);
+  // Compress immediately: camera frames can be 1-5MB raw
+  photo=await gpCompressPhoto(c.toDataURL('image/jpeg',0.85), 400, 320, 0.42);
+  stopCam();
+  document.getElementById('phimg').src=photo;
+  document.getElementById('phprev').style.display='inline-block';
 }
 function stopCam(){if(camStream){camStream.getTracks().forEach(t=>t.stop());camStream=null;}document.getElementById('cam-wrap').style.display='none';document.getElementById('cam-ctrl').style.display='none';document.getElementById('cam-btn').style.display='block';}
 function filePhoto(ev){
   const f=ev.target.files[0];if(!f)return;
   const r=new FileReader();
-  r.onload=e2=>{
+  r.onload=async e2=>{
     const dataUrl=e2.target.result;
     const img=new Image();
-    img.onload=function(){
-      // Read EXIF orientation from raw bytes to auto-rotate portrait shots
+    img.onload=async function(){
+      // Read EXIF orientation then compress
       let orientation=1;
       try{
         const arr=new Uint8Array(ev.target._rawBuf||[]);
         if(arr[0]===0xFF&&arr[1]===0xD8){
           let i=2;while(i<arr.length-1){if(arr[i]===0xFF&&arr[i+1]===0xE1){const len=(arr[i+2]<<8)|arr[i+3];const seg=arr.slice(i+4,i+4+len);const te=new TextDecoder('ascii',{fatal:false}).decode(seg.slice(0,4));if(te==='Exif'){const little=seg[6]===0x49;const get16=(o)=>little?(seg[o+1]<<8)|seg[o]:(seg[o]<<8)|seg[o+1];const get32=(o)=>little?(seg[o+3]<<24|seg[o+2]<<16|seg[o+1]<<8|seg[o])>>>0:(seg[o]<<24|seg[o+1]<<16|seg[o+2]<<8|seg[o+3])>>>0;const ifdOff=get32(10)+8;const entries=get16(ifdOff);for(let j=0;j<entries;j++){const tag=get16(ifdOff+2+j*12);if(tag===0x0112){orientation=get16(ifdOff+2+j*12+8);break;}}}break;}i+=(arr[i+2]<<8)|arr[i+3];i+=2;}}
       }catch(ex){}
-      const MAX_PX=800;
-      let w=img.naturalWidth,h=img.naturalHeight;
-      // Scale down to max 800px on longest side
-      if(w>MAX_PX||h>MAX_PX){const s=MAX_PX/Math.max(w,h);w=Math.round(w*s);h=Math.round(h*s);}
+      const w=img.naturalWidth,h=img.naturalHeight;
       const swapped=orientation>=5&&orientation<=8;
       const c=document.createElement('canvas');
       c.width=swapped?h:w;c.height=swapped?w:h;
       const ctx=c.getContext('2d');
-      // Apply EXIF transform
-      switch(orientation){
-        case 2:ctx.transform(-1,0,0,1,w,0);break;
-        case 3:ctx.transform(-1,0,0,-1,w,h);break;
-        case 4:ctx.transform(1,0,0,-1,0,h);break;
-        case 5:ctx.transform(0,1,1,0,0,0);break;
-        case 6:ctx.transform(0,1,-1,0,h,0);break;
-        case 7:ctx.transform(0,-1,-1,0,h,w);break;
-        case 8:ctx.transform(0,-1,1,0,0,w);break;
-        default:break;
-      }
-      ctx.drawImage(img,0,0,c.width,c.height);
-      photo=c.toDataURL('image/jpeg',0.65);
+      switch(orientation){case 2:ctx.transform(-1,0,0,1,w,0);break;case 3:ctx.transform(-1,0,0,-1,w,h);break;case 4:ctx.transform(1,0,0,-1,0,h);break;case 5:ctx.transform(0,1,1,0,0,0);break;case 6:ctx.transform(0,1,-1,0,h,0);break;case 7:ctx.transform(0,-1,-1,0,h,w);break;case 8:ctx.transform(0,-1,1,0,0,w);break;default:break;}
+      ctx.drawImage(img,0,0);
+      // Compress: max 400×320 @ quality 0.42 → ~50–90KB
+      photo=await gpCompressPhoto(c.toDataURL('image/jpeg',0.85), 400, 320, 0.42);
       document.getElementById('phimg').src=photo;
       document.getElementById('phprev').style.display='inline-block';
     };
     img.src=dataUrl;
   };
-  // Also read as ArrayBuffer in parallel for EXIF parsing
   const r2=new FileReader();
   r2.onload=e3=>{ev.target._rawBuf=new Uint8Array(e3.target.result);};
   r2.readAsArrayBuffer(f);
