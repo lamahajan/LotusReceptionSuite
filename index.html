@@ -1451,16 +1451,7 @@ Reason: {reason}"></textarea>
               </div>
             </label>
           </div>
-          <!-- Auto-download photo -->
-          <div style="background:var(--bg3);border:1.5px solid var(--border);border-radius:var(--rs);padding:11px 13px;margin-bottom:10px">
-            <label style="display:flex;align-items:center;gap:9px;cursor:pointer">
-              <input type="checkbox" id="gp-auto-dl-photo" style="accent-color:var(--green);width:16px;height:16px" onchange="gpSaveAutoDLPhoto()">
-              <div>
-                <div style="font-size:13px;font-weight:700;color:var(--text)">📥 Auto-download picker photo</div>
-                <div style="font-size:11px;color:var(--muted);margin-top:1px">This device will auto-save the photo to Downloads when a pass is issued or synced</div>
-              </div>
-            </label>
-          </div>
+
           <!-- Principal signature -->
           <div style="background:var(--bg3);border:1.5px solid var(--border);border-radius:var(--rs);padding:11px 13px;margin-bottom:12px">
             <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:6px">✍️ Principal Signature</div>
@@ -3284,18 +3275,44 @@ function mergeRefStudents(){
     if(added||updated)console.log('Gatepass: +'+added+' new, '+updated+' updated from Ref Register');
   }catch(err){console.warn('mergeRefStudents:',err);}
 }
+// ── LOCAL-FIRST DELTA SYNC HELPERS ──────────────────────────────────────────
+// Only keep passes from the last PASS_RETAIN_DAYS days in localStorage.
+// Firebase is the source of truth for older records; local storage is a cache.
+const PASS_RETAIN_DAYS=30;
+function _cutoffDate(){
+  const d=new Date();d.setDate(d.getDate()-PASS_RETAIN_DAYS);
+  return d.toISOString().slice(0,10); // "YYYY-MM-DD"
+}
+function pruneOldPasses(passes){
+  const cutoff=_cutoffDate();
+  return passes.filter(p=>(p.date||'')>=cutoff);
+}
+// Merge fetched passes (from Firebase) into existing local array.
+// For each fetched pass: update or add. Local passes outside the fetched date
+// range are kept as-is (they won't change — they're old/closed passes).
+function _mergePasses(localPasses,fetchedPasses){
+  const cutoff=_cutoffDate();
+  // Keep local passes that are older than cutoff (not in Firebase fetch range)
+  const oldLocal=localPasses.filter(p=>(p.date||'')<cutoff);
+  // Build a map of fetched passes by id for fast lookup
+  const fetchedMap=new Map(fetchedPasses.map(p=>[p.id,p]));
+  // For recent local passes: if also in fetchedMap, fetched wins; else keep local
+  const recentLocal=localPasses.filter(p=>(p.date||'')>=cutoff);
+  const recentMerged=recentLocal.filter(p=>!fetchedMap.has(p.id)); // local-only (e.g. just issued)
+  // Combine: old local + fetched recent + any local-only recent
+  const merged=[...oldLocal,...fetchedPasses,...recentMerged];
+  merged.sort((a,b)=>((b.date||'')+(b.time||'')).localeCompare((a.date||'')+(a.time||'')));
+  return merged;
+}
+
 function saveLocal(){
   try{
     // ── STORAGE OPTIMISATION ──
-    // Photos are large (~50-100KB each). Store them ONLY in sessionStorage
-    // (keyed by pass id). localStorage gets just the `__has_photo` marker.
-    // This keeps each pass entry in localStorage at ~500B–2KB.
-    // Budget: 70 passes × 2KB = 140KB localStorage/day — well under 100MB.
-    const passesForStorage=S.passes.map(p=>{
+    // 1. Strip photos into sessionStorage (only marker saved in localStorage)
+    // 2. Prune passes older than PASS_RETAIN_DAYS — Firebase has the full history
+    const passesForStorage=pruneOldPasses(S.passes).map(p=>{
       if(p.pickerPhoto && p.pickerPhoto!=='__has_photo'){
-        // Cache photo in sessionStorage under this pass id
         _photoCache.set(p.id, p.pickerPhoto);
-        // Save stripped copy (just marker)
         return {...p, pickerPhoto:'__has_photo'};
       }
       return p;
@@ -3306,9 +3323,8 @@ function saveLocal(){
       buses:S.buses
     }));
   }catch(err){
-    // If storage is still full, retry without photos entirely
     try{
-      const stripped=S.passes.map(p=>({...p,pickerPhoto:p.pickerPhoto?'__has_photo':null}));
+      const stripped=pruneOldPasses(S.passes).map(p=>({...p,pickerPhoto:p.pickerPhoto?'__has_photo':null}));
       localStorage.setItem('gp_local',JSON.stringify({students:S.students,passes:stripped,buses:S.buses}));
     }catch(e2){}
   }
@@ -3404,7 +3420,6 @@ function _gpSSEpatch(ev){
         const np={...updates};
         if(np.pickerPhoto==='__has_photo')np.pickerPhoto=null;
         S.passes.unshift(np);
-        _gpMaybeAutoDownload(np); // auto-dl photo if enabled on this device
       }
       saveLocal();renderAll();setSS('ok');
       return;
@@ -3480,11 +3495,21 @@ async function fetchAll(){
     if(!r.ok)throw 0;
     const raw=await r.json();
     if(raw!==null){
-      let passes;
-      if(Array.isArray(raw)){passes=raw;}
-      else if(raw&&raw.__empty){passes=[];}
-      else{passes=Object.values(raw).filter(p=>p&&p.id);passes.sort((a,b)=>((b.date||'')+(b.time||'')).localeCompare((a.date||'')+(a.time||'')));}
-      S.passes=passes;saveLocal();renderAll();
+      let fetched;
+      if(Array.isArray(raw)){fetched=raw;}
+      else if(raw&&raw.__empty){fetched=[];}
+      else{fetched=Object.values(raw).filter(p=>p&&p.id);fetched.sort((a,b)=>((b.date||'')+(b.time||'')).localeCompare((a.date||'')+(a.time||'')));}
+      // ── DELTA MERGE ──
+      // Preserve local passes for photos that are already resolved
+      fetched.forEach(p=>{
+        if(p.pickerPhoto==='__has_photo'){
+          const lp=S.passes.find(x=>x.id===p.id);
+          if(lp&&lp.pickerPhoto&&lp.pickerPhoto!=='__has_photo')p.pickerPhoto=lp.pickerPhoto;
+        }
+      });
+      // Merge: keep local old passes, update/add recent from Firebase
+      S.passes=_mergePasses(S.passes,fetched);
+      saveLocal();renderAll();
     } else {
       await _gpMigratePasses();
     }
@@ -3987,7 +4012,6 @@ async function issuePass(){
   const pass={id:uid(),date:todayStr(),time:nowT(),gateOutTime:null,studentName:cpSel.name,admissionNumber:cpSel.admissionNumber,class:cpSel.class||'',fatherName:cpSel.fatherName||'',motherName:cpSel.motherName||'',address:cpSel.address||'',pickedUpBy:by,relation:document.getElementById('cprel').value,reason:document.getElementById('cpreason').value.trim(),busNumber:document.getElementById('cpbus').value||cpSel.busNumber||'',pickerPhoto:photo};
   S.passes.unshift(pass);
   if(pass.pickerPhoto)_photoCache.set(pass.id,pass.pickerPhoto);
-  _gpMaybeAutoDownload(pass);
   await pushOnePass(pass);
   gpToast(`✅ Pass issued for ${pass.studentName}`);
   if(_gpPrintCfg.enabled!==false)gpPrintA6Slip(pass);
@@ -4805,7 +4829,6 @@ function gpLoadPrintCfg(){
   if(dir)dir.checked=!!_gpPrintCfg.direct;
   gpApplyLogoPosButtons(_gpPrintCfg.logoPos||'left');
   const enEl=document.getElementById('gp-print-enabled');if(enEl)enEl.checked=_gpPrintCfg.enabled!==false;
-  gpLoadAutoDLSetting();
   const bwEl=document.getElementById('gp-print-bw');if(bwEl)bwEl.checked=!!_gpPrintCfg.bw;
   const phEl=document.getElementById('gp-print-photo');if(phEl)phEl.checked=!!_gpPrintCfg.printPhoto;
   const alEl=document.getElementById('gp-auto-load-photo');if(alEl)alEl.checked=!!_gpPrintCfg.autoLoadPhoto;
@@ -4857,22 +4880,6 @@ async function _loadPassPhoto(id){
     p.pickerPhoto=photo; // cache in memory
     if(el){const img=document.createElement('img');img.src=photo;img.style.cssText='max-height:80px;border-radius:6px;display:block;margin-top:6px';el.replaceWith(img);}
   }else{if(el)el.textContent='📷 Photo not available';}
-}
-
-// Auto-fetch photo when new pass arrives (if this device has autoLoadPhoto enabled)
-async function _gpMaybeAutoDownload(p){
-  if(!_gpPrintCfg.autoLoadPhoto)return;
-  if(!p||p.pickerPhoto!==null)return; // already resolved or no photo
-  const photo=await _resolvePhotoAsync(p);
-  if(photo){p.pickerPhoto=photo;saveLocal();}
-}
-
-// Auto-fetch photo when new pass arrives (if this device has autoLoadPhoto enabled)
-async function _gpMaybeAutoDownload(p){
-  if(!_gpPrintCfg.autoLoadPhoto)return;
-  if(!p||p.pickerPhoto!==null)return; // already resolved or no photo
-  const photo=await _resolvePhotoAsync(p);
-  if(photo){p.pickerPhoto=photo;saveLocal();}
 }
 
 // ═══ MONTHLY EMAIL REPORT ═══
@@ -8241,46 +8248,6 @@ function gpSavePrintEnabled(){
   _gpPrintCfg.enabled=el?el.checked:true;
   _gpSavePrintCfg();
   gpToast(_gpPrintCfg.enabled?'Auto-print enabled':'Auto-print disabled');
-}
-function gpSaveAutoDLPhoto(){
-  const v=document.getElementById('gp-auto-dl-photo')?.checked||false;
-  localStorage.setItem('gp_auto_dl_photo',v?'1':'0');
-  gpToast(v?'📥 Auto-download enabled for this device':'Auto-download disabled');
-}
-
-function gpIsAutoDL(){return localStorage.getItem('gp_auto_dl_photo')==='1';}
-
-// Load auto-dl setting into checkbox
-function gpLoadAutoDLSetting(){
-  const el=document.getElementById('gp-auto-dl-photo');
-  if(el)el.checked=gpIsAutoDL();
-}
-
-// Download a photo blob to device as file
-function gpAutoDownloadPhoto(pass,photoDataUrl){
-  if(!photoDataUrl||photoDataUrl==='__has_photo')return;
-  try{
-    const ext=(photoDataUrl.match(/data:[^/]+\/([^;]+)/)||[])[1]||'jpg';
-    const name=`GP_${pass.studentName||pass.admissionNumber||pass.id}_${(pass.date||'').replace(/-/g,'')}_${(pass.time||'').replace(/:/g,'').replace(/\s/g,'')}.${ext}`;
-    const a=document.createElement('a');
-    a.href=photoDataUrl;
-    a.download=name;
-    document.body.appendChild(a);
-    a.click();
-    setTimeout(()=>document.body.removeChild(a),500);
-  }catch(e){}
-}
-
-// Called after a pass is received via SSE/polling — auto-dl photo if enabled
-async function _gpMaybeAutoDownload(pass){
-  if(!gpIsAutoDL())return;
-  if(!pass.pickerPhoto&&pass.pickerPhoto!=='__has_photo')return;
-  let photo=_resolvePhoto(pass);
-  if(!photo&&pass.pickerPhoto==='__has_photo'){
-    photo=await _resolvePhotoAsync(pass);
-    if(photo)pass.pickerPhoto=photo;
-  }
-  if(photo)gpAutoDownloadPhoto(pass,photo);
 }
 
 function gpSavePrintPhoto(){
