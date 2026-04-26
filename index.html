@@ -3304,9 +3304,16 @@ function startSync(){
   setSS('ing');
   fetchBuses();
   _gpSSEOpen();
-  // Polling fallback — runs even when SSE is connected; fetchAll is now cheap
-  // (only fetches /passes.json, no photos, tiny doc) so 6s is fine
+  // Polling only runs when SSE is NOT connected (fallback)
+  // _gpSSEFail() starts it; SSE open/message stops it
+}
+
+function _gpStartFallbackPoll(){
+  if(syncIv)return; // already running
   syncIv=setInterval(fetchAll,gpSyncInt()*1000);
+}
+function _gpStopFallbackPoll(){
+  if(syncIv){clearInterval(syncIv);syncIv=null;}
 }
 
 function _gpSSEOpen(){
@@ -3314,15 +3321,15 @@ function _gpSSEOpen(){
   gpSSE=new EventSource(`${cfg.url}/${cfg.code}/passes.json`);
   gpSSE.addEventListener('put',_gpSSEput);
   gpSSE.addEventListener('patch',_gpSSEpatch);
-  gpSSE.addEventListener('keep-alive',()=>setSS('ok'));
+  gpSSE.addEventListener('keep-alive',()=>{setSS('ok');_gpStopFallbackPoll();});
+  gpSSE.onopen=()=>{setSS('ok');_gpStopFallbackPoll();};
   gpSSE.addEventListener('cancel',()=>{setSS('err');_gpSSEFail();});
   gpSSE.onerror=()=>{setSS('err');_gpSSEFail();};
 }
 
 function _gpSSEFail(){
   if(gpSSE){gpSSE.close();gpSSE=null;}
-  // Fallback: poll every gpSyncInt() seconds
-  if(!syncIv)syncIv=setInterval(fetchAll,gpSyncInt()*1000);
+  _gpStartFallbackPoll(); // SSE down — fall back to polling
   fetchAll();
   // Try reconnecting SSE after 30s
   if(!gpSSERetry)gpSSERetry=setTimeout(()=>{gpSSERetry=null;if(!gpSSE)startSync();},30000);
@@ -3349,7 +3356,7 @@ function _gpSSEput(ev){
       passes.sort((a,b)=>((b.date||'')+(b.time||'')).localeCompare((a.date||'')+(a.time||'')));
     }
     if(passes!==null){S.passes=passes;saveLocal();renderAll();}
-    setSS('ok');
+    setSS('ok');_gpStopFallbackPoll();
   }catch(e){}
 }
 
@@ -3876,7 +3883,16 @@ async function openCam(){
   }
   note.textContent='⚠️ Camera not supported.';note.style.display='block';fup.style.display='block';
 }
-function capPhoto(){const v=document.getElementById('cam-vid'),c=document.createElement('canvas');c.width=v.videoWidth||640;c.height=v.videoHeight||480;c.getContext('2d').drawImage(v,0,0);photo=c.toDataURL('image/jpeg',0.75);stopCam();document.getElementById('phimg').src=photo;document.getElementById('phprev').style.display='inline-block';}
+function capPhoto(){
+  const v=document.getElementById('cam-vid');
+  const MAX=800;
+  let sw=v.videoWidth||640,sh=v.videoHeight||480;
+  if(sw>MAX){sh=Math.round(sh*MAX/sw);sw=MAX;}
+  const c=document.createElement('canvas');c.width=sw;c.height=sh;
+  c.getContext('2d').drawImage(v,0,0,sw,sh);
+  photo=c.toDataURL('image/jpeg',0.65);
+  stopCam();document.getElementById('phimg').src=photo;document.getElementById('phprev').style.display='inline-block';
+}
 function stopCam(){if(camStream){camStream.getTracks().forEach(t=>t.stop());camStream=null;}document.getElementById('cam-wrap').style.display='none';document.getElementById('cam-ctrl').style.display='none';document.getElementById('cam-btn').style.display='block';}
 function filePhoto(ev){
   const f=ev.target.files[0];if(!f)return;
@@ -3892,7 +3908,10 @@ function filePhoto(ev){
         if(arr[0]===0xFF&&arr[1]===0xD8){
           let i=2;while(i<arr.length-1){if(arr[i]===0xFF&&arr[i+1]===0xE1){const len=(arr[i+2]<<8)|arr[i+3];const seg=arr.slice(i+4,i+4+len);const te=new TextDecoder('ascii',{fatal:false}).decode(seg.slice(0,4));if(te==='Exif'){const little=seg[6]===0x49;const get16=(o)=>little?(seg[o+1]<<8)|seg[o]:(seg[o]<<8)|seg[o+1];const get32=(o)=>little?(seg[o+3]<<24|seg[o+2]<<16|seg[o+1]<<8|seg[o])>>>0:(seg[o]<<24|seg[o+1]<<16|seg[o+2]<<8|seg[o+3])>>>0;const ifdOff=get32(10)+8;const entries=get16(ifdOff);for(let j=0;j<entries;j++){const tag=get16(ifdOff+2+j*12);if(tag===0x0112){orientation=get16(ifdOff+2+j*12+8);break;}}}break;}i+=(arr[i+2]<<8)|arr[i+3];i+=2;}}
       }catch(ex){}
-      const w=img.naturalWidth,h=img.naturalHeight;
+      const MAX_PX=800;
+      let w=img.naturalWidth,h=img.naturalHeight;
+      // Scale down to max 800px on longest side
+      if(w>MAX_PX||h>MAX_PX){const s=MAX_PX/Math.max(w,h);w=Math.round(w*s);h=Math.round(h*s);}
       const swapped=orientation>=5&&orientation<=8;
       const c=document.createElement('canvas');
       c.width=swapped?h:w;c.height=swapped?w:h;
@@ -3908,8 +3927,8 @@ function filePhoto(ev){
         case 8:ctx.transform(0,-1,1,0,0,w);break;
         default:break;
       }
-      ctx.drawImage(img,0,0);
-      photo=c.toDataURL('image/jpeg',0.80);
+      ctx.drawImage(img,0,0,c.width,c.height);
+      photo=c.toDataURL('image/jpeg',0.65);
       document.getElementById('phimg').src=photo;
       document.getElementById('phprev').style.display='inline-block';
     };
