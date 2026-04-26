@@ -1502,42 +1502,6 @@ Reason: {reason}"></textarea>
       </div>
 
       <!-- Delete Records -->
-      <!-- ── MONTHLY EMAIL REPORT ── -->
-      <div class="gset-acc" id="gacc-email">
-        <button class="gset-hdr" onclick="gpToggleAcc('gacc-email')">
-          <span style="font-size:16px">📧</span>
-          <span class="gset-title">Monthly Email Report</span>
-          <span class="gset-sub" id="gacc-email-sub">Auto-sends Excel + summary on last day of month</span>
-          <span class="gset-chev">▼</span>
-        </button>
-        <div class="gset-body">
-          <div style="font-size:11px;color:var(--sub);margin-bottom:12px;line-height:1.6;background:var(--bg3);border-radius:var(--rs);padding:10px 12px">
-            📬 Uses <b>EmailJS</b> (free, no backend needed). Sign up at <a href="https://emailjs.com" target="_blank" style="color:var(--blue)">emailjs.com</a>, create a Gmail service + template, then paste the keys below. Gmail App Password required (not regular password) — enable 2FA → Google Account → Security → App Passwords.
-          </div>
-          <label style="display:flex;align-items:center;gap:9px;cursor:pointer;margin-bottom:12px">
-            <input type="checkbox" id="gp-email-enabled" style="accent-color:var(--blue);width:16px;height:16px" onchange="gpSaveEmailCfg()">
-            <div style="font-size:13px;font-weight:700;color:var(--text)">✅ Enable monthly auto-email</div>
-          </label>
-          <div class="g2" style="margin-bottom:10px">
-            <div class="field"><label class="lbl">EmailJS Public Key</label><input id="gp-ejs-pubkey" class="inp" placeholder="user_xxxxxxxxxxxx" style="font-family:var(--mono);font-size:12px" oninput="gpSaveEmailCfg()"></div>
-            <div class="field"><label class="lbl">EmailJS Service ID</label><input id="gp-ejs-svcid" class="inp" placeholder="service_xxxxxxx" style="font-family:var(--mono);font-size:12px" oninput="gpSaveEmailCfg()"></div>
-          </div>
-          <div class="field" style="margin-bottom:10px"><label class="lbl">EmailJS Template ID</label><input id="gp-ejs-tmpl" class="inp" placeholder="template_xxxxxxx" style="font-family:var(--mono);font-size:12px" oninput="gpSaveEmailCfg()">
-            <div style="font-size:10px;color:var(--muted);margin-top:3px">Template must have variables: <code>{{month}}</code> <code>{{total}}</code> <code>{{school_name}}</code> <code>{{message}}</code></div>
-          </div>
-          <div class="g2" style="margin-bottom:10px">
-            <div class="field"><label class="lbl">From Email (Gmail)</label><input id="gp-email-from" class="inp" type="email" placeholder="school@gmail.com" oninput="gpSaveEmailCfg()"></div>
-            <div class="field"><label class="lbl">From Name</label><input id="gp-email-name" class="inp" placeholder="Lotus International School" oninput="gpSaveEmailCfg()"></div>
-          </div>
-          <div class="field" style="margin-bottom:10px"><label class="lbl">📨 Recipient Emails <span style="font-weight:400;font-size:10px">(comma separated)</span></label><textarea id="gp-email-to" class="ta" rows="2" placeholder="principal@school.com, admin@school.com" oninput="gpSaveEmailCfg()"></textarea></div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">
-            <button class="btn bp flex1" onclick="gpSendMonthlyReport(false)">📧 Send Now (this month)</button>
-            <button class="btn bgh" onclick="gpTestEmail()" style="font-size:12px">🧪 Test</button>
-          </div>
-          <div id="gp-email-status" style="font-size:11px;color:var(--sub);min-height:14px"></div>
-        </div>
-      </div>
-
       <!-- ── FORCE PUSH + JSON BACKUP ── -->
       <div class="gset-acc" id="gacc-backup">
         <button class="gset-hdr" onclick="gpToggleAcc('gacc-backup')">
@@ -4708,7 +4672,7 @@ function gpTestWA(){
 }
 
 function recLockSet(){document.getElementById('pw-gate').style.display='block';document.getElementById('set-ct').style.display='none';document.getElementById('pw-inp').value='';document.getElementById('pw-err').textContent='';document.getElementById('mdlist').style.display='none';document.getElementById('drlist').style.display='none';document.getElementById('mdui').style.display='flex';}
-function loadCfgF(){document.getElementById('cfg-url').value=localStorage.getItem('gp_url')||'';document.getElementById('cfg-code').value=localStorage.getItem('gp_code')||'';const connected=!!(localStorage.getItem('gp_url')&&localStorage.getItem('gp_code'));document.getElementById('sync-status-info').textContent=connected?`✅ Connected to: ${localStorage.getItem('gp_url')} / ${localStorage.getItem('gp_code')}`:'⚪ Not connected — fill in details and click Save & Connect.';const piEl=document.getElementById('gp-sync-int');if(piEl)piEl.value=gpSyncInt();const siEl=document.getElementById('gp-stu-sync-int');if(siEl)siEl.value=gpStuSyncInt();gpLoadEmailCfgF();}
+function loadCfgF(){document.getElementById('cfg-url').value=localStorage.getItem('gp_url')||'';document.getElementById('cfg-code').value=localStorage.getItem('gp_code')||'';const connected=!!(localStorage.getItem('gp_url')&&localStorage.getItem('gp_code'));document.getElementById('sync-status-info').textContent=connected?`✅ Connected to: ${localStorage.getItem('gp_url')} / ${localStorage.getItem('gp_code')}`:'⚪ Not connected — fill in details and click Save & Connect.';const piEl=document.getElementById('gp-sync-int');if(piEl)piEl.value=gpSyncInt();const siEl=document.getElementById('gp-stu-sync-int');if(siEl)siEl.value=gpStuSyncInt();}
 async function testCfg(){const url=document.getElementById('cfg-url').value.trim().replace(/\/$/,'');const code=document.getElementById('cfg-code').value.trim().replace(/[^a-zA-Z0-9_-]/g,'');if(!url||!code){cfgSt('⚠️ Fill in both fields first','var(--amber)');return;}cfgSt('Testing…','var(--blue)');try{const r=await fetch(`${url}/${code}/ping.json`,{method:'PUT',body:JSON.stringify(1)});if(!r.ok)throw 0;cfgSt('✅ Connection successful!','var(--green)');}catch{cfgSt('❌ Failed — check URL & Firebase rules','var(--red)');}}
 async function saveCfg(){const url=document.getElementById('cfg-url').value.trim().replace(/\/$/,'');const code=document.getElementById('cfg-code').value.trim().replace(/[^a-zA-Z0-9_-]/g,'');if(!url||!code){cfgSt('⚠️ Fill both fields','var(--amber)');return;}document.getElementById('cfg-save-btn').disabled=true;cfgSt('Testing & saving…','var(--blue)');try{const r=await fetch(`${url}/${code}/ping.json`,{method:'PUT',body:JSON.stringify(1)});if(!r.ok)throw 0;localStorage.setItem('gp_url',url);localStorage.setItem('gp_code',code);cfg={url,code};cfgSt('✅ Saved! Syncing now…','var(--green)');startSync();loadCfgF();}catch{cfgSt('❌ Connection failed','var(--red)');}document.getElementById('cfg-save-btn').disabled=false;}
 function disconnectFB(){if(!confirm('Disconnect Firebase?'))return;localStorage.removeItem('gp_url');localStorage.removeItem('gp_code');cfg={url:'',code:''};if(syncIv)clearInterval(syncIv);setSS('off');loadCfgF();gpToast('✕ Firebase disconnected','inf');}
@@ -4848,6 +4812,14 @@ async function _gpMaybeAutoDownload(p){
   if(photo){p.pickerPhoto=photo;saveLocal();}
 }
 
+// Auto-fetch photo when new pass arrives (if this device has autoLoadPhoto enabled)
+async function _gpMaybeAutoDownload(p){
+  if(!_gpPrintCfg.autoLoadPhoto)return;
+  if(!p||p.pickerPhoto!==null)return; // already resolved or no photo
+  const photo=await _resolvePhotoAsync(p);
+  if(photo){p.pickerPhoto=photo;saveLocal();}
+}
+
 // ═══ MONTHLY EMAIL REPORT ═══
 let _gpEmailCfg={enabled:false,pubKey:'',serviceId:'',templateId:'',fromEmail:'',fromName:'',recipients:''};
 
@@ -4910,79 +4882,6 @@ async function _gpSendViaEmailJS(params){
   });
   if(!resp.ok){const t=await resp.text();throw new Error(t);}
   return true;
-}
-
-async function gpSendMonthlyReport(auto=false){
-  gpLoadEmailCfg();
-  const st=document.getElementById('gp-email-status');
-  if(!_gpEmailCfg.enabled&&auto)return;
-  if(!_gpEmailCfg.pubKey||!_gpEmailCfg.serviceId||!_gpEmailCfg.templateId){
-    if(st)st.textContent='⚠️ EmailJS keys not configured';return;
-  }
-  if(!_gpEmailCfg.recipients.trim()){if(st)st.textContent='⚠️ No recipients configured';return;}
-  if(st){st.textContent='📤 Generating report…';st.style.color='var(--blue)';}
-
-  const now=new Date();
-  const year=now.getFullYear(),month=now.getMonth()+1;
-  const {wb,passes,mName}=_gpBuildMonthlyExcel(year,month);
-  const exited=passes.filter(p=>p.gateOutTime).length;
-  const pending=passes.length-exited;
-
-  // Generate Excel as base64
-  const xlsxB64=XLSX.write(wb,{bookType:'xlsx',type:'base64'});
-  const fileName=`GatePass_${mName}_${year}.xlsx`;
-
-  const recipients=_gpEmailCfg.recipients.split(',').map(e=>e.trim()).filter(Boolean);
-  const summary=`Total: ${passes.length} | Exited: ${exited} | Pending: ${pending}`;
-  const schoolName=_gpEmailCfg.fromName||(localStorage.getItem('gp_appname')||'School');
-
-  let sent=0,failed=0;
-  for(const to of recipients){
-    try{
-      await _gpSendViaEmailJS({
-        to_email:to,
-        from_name:schoolName,
-        month:`${mName} ${year}`,
-        total:passes.length,
-        exited,pending,
-        school_name:schoolName,
-        message:summary,
-        attachment_name:fileName,
-        attachment_data:xlsxB64,
-      });
-      sent++;
-    }catch(e){failed++;console.error('Email send failed:',to,e);}
-  }
-  const msg=sent?`✅ Report sent to ${sent} recipient${sent>1?'s':''}${failed?' ('+failed+' failed)':''}`:`❌ Failed to send — check console`;
-  if(st){st.textContent=msg;st.style.color=sent?'var(--green)':'var(--red)';}
-  gpToast(msg,sent?'':'err');
-  // Store last sent month so auto doesn't re-send
-  localStorage.setItem('gp_email_last_sent',`${year}-${month}`);
-}
-
-async function gpTestEmail(){
-  const st=document.getElementById('gp-email-status');
-  if(st){st.textContent='📤 Sending test…';st.style.color='var(--blue)';}
-  gpSaveEmailCfg();
-  const to=(_gpEmailCfg.recipients.split(',')[0]||'').trim();
-  if(!to){if(st)st.textContent='⚠️ Add at least one recipient first';return;}
-  try{
-    await _gpSendViaEmailJS({to_email:to,from_name:_gpEmailCfg.fromName||'School',month:'Test',total:0,exited:0,pending:0,school_name:_gpEmailCfg.fromName||'School',message:'This is a test email from Lotus SchoolSuite Gate Pass.',attachment_name:'',attachment_data:''});
-    if(st){st.textContent=`✅ Test sent to ${to}`;st.style.color='var(--green)';}
-  }catch(e){if(st){st.textContent='❌ '+e.message;st.style.color='var(--red)';}}
-}
-
-// Auto-trigger: check on load if today is last day of month and not already sent
-function _gpCheckAutoEmail(){
-  gpLoadEmailCfg();
-  if(!_gpEmailCfg.enabled)return;
-  const now=new Date();
-  const lastDayOfMonth=new Date(now.getFullYear(),now.getMonth()+1,0).getDate();
-  if(now.getDate()!==lastDayOfMonth)return;
-  const key=`${now.getFullYear()}-${now.getMonth()+1}`;
-  if(localStorage.getItem('gp_email_last_sent')===key)return; // already sent this month
-  // Delay 5 min to let data load first
-  setTimeout(()=>gpSendMonthlyReport(true),5*60*1000);
 }
 
 async function gpPrintPassById(id){
@@ -5460,7 +5359,7 @@ function getAllFYs(){const s=new Set(R.entries.map(e=>e.fy).filter(Boolean));s.a
 
 // ─── INIT ────────────────────────────────────────────────
 function _refInit(){
-  initTheme();loadCFG();loadFSCfg();loadODCfg();loadGPODCfg();loadTGCfg();loadPTGCfg();loadRefTGCfg();loadWixCfg();_gpRestoreCfgFromStorage();startTGApprovalPolling();gpLoadEmailCfg();setTimeout(_gpCheckAutoEmail,3000);
+  initTheme();loadCFG();loadFSCfg();loadODCfg();loadGPODCfg();loadTGCfg();loadPTGCfg();loadRefTGCfg();loadWixCfg();_gpRestoreCfgFromStorage();startTGApprovalPolling();
   if(CFG.adminAlertEnabled===undefined)CFG.adminAlertEnabled=true;
   const fu=localStorage.getItem('ref_fb_url'),fc=localStorage.getItem('ref_fb_code');
   if(fu&&fc){fbCfg={url:fu,code:fc};fbFetchAll();if(fbIv)clearInterval(fbIv);fbIv=setInterval(fbFetchAll,refSyncInt()*1000);}
