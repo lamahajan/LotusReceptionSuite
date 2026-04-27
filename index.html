@@ -1144,18 +1144,6 @@ body.dark .fq-mtitle{color:#f4ede0}
             <button class="btn bgh" onclick="disconnectFB()" style="font-size:12px;padding:8px 12px;color:var(--red)">✕</button>
           </div>
           <div id="sync-status-info" style="margin-top:8px;font-size:12px;color:var(--sub)"></div>
-          <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
-            <div style="font-size:11px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px">⏱ Sync Intervals <span style="font-weight:400;font-size:10px;color:var(--muted);text-transform:none;letter-spacing:0">(seconds · saved to all devices)</span></div>
-            <div class="g2" style="margin-bottom:8px">
-              <div class="field"><label class="lbl">Passes poll</label><input id="gp-sync-int" class="inp" type="number" min="5" max="600" placeholder="30" style="font-family:var(--mono)"></div>
-              <div class="field"><label class="lbl">Student DB poll</label><input id="gp-stu-sync-int" class="inp" type="number" min="10" max="600" placeholder="60" style="font-family:var(--mono)"></div>
-            </div>
-            <div style="display:flex;gap:8px;flex-wrap:wrap">
-              <button class="btn bp flex1" onclick="gpSaveSyncInt()" style="font-size:12px">💾 Save &amp; Push to All Devices</button>
-              <button class="btn bgh" onclick="gpFullSync()" style="font-size:12px;padding:8px 12px" title="Force full download, ignoring cache">🔄 Full Sync</button>
-            </div>
-            <div style="font-size:11px;color:var(--muted);margin-top:6px">Smart sync: only checks timestamp first (tiny request), full fetch only when data changed.</div>
-          </div>
         </div>
       </div>
 
@@ -1206,8 +1194,8 @@ body.dark .fq-mtitle{color:#f4ede0}
             <div class="g2" style="margin-top:6px">
               <div class="field"><label class="lbl">Bus</label><select id="sfb" class="sel"><option value="">— None —</option></select></div>
               <div class="field"><label class="lbl">📱 Parent Phone <span style="font-weight:400;font-size:10px;color:var(--muted)">(WhatsApp)</span></label><input id="sfphone" class="inp" placeholder="e.g. 919876543210" style="font-family:var(--mono)" oninput="this.value=this.value.replace(/[^0-9]/g,'')"></div>
+              <div class="field" style="grid-column:1/-1"><label class="lbl">🏠 Address</label><input id="sfaddr" class="inp" placeholder="e.g. 23 Master Colony, Dinanagar"></div>
             </div>
-            <div class="field" style="margin-top:6px"><label class="lbl">🏠 Address <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:10px;color:var(--muted)">(bus stop / relation k paas)</span></label><textarea id="sfaddress" class="ta" placeholder="e.g. House No. 12, Street 5, Model Town" rows="2"></textarea></div>
             <div style="display:flex;gap:8px;margin-top:8px">
               <button class="btn bp flex1" onclick="saveStu()">Save</button>
               <button class="btn bgh" onclick="closeSF()">Cancel</button>
@@ -1441,17 +1429,6 @@ Reason: {reason}"></textarea>
               </div>
             </label>
           </div>
-          <!-- Auto-load photo on this device -->
-          <div style="background:var(--bg3);border:1.5px solid var(--border);border-radius:var(--rs);padding:11px 13px;margin-bottom:10px">
-            <label style="display:flex;align-items:center;gap:9px;cursor:pointer">
-              <input type="checkbox" id="gp-auto-load-photo" style="accent-color:var(--purple);width:16px;height:16px" onchange="gpSaveAutoLoadPhoto()">
-              <div>
-                <div style="font-size:13px;font-weight:700;color:var(--text)">📷 Auto-load photos on this device</div>
-                <div style="font-size:11px;color:var(--muted);margin-top:1px">Enable on the printing device — photos fetch automatically when a new pass arrives so Print works instantly</div>
-              </div>
-            </label>
-          </div>
-
           <!-- Principal signature -->
           <div style="background:var(--bg3);border:1.5px solid var(--border);border-radius:var(--rs);padding:11px 13px;margin-bottom:12px">
             <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:6px">✍️ Principal Signature</div>
@@ -1519,12 +1496,12 @@ Reason: {reason}"></textarea>
             </label>
           </div>
           <div id="gp-backup-status" style="font-size:11px;color:var(--sub);min-height:14px"></div>
-          <!-- CSV Upload → auto push -->
+          <!-- CSV Upload → column mapping → auto push -->
           <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border)">
-            <div style="font-size:12px;font-weight:800;color:var(--text);margin-bottom:4px">📋 CSV Student Upload → Auto Sync</div>
-            <div style="font-size:11px;color:var(--sub);margin-bottom:8px">CSV upload karega aur turant Firebase push bhi karega.</div>
+            <div style="font-size:12px;font-weight:800;color:var(--text);margin-bottom:4px">📋 CSV Student Upload → Column Mapping → Auto Sync</div>
+            <div style="font-size:11px;color:var(--sub);margin-bottom:8px">CSV/Excel upload karega, column mapping ka popup aayega, phir Firebase push bhi ho jaayega.</div>
             <label class="btn bgh" style="cursor:pointer;display:inline-flex;align-items:center;gap:6px">
-              📂 Upload Students CSV (with auto-push)
+              📂 Upload Students CSV
               <input type="file" accept=".csv,.xlsx" style="display:none" onchange="gpCSVUploadAndPush(this)">
             </label>
             <div id="gp-csv-push-status" style="font-size:11px;color:var(--sub);margin-top:6px;min-height:14px"></div>
@@ -2383,7 +2360,6 @@ Reason: {reason}"></textarea>
             <div class="field"><label class="lbl">Class</label><input id="ns-class" class="inp" placeholder="e.g. 10-A"></div>
             <div class="field"><label class="lbl">Phone</label><input id="ns-phone" class="inp" placeholder="10-digit" style="font-family:var(--mono)"></div>
           </div>
-          <div class="field"><label class="lbl">🏠 Address <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:10px;color:var(--muted)">(printed on gate pass)</span></label><textarea id="ns-address" class="inp" placeholder="e.g. House No. 12, Street 5, Model Town" rows="2" style="resize:vertical;min-height:52px;font-family:var(--sans)"></textarea></div>
           <button class="btn bpink" style="font-size:12px" onclick="addSingleStudent()">➕ Add</button>
         </div>
         <div style="display:flex;gap:8px;margin-bottom:10px">
@@ -2454,18 +2430,6 @@ Reason: {reason}"></textarea>
           <div style="margin-top:8px;display:flex;gap:6px">
             <button class="btn bgh" style="font-size:11px;padding:5px 10px" onclick="fbPushPublic().then(()=>gpToast('Public board refreshed'))">🔄 Refresh Now</button>
           </div>
-        </div>
-        <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
-          <div style="font-size:11px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px">⏱ Sync Intervals <span style="font-weight:400;font-size:10px;color:var(--muted);text-transform:none;letter-spacing:0">(seconds · saved to all devices)</span></div>
-          <div class="g2" style="margin-bottom:8px">
-            <div class="field"><label class="lbl">Entries poll</label><input id="ref-sync-int" class="inp" type="number" min="5" max="600" placeholder="30" style="font-family:var(--mono)"></div>
-            <div class="field"><label class="lbl">Student DB poll</label><input id="ref-stu-sync-int" class="inp" type="number" min="10" max="600" placeholder="60" style="font-family:var(--mono)"></div>
-          </div>
-          <div class="row" style="gap:8px">
-            <button class="btn bpink flex1" onclick="refSaveSyncInt()" style="font-size:12px">💾 Save &amp; Push to All Devices</button>
-            <button class="btn bgh" onclick="refFullSync()" style="font-size:12px;padding:8px 12px" title="Force full download, ignoring cache">🔄 Full Sync</button>
-          </div>
-          <div style="font-size:11px;color:var(--muted);margin-top:6px">Smart sync: only fetches a tiny timestamp first — full download only when data changed.</div>
         </div>
       </div>
     </div>
@@ -3214,21 +3178,12 @@ function gpUpdateSettingsSubs(){
 // ═══ STATE ═══
 const S={students:[],passes:[],buses:['Bus 1','Bus 2','Bus 3','Walk'],lastMod:0};
 window.S=S;
-let localMod=0,cfg={url:'',code:''},syncIv=null;
+// localMod persisted — app reopen won't re-fetch if Firebase hasn't changed
+let localMod=parseInt(localStorage.getItem('gp_local_mod')||'0',10)||0;
+let cfg={url:'',code:''},syncIv=null;
 let camStream=null,photo=null,cpSel=null,isDark=false;
 let qpSel=null;
 const PASS=(()=>{const _e='bWFoYWphbg==';try{return atob(_e);}catch{return '';}})();
-
-// ═══ PAGE VISIBILITY — immediate re-sync when app comes to foreground ═══
-document.addEventListener('visibilitychange',()=>{
-  if(document.visibilityState==='visible'&&cfg.url&&cfg.code){
-    // Force next fetchAll to bypass lastMod cache so fresh data is guaranteed
-    localMod=0;
-    fetchAll();
-    // Restart SSE if it died in background
-    if(!gpSSE)_gpSSEOpen();
-  }
-});
 
 // ═══ INIT ═══
 function _recInit(){
@@ -3246,7 +3201,10 @@ function _recInit(){
 
 // ═══ LOCAL STORAGE ═══
 function loadLocalData(){
-  try{const d=localStorage.getItem('gp_local');if(d){const p=JSON.parse(d);if(p.students)S.students=p.students;if(p.passes)S.passes=p.passes;if(p.buses&&p.buses.length)S.buses=p.buses;updBadge();popBusSel();}}catch(err){}
+  try{
+    const d=localStorage.getItem('gp_local');
+    if(d){const p=JSON.parse(d);if(p.students)S.students=p.students;if(p.passes)S.passes=p.passes;if(p.buses&&p.buses.length)S.buses=p.buses;updBadge();popBusSel();}
+  }catch(err){}
   mergeRefStudents();
   // Push existing gatepass students into ref register on load
   if(typeof syncGpStudentsToRef==='function')setTimeout(syncGpStudentsToRef,500);
@@ -3278,7 +3236,7 @@ function mergeRefStudents(){
         if(!ex.name&&rs.name)ex.name=rs.name;
         updated++;
       } else {
-        S.students.push({name:rs.name,admissionNumber:adm,class:rs.cls||rs.class||'',fatherName:rs.fatherName||'',motherName:rs.motherName||'',busNumber:'',address:rs.address||''});
+        S.students.push({name:rs.name,admissionNumber:adm,class:rs.cls||rs.class||'',fatherName:rs.fatherName||'',motherName:rs.motherName||'',busNumber:''});
         map[key]=S.students[S.students.length-1];
         added++;
       }
@@ -3286,61 +3244,36 @@ function mergeRefStudents(){
     if(added||updated)console.log('Gatepass: +'+added+' new, '+updated+' updated from Ref Register');
   }catch(err){console.warn('mergeRefStudents:',err);}
 }
-// ── LOCAL-FIRST DELTA SYNC HELPERS ──────────────────────────────────────────
-// Only keep passes from the last PASS_RETAIN_DAYS days in localStorage.
-// Firebase is the source of truth for older records; local storage is a cache.
-const PASS_RETAIN_DAYS=30;
-function _cutoffDate(){
-  const d=new Date();d.setDate(d.getDate()-PASS_RETAIN_DAYS);
-  return d.toISOString().slice(0,10); // "YYYY-MM-DD"
+// ── PHOTO CACHE — localStorage backup for offline/quick access ───────────────
+const _photoCache={
+  set(id,d){try{localStorage.setItem('gp_photo_'+id,d);}catch(e){}},
+  get(id){return localStorage.getItem('gp_photo_'+id)||null},
+  del(id){try{localStorage.removeItem('gp_photo_'+id);}catch(e){}},
+  pruneOld(){
+    const cutoff=(()=>{const d=new Date();d.setDate(d.getDate()-30);return d.toISOString().slice(0,10);})();
+    const keys=[];for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.startsWith('gp_photo_'))keys.push(k);}
+    keys.forEach(k=>{const id=k.slice(9);const p=S.passes.find(x=>x.id===id);if(!p||(p.date||'')<cutoff)localStorage.removeItem(k);});
+  }
+};
+function _resolvePhoto(pass){
+  if(!pass)return null;
+  if(pass.pickerPhoto&&pass.pickerPhoto!=='__has_photo')return pass.pickerPhoto;
+  if(pass.id){const c=_photoCache.get(pass.id);if(c)return c;}
+  return null;
 }
-function pruneOldPasses(passes){
-  const cutoff=_cutoffDate();
-  return passes.filter(p=>(p.date||'')>=cutoff);
-}
-// Merge fetched passes (from Firebase) into existing local array.
-// For each fetched pass: update or add. Local passes outside the fetched date
-// range are kept as-is (they won't change — they're old/closed passes).
-function _mergePasses(localPasses,fetchedPasses){
-  const cutoff=_cutoffDate();
-  // Keep old local passes (beyond 30-day window) — not re-fetched from Firebase
-  const oldLocal=localPasses.filter(p=>(p.date||'')<cutoff);
-  // Restore locally-cached photos into fetched passes
-  fetchedPasses.forEach(p=>{
-    if(p.pickerPhoto==='__has_photo'){
-      const lp=localPasses.find(x=>x.id===p.id);
-      if(lp&&lp.pickerPhoto&&lp.pickerPhoto!=='__has_photo')p.pickerPhoto=lp.pickerPhoto;
-    }
-  });
-  // Firebase is fully authoritative for recent passes — deleted passes stay deleted
-  const merged=[...oldLocal,...fetchedPasses];
-  merged.sort((a,b)=>((b.date||'')+(b.time||'')).localeCompare((a.date||'')+(a.time||'')));
-  return merged;
-}
-
 function saveLocal(){
   try{
-    // ── STORAGE OPTIMISATION ──
-    // 1. Strip photos into sessionStorage (only marker saved in localStorage)
-    // 2. Prune passes older than PASS_RETAIN_DAYS — Firebase has the full history
-    const passesForStorage=pruneOldPasses(S.passes).map(p=>{
-      if(p.pickerPhoto && p.pickerPhoto!=='__has_photo'){
-        _photoCache.set(p.id, p.pickerPhoto);
-        return {...p, pickerPhoto:'__has_photo'};
-      }
-      return p;
-    });
-    localStorage.setItem('gp_local',JSON.stringify({
-      students:S.students,
-      passes:passesForStorage,
-      buses:S.buses
-    }));
-    // Prune photos for passes that no longer exist in local cache
+    // Cache photos separately so localStorage doesn't balloon with duplicates
+    S.passes.forEach(p=>{if(p.pickerPhoto&&p.pickerPhoto!=='__has_photo')_photoCache.set(p.id,p.pickerPhoto);});
+    localStorage.setItem('gp_local',JSON.stringify({students:S.students,passes:S.passes,buses:S.buses}));
     _photoCache.pruneOld();
+    localStorage.setItem('gp_local_mod',String(localMod));
   }catch(err){
+    // If storage full, try without photos
     try{
-      const stripped=pruneOldPasses(S.passes).map(p=>({...p,pickerPhoto:p.pickerPhoto?'__has_photo':null}));
-      localStorage.setItem('gp_local',JSON.stringify({students:S.students,passes:stripped,buses:S.buses}));
+      const s=S.passes.map(p=>({...p,pickerPhoto:p.pickerPhoto?'__has_photo':null}));
+      localStorage.setItem('gp_local',JSON.stringify({students:S.students,passes:s,buses:S.buses}));
+      localStorage.setItem('gp_local_mod',String(localMod));
     }catch(e2){}
   }
 }
@@ -3349,409 +3282,52 @@ function saveLocal(){
 function recToggleTheme(){window.toggleTheme();isDark=document.body.classList.contains('dark');document.getElementById('screen-rec').classList.toggle('dark',isDark);var b=document.getElementById('theme-btn');if(b)b.textContent=isDark?'☀️ Light':'🌙 Dark';}
 function recInitTheme(){isDark=document.body.classList.contains('dark');document.getElementById('screen-rec').classList.toggle('dark',isDark);var b=document.getElementById('theme-btn');if(b)b.textContent=isDark?'☀️ Light':'🌙 Dark';}
 
-// ═══ FIREBASE SSE ═══
-let gpSSE=null,gpStuSSE=null,gpSSERetry=null,gpStuSSERetry=null;
-
-// ── Passes SSE ─────────────────────────────────────────────────────────────
-function startSync(){
-  if(!cfg.url||!cfg.code)return;
-  if(syncIv){clearInterval(syncIv);syncIv=null;}
-  if(gpSSE){gpSSE.close();gpSSE=null;}
-  if(gpSSERetry){clearTimeout(gpSSERetry);gpSSERetry=null;}
-  setSS('ing');
-  fetchBuses();
-  _gpSSEOpen();
-  // Polling fallback — runs even when SSE is connected; fetchAll is now cheap
-  // (only fetches /passes.json, no photos, tiny doc) so 6s is fine
-  syncIv=setInterval(fetchAll,gpSyncInt()*1000);
-}
-
-function _gpSSEOpen(){
-  if(!cfg.url||!cfg.code)return;
-  gpSSE=new EventSource(`${cfg.url}/${cfg.code}/passes.json`);
-  gpSSE.addEventListener('put',_gpSSEput);
-  gpSSE.addEventListener('patch',_gpSSEpatch);
-  gpSSE.addEventListener('keep-alive',()=>setSS('ok'));
-  gpSSE.addEventListener('cancel',()=>{setSS('err');_gpSSEFail();});
-  gpSSE.onerror=()=>{setSS('err');_gpSSEFail();};
-}
-
-function _gpSSEFail(){
-  if(gpSSE){gpSSE.close();gpSSE=null;}
-  // Fallback: poll every gpSyncInt() seconds
-  if(!syncIv)syncIv=setInterval(fetchAll,gpSyncInt()*1000);
-  fetchAll();
-  // Try reconnecting SSE after 30s
-  if(!gpSSERetry)gpSSERetry=setTimeout(()=>{gpSSERetry=null;if(!gpSSE)startSync();},30000);
-}
-
-function _gpSSEput(ev){
-  try{
-    const d=JSON.parse(ev.data);
-    const raw=d.data;
-    if(raw===null&&d.path==='/'){
-      _gpMigratePasses();return;
-    }
-    let passes=null;
-    if(Array.isArray(raw)){passes=raw;}
-    else if(raw&&typeof raw==='object'){
-      passes=Object.values(raw).filter(p=>p&&typeof p==='object'&&p.id);
-      passes.forEach(p=>{
-        if(p.pickerPhoto==='__has_photo'){
-          const lp=S.passes.find(x=>x.id===p.id);
-          if(lp&&lp.pickerPhoto&&lp.pickerPhoto!=='__has_photo')p.pickerPhoto=lp.pickerPhoto;
-        }
-      });
-      passes.sort((a,b)=>((b.date||'')+(b.time||'')).localeCompare((a.date||'')+(a.time||'')));
-    }
-    if(passes!==null){
-      S.passes=_mergePasses(S.passes,passes);
-      saveLocal();renderAll();
-      // Sync localMod so next poll doesn't redundantly re-fetch
-      fetch(`${cfg.url}/${cfg.code}/lastMod.json`).then(r=>r.json()).then(v=>{if(v)localMod=v;}).catch(()=>{});
-    }
-    setSS('ok');
-  }catch(e){}
-}
-
-function _gpSSEpatch(ev){
-  try{
-    const d=JSON.parse(ev.data);
-    const path=d.path||'/';
-    const updates=d.data;
-    if(updates===undefined)return;
-
-    // Case 1: path is "/{passId}" — Firebase sent update for one specific pass
-    if(path!=='/'&&path.split('/').length===2){
-      const passId=path.replace('/','');
-      const idx=S.passes.findIndex(p=>p.id===passId);
-      if(updates===null){
-        // Deleted
-        if(idx>-1)S.passes.splice(idx,1);
-      } else if(idx>-1){
-        // Update existing
-        const v=updates;
-        if(v.pickerPhoto==='__has_photo'&&S.passes[idx].pickerPhoto&&S.passes[idx].pickerPhoto!=='__has_photo')
-          updates.pickerPhoto=S.passes[idx].pickerPhoto;
-        Object.assign(S.passes[idx],updates);
-      } else {
-        // New pass from another device
-        const np={...updates};
-        if(np.pickerPhoto==='__has_photo')np.pickerPhoto=null;
-        S.passes.unshift(np);
-      }
-      saveLocal();renderAll();setSS('ok');
-      return;
-    }
-
-    // Case 2: path is "/" — bulk update, data is {passId: passObj, ...}
-    if(typeof updates==='object'&&!Array.isArray(updates)){
-      Object.entries(updates).forEach(([k,v])=>{
-        const byId=S.passes.findIndex(p=>p.id===k);
-        if(byId>-1){
-          if(v===null){S.passes.splice(byId,1);}
-          else{
-            if(v.pickerPhoto==='__has_photo'&&S.passes[byId].pickerPhoto&&S.passes[byId].pickerPhoto!=='__has_photo')
-              v.pickerPhoto=S.passes[byId].pickerPhoto;
-            Object.assign(S.passes[byId],v);
-          }
-          return;
-        }
-        // Legacy numeric index
-        const i=parseInt(k,10);
-        if(!isNaN(i)){
-          if(v===null){S.passes.splice(i,1);}
-          else if(i<S.passes.length){Object.assign(S.passes[i],v);}
-          else{S.passes.push(v);}
-        } else if(v&&v.id){
-          if(v.pickerPhoto==='__has_photo')v.pickerPhoto=null;
-          S.passes.unshift(v);
-        }
-      });
-    }
-    saveLocal();renderAll();setSS('ok');
-  }catch(e){}
-}
-
-async function _gpMigratePasses(){
-  // Old format: full doc at /{code}.json with {passes:[...], buses:[...]}
-  try{
-    const r=await fetch(`${cfg.url}/${cfg.code}.json`);
-    if(!r.ok)return;
-    const d=await r.json();
-    if(!d){setSS('ok');return;}
-    // Pull buses
-    if(d.buses&&!d.buses.__empty&&d.buses.length)S.buses=d.buses;
-    // Migrate passes to split node
-    const passVal=(d.passes&&d.passes.length)?d.passes:{'__empty':true};
-    await fetch(`${cfg.url}/${cfg.code}/passes.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(passVal)});
-    // Migrate _cfg if present
-    if(d._cfg)await fetch(`${cfg.url}/${cfg.code}/_cfg.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(d._cfg)});
-    gpApplyRemoteCfg(d._cfg);
-    setSS('ok');
-  }catch(e){setSS('err');}
-}
-
-// ── REST fallback (used by gpFullSync + SSE error fallback) ────────────────
-async function fetchBuses(){
-  if(!cfg.url||!cfg.code)return;
-  try{
-    const r=await fetch(`${cfg.url}/${cfg.code}/buses.json`);
-    if(!r.ok)return;
-    const d=await r.json();
-    if(d&&!d.__empty&&Array.isArray(d)&&d.length){S.buses=d;saveLocal();popBusSel();}
-  }catch(e){}
-}
-
+// ═══ FIREBASE ═══
 async function fetchAll(){
   if(!cfg.url||!cfg.code)return;
   setSS('ing');
   try{
-    // Cheap lastMod check — skip full fetch if nothing changed since last poll
-    const mr=await fetch(`${cfg.url}/${cfg.code}/lastMod.json`);
-    if(mr.ok){const sm=(await mr.json())||0;if(sm===localMod){setSS('ok');return;}localMod=sm;}
-    const r=await fetch(`${cfg.url}/${cfg.code}/passes.json`);
+    // ── STEP 1: Cheap lastMod check (~50 bytes) ──────────────────────────────
+    // Firebase stores lastMod as a child node — fetch only that first
+    const lmr=await fetch(`${cfg.url}/${cfg.code}/lastMod.json`);
+    if(lmr.ok){
+      const remMod=(await lmr.json())||0;
+      if(remMod===localMod){setSS('ok');return;} // nothing changed — skip full fetch
+    }
+    // ── STEP 2: Full fetch only when something changed ────────────────────────
+    const r=await fetch(`${cfg.url}/${cfg.code}.json`);
     if(!r.ok)throw 0;
-    const raw=await r.json();
-    if(raw!==null){
-      let fetched;
-      if(Array.isArray(raw)){fetched=raw;}
-      else if(raw&&typeof raw==='object'){
-        fetched=Object.values(raw).filter(p=>p&&typeof p==='object'&&p.id);
-        fetched.sort((a,b)=>((b.date||'')+(b.time||'')).localeCompare((a.date||'')+(a.time||'')));
-      } else {fetched=[];}
-      fetched.forEach(p=>{
-        if(p.pickerPhoto==='__has_photo'){
-          const lp=S.passes.find(x=>x.id===p.id);
-          if(lp&&lp.pickerPhoto&&lp.pickerPhoto!=='__has_photo')p.pickerPhoto=lp.pickerPhoto;
-        }
-      });
-      S.passes=_mergePasses(S.passes,fetched);
-      saveLocal();renderAll();
-    } else {
-      await fetch(`${cfg.url}/${cfg.code}/passes.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({'__empty':true})}).catch(()=>{});
-      await _gpMigratePasses();
-    }
-    try{const cr=await fetch(`${cfg.url}/${cfg.code}/_cfg.json`);if(cr.ok){const c=await cr.json();gpApplyRemoteCfg(c);}}catch(e){}
-    setSS('ok');
-  }catch{setSS('err');}
-}
-
-// Full sync — close SSE, force full REST fetch, reopen SSE
-async function gpFullSync(){
-  if(gpSSE){gpSSE.close();gpSSE=null;}
-  if(syncIv){clearInterval(syncIv);syncIv=null;}
-  setSS('ing');
-  await fetchAll();
-  startSync(); // reopen SSE
-  gpToast('🔄 Full sync complete');
-}
-
-// ── Student DB SSE ─────────────────────────────────────────────────────────
-function startStuSSE(){
-  if(!gpStuCfg.url||!gpStuCfg.code)return;
-  if(gpStuIv){clearInterval(gpStuIv);gpStuIv=null;}
-  if(gpStuSSE){gpStuSSE.close();gpStuSSE=null;}
-  if(gpStuSSERetry){clearTimeout(gpStuSSERetry);gpStuSSERetry=null;}
-  _gpStuSSEOpen();
-}
-
-function _gpStuSSEOpen(){
-  if(!gpStuCfg.url||!gpStuCfg.code)return;
-  gpStuSSE=new EventSource(`${gpStuCfg.url}/${gpStuCfg.code}/students.json`);
-  gpStuSSE.addEventListener('put',_gpStuSSEput);
-  gpStuSSE.addEventListener('keep-alive',()=>{});
-  gpStuSSE.addEventListener('cancel',()=>_gpStuSSEFail());
-  gpStuSSE.onerror=()=>_gpStuSSEFail();
-}
-
-function _gpStuSSEFail(){
-  if(gpStuSSE){gpStuSSE.close();gpStuSSE=null;}
-  if(!gpStuIv)gpStuIv=setInterval(gpStuFetchShared,gpStuSyncInt()*1000);
-  gpStuFetchShared();
-  if(!gpStuSSERetry)gpStuSSERetry=setTimeout(()=>{gpStuSSERetry=null;if(!gpStuSSE)startStuSSE();},30000);
-}
-
-async function _gpStuSSEput(ev){
-  try{
-    const d=JSON.parse(ev.data);
-    const raw=d.data;
-    if(raw===null&&d.path==='/'){
-      // No split node yet — fall back to full-doc fetch and migrate
-      await gpStuFetchShared();
-      return;
-    }
-    if(raw===null)return;
-    const remote=Array.isArray(raw)?raw:(raw.__empty?[]:Object.values(raw));
-    const map={};
-    S.students.forEach(s=>{if(s.admissionNumber)map[String(s.admissionNumber).trim()]=s;});
-    remote.forEach(rs=>{
-      const adm=(rs.admNo||rs.admissionNumber||'').trim();if(!adm)return;
-      const ex=map[adm]||{};
-      const existingPhone=(ex.phone)||'';
-      const existingBus=(ex.busNumber)||'';
-      const remotePhone=(rs.phone||rs.mobile||rs.contact||'').replace(/[^0-9]/g,'');
-      const remoteBus=(rs.busNumber||rs.bus||'').trim();
-      map[adm]={name:rs.name||ex.name||'',admissionNumber:adm,class:rs.cls||rs.class||ex.class||'',fatherName:rs.fatherName||ex.fatherName||'',motherName:rs.motherName||ex.motherName||'',busNumber:remoteBus||existingBus,phone:remotePhone||existingPhone,address:rs.address||ex.address||''};
-    });
-    S.students=Object.values(map);
-    saveLocal();renderStu();popBusSel();updBadge();
-    syncGpStudentsToRef();
-  }catch(e){}
-}
-
-// ── Push (split nodes) ─────────────────────────────────────────────────────
-// Photo cache — pickerPhoto blobs stored in localStorage (persistent across sessions)
-// Key: gp_photo_{id}  Value: base64 dataUrl (~50KB each after compression)
-// Old photos pruned automatically alongside pass pruning.
-const _photoCache={
-  set(id,dataUrl){
-    try{localStorage.setItem('gp_photo_'+id,dataUrl);}catch(e){
-      // localStorage full — evict oldest photo and retry once
-      try{_photoCache.pruneAll();localStorage.setItem('gp_photo_'+id,dataUrl);}catch(e2){}
-    }
-  },
-  get(id){return localStorage.getItem('gp_photo_'+id)||null},
-  del(id){try{localStorage.removeItem('gp_photo_'+id);}catch(e){}},
-  // Remove photos for passes older than cutoff date
-  pruneOld(){
-    const cutoff=_cutoffDate();
-    const toDelete=[];
-    for(let i=0;i<localStorage.length;i++){
-      const k=localStorage.key(i);
-      if(k&&k.startsWith('gp_photo_')){
-        const id=k.slice(9);
-        const pass=S.passes.find(p=>p.id===id);
-        if(!pass||(pass.date||'')<cutoff)toDelete.push(k);
+    const d=await r.json();
+    if(d){
+      const sm=d.lastMod||0;
+      const toArr=v=>Array.isArray(v)?v:(v&&v.__empty)?[]:(v!=null?v:null);
+      const ps=toArr(d.passes);
+      if(ps!==null){
+        // Restore locally cached photos into fetched passes
+        ps.forEach(p=>{
+          if(p.pickerPhoto==='__has_photo'){
+            const cached=_photoCache.get(p.id);
+            if(cached)p.pickerPhoto=cached;
+          }
+        });
+        S.passes=ps;
       }
+      if(d.buses&&!d.buses.__empty&&d.buses.length)S.buses=d.buses;
+      localMod=sm;saveLocal();renderAll();
     }
-    toDelete.forEach(k=>localStorage.removeItem(k));
-  },
-  // Emergency: remove all cached photos to free space
-  pruneAll(){
-    const toDelete=[];
-    for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.startsWith('gp_photo_'))toDelete.push(k);}
-    toDelete.forEach(k=>localStorage.removeItem(k));
-  }
-};
-
-// Resolve pickerPhoto — checks local cache first, then fetches from Firebase on demand
-async function _resolvePhotoAsync(p){
-  if(p.pickerPhoto&&p.pickerPhoto!=='__has_photo')return p.pickerPhoto;
-  if(p.pickerPhoto!=='__has_photo')return null;
-  const cached=_photoCache.get(p.id);if(cached)return cached;
-  if(!cfg.url||!cfg.code)return null;
-  try{
-    const r=await fetch(`${cfg.url}/${cfg.code}/photos/${p.id}.json`);
-    if(!r.ok)return null;
-    const data=await r.json();
-    if(data&&data.photo){_photoCache.set(p.id,data.photo);return data.photo;}
-  }catch(e){}
-  return null;
-}
-
-// Sync version — only returns if already cached
-function _resolvePhoto(p){
-  if(p.pickerPhoto&&p.pickerPhoto!=='__has_photo')return p.pickerPhoto;
-  if(p.pickerPhoto==='__has_photo')return _photoCache.get(p.id)||null;
-  return null;
-}
-
-// ═══ INCREMENTAL FIREBASE WRITES ═══
-// Each pass stored at /{code}/passes/{id}.json — photo at /{code}/photos/{id}.json
-
-async function pushOnePass(pass){
-  saveLocal();
-  if(!cfg.url||!cfg.code)return;
-  setSS('ing');
-  try{
-    const {pickerPhoto,...meta}=pass;
-    // 1. Write pass metadata (no photo blob — tiny)
-    await fetch(`${cfg.url}/${cfg.code}/passes/${pass.id}.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({...meta,pickerPhoto:pickerPhoto?'__has_photo':null})});
-    // 2. Write photo to separate node (so other devices can fetch it on demand for printing)
-    if(pickerPhoto&&pickerPhoto!=='__has_photo'){
-      fetch(`${cfg.url}/${cfg.code}/photos/${pass.id}.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({photo:pickerPhoto})}).catch(()=>{});
-    }
-    await fetch(`${cfg.url}/${cfg.code}/lastMod.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(Date.now())});
     setSS('ok');
   }catch{setSS('err');}
 }
-
-async function patchPassFields(id,fields,_skipTGUpdate){
-  const pidx=S.passes.findIndex(p=>p.id===id);
-  if(pidx>-1)Object.assign(S.passes[pidx],fields);
-  saveLocal();
-  if(!cfg.url||!cfg.code)return;
-  try{
-    await fetch(`${cfg.url}/${cfg.code}/passes/${id}.json`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(fields)});
-    await fetch(`${cfg.url}/${cfg.code}/lastMod.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(Date.now())});
-  }catch(e){}
-}
-
-async function deletePassFB(id){
-  if(!cfg.url||!cfg.code)return;
-  try{
-    await fetch(`${cfg.url}/${cfg.code}/passes/${id}.json`,{method:'DELETE'});
-    // Also clean up photo node
-    fetch(`${cfg.url}/${cfg.code}/photos/${id}.json`,{method:'DELETE'}).catch(()=>{});
-    await fetch(`${cfg.url}/${cfg.code}/lastMod.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(Date.now())});
-  }catch(e){}
-}
-
 async function push(k){
   saveLocal();
-  if(k==='students'){syncGpStudentsToRef();gpStuPushShared();return;}
+  if(k==='students'){syncGpStudentsToRef();gpStuPushShared();}
   if(!cfg.url||!cfg.code)return;
-  setSS('ing');
-  if(k==='passes'){
-    // Full passes push — convert array to ID-keyed object
-    try{
-      const obj=S.passes.length===0?{'__empty':true}:Object.fromEntries(S.passes.map(p=>{const {pickerPhoto,...meta}=p;return [p.id,{...meta,pickerPhoto:pickerPhoto?'__has_photo':null}];}));
-      await fetch(`${cfg.url}/${cfg.code}/passes.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(obj)});
-      await fetch(`${cfg.url}/${cfg.code}/lastMod.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(Date.now())});
-      setSS('ok');
-    }catch{setSS('err');}
-    return;
-  }
+  S.lastMod=Date.now();localMod=S.lastMod;setSS('ing');
+  if(k==='students')return;
+  // Photos are compressed (~50KB) so safe to send to Firebase for multi-device sync
   const val=Array.isArray(S[k])&&S[k].length===0?{'__empty':true}:S[k];
-  try{
-    await fetch(`${cfg.url}/${cfg.code}/${k}.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(val)});
-    // Bump lastMod so other devices' fallback polling picks up the change
-    fetch(`${cfg.url}/${cfg.code}/lastMod.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(Date.now())}).catch(()=>{});
-    setSS('ok');
-  }catch{setSS('err');}
-}
-
-// Apply remote config (sync intervals) from Firebase _cfg node
-function gpApplyRemoteCfg(rc){
-  if(!rc)return;
-  const si=rc.syncIntervals||{};
-  let changed=false;
-  if(si.gpPasses&&si.gpPasses!==gpSyncInt()){localStorage.setItem('gp_sync_int',si.gpPasses);changed=true;}
-  if(si.gpStu&&si.gpStu!==gpStuSyncInt()){localStorage.setItem('gp_stu_sync_int',si.gpStu);changed=true;}
-  if(changed){
-    const piEl=document.getElementById('gp-sync-int');if(piEl)piEl.value=gpSyncInt();
-    const siEl=document.getElementById('gp-stu-sync-int');if(siEl)siEl.value=gpStuSyncInt();
-  }
-}
-function gpSyncInt(){return parseInt(localStorage.getItem('gp_sync_int')||'10',10)||10;}
-function gpStuSyncInt(){return parseInt(localStorage.getItem('gp_stu_sync_int')||'60',10)||60;}
-
-async function gpPushRemoteCfg(){
-  if(!cfg.url||!cfg.code)return;
-  const c={syncIntervals:{gpPasses:gpSyncInt(),gpStu:gpStuSyncInt()}};
-  try{await fetch(`${cfg.url}/${cfg.code}/_cfg.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(c)});}catch(e){}
-}
-
-async function gpSaveSyncInt(){
-  const v=parseInt(document.getElementById('gp-sync-int').value,10);
-  const sv=parseInt(document.getElementById('gp-stu-sync-int').value,10);
-  if(v<5||v>600){gpToast('⚠️ Passes interval must be 5–600s','err');return;}
-  if(sv<10||sv>600){gpToast('⚠️ Student interval must be 10–600s','err');return;}
-  localStorage.setItem('gp_sync_int',v);
-  localStorage.setItem('gp_stu_sync_int',sv);
-  await gpPushRemoteCfg();
-  gpToast('✅ Sync intervals saved & pushed to all devices');
+  try{await fetch(`${cfg.url}/${cfg.code}.json`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({[k]:val,lastMod:S.lastMod})});setSS('ok');}
+  catch{setSS('err');}
 }
 // Sync gatepass students directly into ref register STUDENTS array (same page)
 function syncGpStudentsToRef(){
@@ -3764,7 +3340,7 @@ function syncGpStudentsToRef(){
     if(!adm||!gs.name)return;
     var key=adm.toLowerCase();
     if(!map[key]){
-      STUDENTS.push({id:'gp_'+adm,name:gs.name,admNo:adm,cls:gs.class||'',fatherName:gs.fatherName||'',motherName:gs.motherName||'',phone:gs.phone||'',address:gs.address||''});
+      STUDENTS.push({id:'gp_'+adm,name:gs.name,admNo:adm,cls:gs.class||'',fatherName:gs.fatherName||'',motherName:gs.motherName||''});
       map[key]=STUDENTS[STUDENTS.length-1];
       added++;
     } else {
@@ -3773,8 +3349,6 @@ function syncGpStudentsToRef(){
       if(!ex.fatherName&&gs.fatherName)ex.fatherName=gs.fatherName;
       if(!ex.motherName&&gs.motherName)ex.motherName=gs.motherName;
       if(!ex.cls&&gs.class)ex.cls=gs.class;
-      if(!ex.phone&&gs.phone)ex.phone=gs.phone;
-      if(!ex.address&&gs.address)ex.address=gs.address;
     }
   });
   if(added){
@@ -3786,12 +3360,16 @@ function syncGpStudentsToRef(){
 function setSS(st){
   const b=document.getElementById('sbar'),d=document.getElementById('sdot'),t=document.getElementById('stxt'),ti=document.getElementById('stim');
   b.className=st;d.className='dot'+(st==='ing'?' pulse':'');
-  const live=gpSSE&&gpSSE.readyState===1;
-  const msgs={ok:live?'🟢 Live (SSE)':'🟢 Synced',err:'🔴 Sync error — retrying…',ing:'⏳ Syncing…',off:'⚪ Local mode — Firebase not connected'};
+  const msgs={ok:'🟢 Synced with Firebase',err:'🔴 Sync error',ing:'⏳ Syncing…',off:'⚪ Local mode — Firebase not connected'};
   t.textContent=msgs[st]||'';
   if(st==='ok')ti.textContent=new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',hour12:true});
 }
-function renderAll(){popBusSel();updBadge();renderRec();const a=document.querySelector('.tb.active');if(a){const f=a.getAttribute('onclick')||'';if(f.includes('cut'))renderCpBusSummary();if(f.includes('set')&&document.getElementById('set-ct').style.display!=='none'){renderBuses();renderStu();}}renderQGSidebar();}
+function startSync(){setSS('ing');fetchAll();if(syncIv)clearInterval(syncIv);syncIv=setInterval(fetchAll,6000);}
+// Re-sync immediately when tab/app comes back to foreground
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState==='visible'&&cfg.url&&cfg.code){localMod=0;fetchAll();}
+});
+function renderAll(){popBusSel();updBadge();const a=document.querySelector('.tb.active');if(!a)return;const f=a.getAttribute('onclick')||'';if(f.includes('rec'))renderRec();if(f.includes('cut'))renderCpBusSummary();if(f.includes('set')&&document.getElementById('set-ct').style.display!=='none'){renderBuses();renderStu();}renderQGSidebar();}
 
 // ═══ UTILS ═══
 function todayStr(){return new Date().toISOString().split('T')[0];}
@@ -3949,35 +3527,6 @@ document.addEventListener('click',ev=>{
   if(!ev.target.closest('#qp-modal .sug-wrap'))document.getElementById('qp-by-sug').style.display='none';
 });
 
-// ═══ PHOTO COMPRESSION ═══
-// Target: ≤100KB per photo (keeps 70 passes/day well under 10MB localStorage)
-// Logic: resize to max 400×320 then JPEG at quality 0.42
-function gpCompressPhoto(dataUrl, maxW, maxH, quality){
-  return new Promise(resolve=>{
-    const img=new Image();
-    img.onload=function(){
-      let w=img.naturalWidth, h=img.naturalHeight;
-      // Downscale keeping aspect ratio
-      if(w>maxW||h>maxH){
-        const ratio=Math.min(maxW/w, maxH/h);
-        w=Math.round(w*ratio); h=Math.round(h*ratio);
-      }
-      const c=document.createElement('canvas');
-      c.width=w; c.height=h;
-      c.getContext('2d').drawImage(img,0,0,w,h);
-      resolve(c.toDataURL('image/jpeg', quality));
-    };
-    img.onerror=()=>resolve(dataUrl); // fallback: return original
-    img.src=dataUrl;
-  });
-}
-// Compress and cache photo; returns compressed dataUrl
-async function gpStorePhoto(rawDataUrl){
-  // Max 400×320 @ quality 0.42 → ~50–90KB
-  const compressed=await gpCompressPhoto(rawDataUrl, 400, 320, 0.42);
-  return compressed;
-}
-
 // ═══ CAMERA ═══
 async function openCam(){
   const note=document.getElementById('cam-note'),fup=document.getElementById('file-up');
@@ -4003,51 +3552,32 @@ async function openCam(){
   }
   note.textContent='⚠️ Camera not supported.';note.style.display='block';fup.style.display='block';
 }
-async function capPhoto(){
-  const vid=document.getElementById('cam-vid');
-  const c=document.createElement('canvas');
-  c.width=vid.videoWidth||640; c.height=vid.videoHeight||480;
-  c.getContext('2d').drawImage(vid,0,0);
-  // Compress immediately: camera frames can be 1-5MB raw
-  photo=await gpCompressPhoto(c.toDataURL('image/jpeg',0.85), 400, 320, 0.42);
+function _gpCompressPhoto(dataUrl,cb){
+  const MAX_W=400,MAX_H=320,QUALITY=0.42;
+  const img=new Image();
+  img.onload=function(){
+    let w=img.width,h=img.height;
+    const ratio=Math.min(MAX_W/w,MAX_H/h,1);
+    w=Math.round(w*ratio);h=Math.round(h*ratio);
+    const c=document.createElement('canvas');c.width=w;c.height=h;
+    c.getContext('2d').drawImage(img,0,0,w,h);
+    cb(c.toDataURL('image/jpeg',QUALITY));
+  };
+  img.src=dataUrl;
+}
+function capPhoto(){
+  const v=document.getElementById('cam-vid'),c=document.createElement('canvas');
+  c.width=v.videoWidth||640;c.height=v.videoHeight||480;
+  c.getContext('2d').drawImage(v,0,0);
   stopCam();
-  document.getElementById('phimg').src=photo;
-  document.getElementById('phprev').style.display='inline-block';
+  _gpCompressPhoto(c.toDataURL('image/jpeg',1),compressed=>{
+    photo=compressed;
+    document.getElementById('phimg').src=photo;
+    document.getElementById('phprev').style.display='inline-block';
+  });
 }
 function stopCam(){if(camStream){camStream.getTracks().forEach(t=>t.stop());camStream=null;}document.getElementById('cam-wrap').style.display='none';document.getElementById('cam-ctrl').style.display='none';document.getElementById('cam-btn').style.display='block';}
-function filePhoto(ev){
-  const f=ev.target.files[0];if(!f)return;
-  const r=new FileReader();
-  r.onload=async e2=>{
-    const dataUrl=e2.target.result;
-    const img=new Image();
-    img.onload=async function(){
-      // Read EXIF orientation then compress
-      let orientation=1;
-      try{
-        const arr=new Uint8Array(ev.target._rawBuf||[]);
-        if(arr[0]===0xFF&&arr[1]===0xD8){
-          let i=2;while(i<arr.length-1){if(arr[i]===0xFF&&arr[i+1]===0xE1){const len=(arr[i+2]<<8)|arr[i+3];const seg=arr.slice(i+4,i+4+len);const te=new TextDecoder('ascii',{fatal:false}).decode(seg.slice(0,4));if(te==='Exif'){const little=seg[6]===0x49;const get16=(o)=>little?(seg[o+1]<<8)|seg[o]:(seg[o]<<8)|seg[o+1];const get32=(o)=>little?(seg[o+3]<<24|seg[o+2]<<16|seg[o+1]<<8|seg[o])>>>0:(seg[o]<<24|seg[o+1]<<16|seg[o+2]<<8|seg[o+3])>>>0;const ifdOff=get32(10)+8;const entries=get16(ifdOff);for(let j=0;j<entries;j++){const tag=get16(ifdOff+2+j*12);if(tag===0x0112){orientation=get16(ifdOff+2+j*12+8);break;}}}break;}i+=(arr[i+2]<<8)|arr[i+3];i+=2;}}
-      }catch(ex){}
-      const w=img.naturalWidth,h=img.naturalHeight;
-      const swapped=orientation>=5&&orientation<=8;
-      const c=document.createElement('canvas');
-      c.width=swapped?h:w;c.height=swapped?w:h;
-      const ctx=c.getContext('2d');
-      switch(orientation){case 2:ctx.transform(-1,0,0,1,w,0);break;case 3:ctx.transform(-1,0,0,-1,w,h);break;case 4:ctx.transform(1,0,0,-1,0,h);break;case 5:ctx.transform(0,1,1,0,0,0);break;case 6:ctx.transform(0,1,-1,0,h,0);break;case 7:ctx.transform(0,-1,-1,0,h,w);break;case 8:ctx.transform(0,-1,1,0,0,w);break;default:break;}
-      ctx.drawImage(img,0,0);
-      // Compress: max 400×320 @ quality 0.42 → ~50–90KB
-      photo=await gpCompressPhoto(c.toDataURL('image/jpeg',0.85), 400, 320, 0.42);
-      document.getElementById('phimg').src=photo;
-      document.getElementById('phprev').style.display='inline-block';
-    };
-    img.src=dataUrl;
-  };
-  const r2=new FileReader();
-  r2.onload=e3=>{ev.target._rawBuf=new Uint8Array(e3.target.result);};
-  r2.readAsArrayBuffer(f);
-  r.readAsDataURL(f);
-}
+function filePhoto(ev){const f=ev.target.files[0];if(!f)return;const r=new FileReader();r.onload=e2=>{_gpCompressPhoto(e2.target.result,compressed=>{photo=compressed;document.getElementById('phimg').src=photo;document.getElementById('phprev').style.display='inline-block';});};r.readAsDataURL(f);}
 function clrPhoto(){photo=null;document.getElementById('phprev').style.display='none';document.getElementById('phimg').src='';}
 
 // ═══ ISSUE PASS ═══
@@ -4056,16 +3586,15 @@ async function issuePass(){
   const by=document.getElementById('cpby').value.trim();if(!by){gpToast('⚠️ Enter picker name','err');return;}
   const existing=S.passes.find(p=>p.admissionNumber===cpSel.admissionNumber&&p.date===todayStr());
   if(existing){gpToast(`🚫 Pass already issued for ${cpSel.name} today (${existing.time})`,'err');return;}
-  const pass={id:uid(),date:todayStr(),time:nowT(),gateOutTime:null,studentName:cpSel.name,admissionNumber:cpSel.admissionNumber,class:cpSel.class||'',fatherName:cpSel.fatherName||'',motherName:cpSel.motherName||'',address:cpSel.address||'',pickedUpBy:by,relation:document.getElementById('cprel').value,reason:document.getElementById('cpreason').value.trim(),busNumber:document.getElementById('cpbus').value||cpSel.busNumber||'',pickerPhoto:photo};
+  const pass={id:uid(),date:todayStr(),time:nowT(),gateOutTime:null,studentName:cpSel.name,admissionNumber:cpSel.admissionNumber,class:cpSel.class||'',fatherName:cpSel.fatherName||'',motherName:cpSel.motherName||'',pickedUpBy:by,relation:document.getElementById('cprel').value,reason:document.getElementById('cpreason').value.trim(),busNumber:document.getElementById('cpbus').value||cpSel.busNumber||'',pickerPhoto:photo};
   S.passes.unshift(pass);
-  if(pass.pickerPhoto)_photoCache.set(pass.id,pass.pickerPhoto);
-  await pushOnePass(pass);
+  await push('passes');
   gpToast(`✅ Pass issued for ${pass.studentName}`);
   if(_gpPrintCfg.enabled!==false)gpPrintA6Slip(pass);
   // Telegram school log — always fires (photo or text-only)
   if(TGCfg.enabled) sendToTelegramLog(pass);
   // OneDrive photo upload — only if photo exists
-  if(GPODCfg.enabled && _resolvePhoto(pass)) uploadGatePassPhotoToOneDrive(pass);
+  if(GPODCfg.enabled && pass.pickerPhoto) uploadGatePassPhotoToOneDrive(pass);
   clrSel();['cpby','cpreason'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('cprel').value='';document.getElementById('cpbus').value='';clrPhoto();updBadge();
   updReasonSugs();renderQGSidebar();
@@ -4221,9 +3750,9 @@ async function issueQuickPass(){
   const stu=qpSel.stu||S.students.find(s=>s.admissionNumber===qpSel.adm);
   const existing=S.passes.find(p=>p.admissionNumber===qpSel.adm&&p.date===todayStr());
   if(existing){gpToast(`🚫 Pass already issued for ${qpSel.name} today`,'err');return;}
-  const pass={id:uid(),date:todayStr(),time:nowT(),gateOutTime:null,studentName:qpSel.name,admissionNumber:qpSel.adm,class:qpSel.cls||'',fatherName:stu?stu.fatherName||'':'',motherName:stu?stu.motherName||'':'',address:stu?stu.address||'':'',pickedUpBy:by,relation:document.getElementById('qprel').value,reason:document.getElementById('qpreason').value.trim(),busNumber:stu?stu.busNumber||'':'',pickerPhoto:null};
+  const pass={id:uid(),date:todayStr(),time:nowT(),gateOutTime:null,studentName:qpSel.name,admissionNumber:qpSel.adm,class:qpSel.cls||'',fatherName:stu?stu.fatherName||'':'',motherName:stu?stu.motherName||'':'',pickedUpBy:by,relation:document.getElementById('qprel').value,reason:document.getElementById('qpreason').value.trim(),busNumber:stu?stu.busNumber||'':'',pickerPhoto:null};
   S.passes.unshift(pass);
-  await pushOnePass(pass);
+  await push('passes');
   gpToast(`⚡ Quick pass issued for ${pass.studentName}`);
   gpPrintA6Slip(pass);
   closeQP();updBadge();renderQGSidebar();
@@ -4242,7 +3771,7 @@ async function issueQuickPass(){
 }
 
 // ═══ STUDENTS ═══
-function openSF(){['sfn','sfa','sfc','sff','sfm','sfphone','sfaddress'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});document.getElementById('sfb').value='';document.getElementById('sf-form').style.display='block';document.getElementById('bulk-form').style.display='none';}
+function openSF(){['sfn','sfa','sfc','sff','sfm','sfphone','sfaddr'].forEach(id=>document.getElementById(id).value='');document.getElementById('sfb').value='';document.getElementById('sf-form').style.display='block';document.getElementById('bulk-form').style.display='none';}
 function closeSF(){document.getElementById('sf-form').style.display='none';}
 function togBulk(){const f=document.getElementById('bulk-form');f.style.display=f.style.display==='block'?'none':'block';document.getElementById('sf-form').style.display='none';}
 async function saveStu(){
@@ -4250,7 +3779,7 @@ async function saveStu(){
   const a=document.getElementById('sfa').value.trim().replace(/\s/g,'');
   if(!n||!a){gpToast('Name and Adm No required','err');return;}
   if(!/^[a-zA-Z0-9]{1,8}$/.test(a)){gpToast('Adm No must be 1–8 alphanumeric characters','err');return;}
-  const st={name:n,admissionNumber:a,class:document.getElementById('sfc').value.trim(),fatherName:document.getElementById('sff').value.trim(),motherName:document.getElementById('sfm').value.trim(),busNumber:document.getElementById('sfb').value,phone:document.getElementById('sfphone').value.trim(),address:(document.getElementById('sfaddress').value||'').trim()};
+  const st={name:n,admissionNumber:a,class:document.getElementById('sfc').value.trim(),fatherName:document.getElementById('sff').value.trim(),motherName:document.getElementById('sfm').value.trim(),busNumber:document.getElementById('sfb').value,phone:document.getElementById('sfphone').value.trim(),address:document.getElementById('sfaddr').value.trim()};
   const idx=S.students.findIndex(s=>s.admissionNumber===a);
   if(idx>=0){S.students[idx]=st;gpToast('Student updated');}else{S.students.unshift(st);gpToast('Student added');}
   await push('students');gpStuPushShared();closeSF();renderStu();
@@ -4296,7 +3825,7 @@ function gpRenderStuPage(){
       <td style="padding:8px 6px;font-size:11px;color:var(--sub)">${e(s.fatherName||'—')}</td>
       <td style="padding:8px 6px;font-size:11px;color:var(--green)">${e(s.busNumber||'—')}</td>
       <td style="padding:8px 6px;font-family:var(--mono);font-size:11px;color:${s.phone?'var(--wa)':'var(--muted)'}">${s.phone?s.phone.slice(-10):'—'}</td>
-      <td style="padding:8px 6px;font-size:11px;color:var(--sub);max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${e(s.address||'')}">${e(s.address||'—')}</td>
+      <td style="padding:8px 6px;font-size:11px;color:var(--sub);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${e(s.address||'')}">${e(s.address||'—')}</td>
       <td style="padding:6px">
         <div style="display:flex;gap:3px;justify-content:flex-end">
           <button onclick="editStu('${e(s.admissionNumber)}')" style="background:none;border:1px solid var(--border);border-radius:6px;color:var(--sub);cursor:pointer;font-size:12px;padding:3px 7px" title="Edit">✏️</button>
@@ -4318,85 +3847,9 @@ function gpRenderStuPage(){
 }
 function gpStuPrev(){if(gpStuPage>1){gpStuPage--;gpRenderStuPage();}}
 function gpStuNext(){const p=Math.ceil(gpStuFiltered.length/GP_STU_PAGE);if(gpStuPage<p){gpStuPage++;gpRenderStuPage();}}
-function editStu(adm){const s=S.students.find(x=>x.admissionNumber===adm);if(!s)return;document.getElementById('sfn').value=s.name||'';document.getElementById('sfa').value=s.admissionNumber||'';document.getElementById('sfc').value=s.class||'';document.getElementById('sff').value=s.fatherName||'';document.getElementById('sfm').value=s.motherName||'';document.getElementById('sfb').value=s.busNumber||'';document.getElementById('sfphone').value=s.phone||'';const sfad=document.getElementById('sfaddress');if(sfad)sfad.value=s.address||'';document.getElementById('sf-form').style.display='block';document.getElementById('bulk-form').style.display='none';document.getElementById('sf-form').scrollIntoView({behavior:'smooth'});}
+function editStu(adm){const s=S.students.find(x=>x.admissionNumber===adm);if(!s)return;document.getElementById('sfn').value=s.name||'';document.getElementById('sfa').value=s.admissionNumber||'';document.getElementById('sfc').value=s.class||'';document.getElementById('sff').value=s.fatherName||'';document.getElementById('sfm').value=s.motherName||'';document.getElementById('sfb').value=s.busNumber||'';document.getElementById('sfphone').value=s.phone||'';document.getElementById('sfaddr').value=s.address||'';document.getElementById('sf-form').style.display='block';document.getElementById('bulk-form').style.display='none';document.getElementById('sf-form').scrollIntoView({behavior:'smooth'});}
 function loadCSV(ev){const f=ev.target.files[0];if(!f)return;const r=new FileReader();r.onload=e2=>document.getElementById('csvt').value=e2.target.result;r.readAsText(f);}
-// ── Column Mapping Modal ──────────────────────────────────
-let _gpColData=null; // {headers, rows}
-function gpShowColMap(headers,rows){
-  _gpColData={headers,rows};
-  const fields=[
-    {key:'name',label:'Student Name',req:true},
-    {key:'adm',label:'Adm / Roll No',req:true},
-    {key:'cls',label:'Class',req:false},
-    {key:'father',label:'Father Name',req:false},
-    {key:'mother',label:'Mother Name',req:false},
-    {key:'bus',label:'Bus No',req:false},
-    {key:'phone',label:'Phone / WhatsApp',req:false},
-    {key:'address',label:'Address',req:false},
-  ];
-  // Auto-detect best matching column for each field
-  const kws={name:['name','student'],adm:['adm','roll','no','id','enroll'],cls:['class','grade','std','section'],father:['father','dad'],mother:['mother','mom'],bus:['bus','route'],phone:['phone','mobile','contact','whatsapp','num'],address:['address','addr','location','house','street']};
-  function best(kw){const lc=headers.map(h=>(h||'').toLowerCase());let bi=-1,bs=0;lc.forEach((h,i)=>{const s=kw.filter(k=>h.includes(k)).length;if(s>bs){bs=s;bi=i;}});return bi;}
-  const detected={};Object.keys(kws).forEach(k=>{detected[k]=best(kws[k]);});
-  const opts=headers.map((h,i)=>`<option value="${i}">${h||'(col '+(i+1)+')'}</option>`).join('');
-  const noneOpt='<option value="-1">— skip —</option>';
-  const rows2=fields.map(f=>`<tr>
-    <td style="padding:6px 10px;font-size:12px;font-weight:${f.req?'700':'400'};color:var(--text)">${f.label}${f.req?' <span style="color:var(--red)">*</span>':''}</td>
-    <td style="padding:6px 8px"><select id="gpmap-${f.key}" class="sel" style="width:100%;font-size:12px">${noneOpt}${opts}</select></td>
-  </tr>`).join('');
-  let m=document.getElementById('gp-col-map-modal');
-  if(!m){m=document.createElement('div');m.id='gp-col-map-modal';m.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px';document.body.appendChild(m);}
-  m.innerHTML=`<div style="background:var(--bg);border-radius:14px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.35);padding:20px">
-    <div style="font-size:15px;font-weight:800;color:var(--text);margin-bottom:4px">📊 Map Excel Columns</div>
-    <div style="font-size:12px;color:var(--sub);margin-bottom:14px">Detected ${headers.length} columns · ${rows.length} data rows. Map each field to the correct column.</div>
-    <table style="width:100%;border-collapse:collapse;margin-bottom:16px">
-      <thead><tr><th style="padding:6px 10px;font-size:10px;text-transform:uppercase;letter-spacing:.7px;color:var(--sub);text-align:left">Field</th><th style="padding:6px 8px;font-size:10px;text-transform:uppercase;letter-spacing:.7px;color:var(--sub);text-align:left">Column in your file</th></tr></thead>
-      <tbody>${rows2}</tbody>
-    </table>
-    <div style="display:flex;gap:8px">
-      <button class="btn bp flex1" onclick="gpApplyColMap()">✅ Import ${rows.length} Students</button>
-      <button class="btn bgh" onclick="document.getElementById('gp-col-map-modal').style.display='none'">Cancel</button>
-    </div>
-  </div>`;
-  m.style.display='flex';
-  // Set detected defaults
-  Object.keys(kws).forEach(k=>{const el=document.getElementById('gpmap-'+k);if(el&&detected[k]>=0)el.value=detected[k];});
-}
-async function gpApplyColMap(){
-  if(!_gpColData)return;
-  const {headers,rows}=_gpColData;
-  const get=key=>{const el=document.getElementById('gpmap-'+key);return el?parseInt(el.value,10):-1;};
-  const nI=get('name'),aI=get('adm');
-  if(nI<0||aI<0){gpToast('⚠️ Name and Adm columns required','err');return;}
-  const cI=get('cls'),fI=get('father'),mI=get('mother'),bI=get('bus'),phI=get('phone'),addrI=get('address');
-  const map={};S.students.forEach(s=>s.admissionNumber&&(map[String(s.admissionNumber).trim()]=s));
-  let added=0,updated=0;
-  rows.forEach(c=>{
-    const adm=(c[aI]||'').toString().trim(),name=(c[nI]||'').toString().trim();
-    if(!adm&&!name)return;
-    const phone=phI>=0?((c[phI]||'').toString().replace(/[^0-9]/g,'')):'';
-    const st={name,admissionNumber:adm,class:cI>=0?(c[cI]||'').toString().trim():'',fatherName:fI>=0?(c[fI]||'').toString().trim():'',motherName:mI>=0?(c[mI]||'').toString().trim():'',busNumber:bI>=0?(c[bI]||'').toString().trim():'',phone,address:addrI>=0?(c[addrI]||'').toString().trim():''};
-    if(adm&&map[adm]){Object.assign(map[adm],st);updated++;}else{map[adm||('_r'+added)]=st;added++;}
-  });
-  S.students=Object.values(map);
-  await push('students');gpStuPushShared();
-  gpToast(`✅ ${added} added · ${updated} updated · Total: ${S.students.length}`);
-  document.getElementById('gp-col-map-modal').style.display='none';
-  document.getElementById('csvt').value='';
-  const bf=document.getElementById('bulk-form');if(bf)bf.style.display='none';
-  renderStu();
-  syncGpStudentsToRef();
-}
-
-async function procBulk(){
-  const text=document.getElementById('csvt').value.trim();
-  if(!text){gpToast('⚠️ No data','err');return;}
-  const lines=text.split(/\r?\n/).filter(l=>l.trim());
-  if(lines.length<2){gpToast('⚠️ Need header + data rows','err');return;}
-  const headers=lines[0].split(',').map(h=>h.trim().replace(/^"|"$/g,''));
-  const rows=lines.slice(1).map(l=>l.split(',').map(v=>v.trim().replace(/^"|"$/g,'')));
-  gpShowColMap(headers,rows);
-}
+async function procBulk(){const text=document.getElementById('csvt').value.trim();if(!text){gpToast('⚠️ No data','err');return;}const lines=text.split(/\r?\n/).filter(l=>l.trim());if(lines.length<2){gpToast('⚠️ Need header + data rows','err');return;}const raw=lines[0].split(',').map(h=>h.trim().replace(/^"|"$/g,'').toLowerCase());const col=kws=>raw.findIndex(h=>kws.some(k=>h.includes(k)));const nI=col(['name']),aI=col(['admission','adm','roll']),cI=col(['class','grade']),fI=col(['father']),mI=col(['mother']),bI=col(['bus']),phI=col(['phone','mobile','contact','whatsapp']);if(nI<0||aI<0){gpToast('⚠️ Need name & admissionNumber columns','err');return;}const map={};S.students.forEach(s=>s.admissionNumber&&(map[String(s.admissionNumber).trim()]=s));let added=0,updated=0;for(let i=1;i<lines.length;i++){const c=lines[i].split(',').map(v=>v.trim().replace(/^"|"$/g,''));const adm=(c[aI]||'').trim(),name=c[nI];if(!adm&&!name)continue;const phone=(phI>=0?(c[phI]||''):'').replace(/[^0-9]/g,'');const st={name,admissionNumber:adm,class:cI>=0?c[cI]:'',fatherName:fI>=0?c[fI]:'',motherName:mI>=0?c[mI]:'',busNumber:bI>=0?c[bI]:'',phone};if(adm&&map[adm]){Object.assign(map[adm],st);updated++;}else{map[adm||('_'+i)]=st;added++;}}S.students=Object.values(map);await push('students');gpToast(`✅ ${added} added · ${updated} updated · Total: ${S.students.length}`);document.getElementById('csvt').value='';togBulk();renderStu();}
 
 // ═══ RECORDS ═══
 function rcToday(){document.getElementById('rcdate').value=todayStr();renderRec();}
@@ -4419,13 +3872,11 @@ function renderRec(){
     const lockedMsg=lk?`<div style="font-size:11px;color:var(--red);font-weight:600;margin-bottom:6px">🔒 Locked — Delete via Settings → Master Delete</div>`:'';
     // Compact info line
     const infoLine=[
+      p.fatherName?`👨 ${e(p.fatherName)}`:'',
       p.gateOutTime?`✅ Out: ${p.gateOutTime}`:'',
       p.reason?`📝 ${e(p.reason)}`:'',
     ].filter(Boolean).join(' &nbsp;·&nbsp; ');
-    const _rphoto=_resolvePhoto(p);
-    const photoEl=p.pickerPhoto==='__has_photo'&&!_rphoto
-      ?`<div id="ph-${p.id}" style="margin-top:6px;font-size:11px;color:var(--muted);cursor:pointer" onclick="_loadPassPhoto('${p.id}')">📷 Photo available — tap to load</div>`
-      :(_rphoto?`<div style="margin-top:6px;border:1.5px solid var(--border);border-radius:6px;background:var(--bg2);overflow:hidden;text-align:center"><img src="${_rphoto}" style="max-height:80px;max-width:100%;border-radius:4px;display:block;margin:0 auto;object-fit:contain;"></div>`:'');
+    const photoEl=p.pickerPhoto?`<img src="${p.pickerPhoto}" style="max-height:80px;border-radius:6px;display:block;margin-top:6px">`:'';
     const printBtn=`<button onclick="event.stopPropagation();gpPrintPassById('${p.id}')" class="btn bgh" style="font-size:12px;padding:6px 12px;background:var(--purple-l);border-color:var(--purple);color:var(--purple)">🖨️ Print</button>`;
     const expandBody=`${lockedMsg}${infoLine?`<div style="font-size:11px;color:var(--sub);line-height:1.7">${infoLine}</div>`:''}${photoEl}<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:7px">${waBtn}${printBtn}${delBtn}</div>`;
     return `<div class="card" onclick="tgCard('${p.id}')" style="cursor:pointer">
@@ -4460,23 +3911,9 @@ async function delPass(id){
   const pass=S.passes.find(p=>p.id===id);
   if(pass&&TGCfg.enabled&&pass.tgMsgId) deleteTGMessage(TGCfg.token,TGCfg.chatId,pass.tgMsgId);
   S.passes=S.passes.filter(p=>p.id!==id);
-  _photoCache.del(id);
-  saveLocal();
-  renderRec();updBadge();
+  await push('passes');
   gpToast('🗑 Pass deleted','err');
-  await deletePassFB(id);
-}
-
-// Central TG delete — uses saved chatId, fallback to all configured chatIds
-async function _gpTGDeleteMsgs(pass){
-  if(!TGCfg.enabled||!TGCfg.token||!pass.tgMsgId)return;
-  const cid=pass.tgChatId||TGCfg.chatId;
-  if(cid){
-    deleteTGMessage(TGCfg.token,cid,pass.tgMsgId);
-  } else {
-    const ids=TGCfg.chatIds&&TGCfg.chatIds.length?TGCfg.chatIds:[];
-    ids.forEach(c=>deleteTGMessage(TGCfg.token,c,pass.tgMsgId));
-  }
+  renderRec();updBadge();
 }
 
 // ═══ MASTER DELETE — SELECT MODE ═══
@@ -4499,18 +3936,10 @@ async function execDel(){
   var exited=ids.filter(function(id){var p=S.passes.find(function(p){return p.id===id;});return !!(p&&p.gateOutTime);}).length;
   var msg='Delete '+ids.length+' record'+(ids.length>1?'s':'')+(exited?' ('+exited+' already exited)':'')+' — cannot be undone?';
   if(!confirm(msg))return;
-  const toDelPasses=ids.map(id=>S.passes.find(x=>x.id===id)).filter(Boolean);
-  // Update UI immediately
   S.passes=S.passes.filter(function(p){return ids.indexOf(p.id)===-1;});
-  ids.forEach(id=>_photoCache.del(id));
-  saveLocal();
-  closeMD();updBadge();renderRec();
+  await push('passes');
   gpToast(ids.length+' record'+(ids.length>1?'s':'')+' deleted','err');
-  // TG: delete messages for all deleted passes
-  if(TGCfg.enabled&&TGCfg.token){
-    toDelPasses.forEach(p=>{if(p.tgMsgId) deleteTGMessage(TGCfg.token,p.tgChatId||TGCfg.chatId,p.tgMsgId);});
-  }
-  await Promise.all(ids.map(id=>deletePassFB(id)));
+  closeMD();updBadge();renderRec();
 }
 
 // ═══ MASTER DELETE — DATE RANGE ═══
@@ -4531,20 +3960,19 @@ function drPreview(){
   Object.entries(byDate).sort((a,b)=>b[0].localeCompare(a[0])).forEach(([date,recs])=>{html+=`<div style="font-size:11px;font-weight:700;color:var(--sub);text-transform:uppercase;margin:8px 0 4px">${fmtD(date)} — ${recs.length} record${recs.length>1?'s':''}</div>`;recs.forEach(p=>{html+=`<div style="font-size:12px;padding:4px 6px;border-radius:5px;margin-bottom:3px;background:var(--bg4);display:flex;justify-content:space-between"><span style="font-weight:600">${e(p.studentName)}</span><span style="font-family:var(--mono);font-size:10px;color:${p.gateOutTime?'var(--green)':'var(--amber)'}">${p.gateOutTime?'EXITED':'PENDING'}</span></div>`;});});
   html+=`</div>`;prev.innerHTML=html;btn.textContent=`🗑 Delete ${hits.length} Record${hits.length>1?'s':''} (${fmtD(from)} → ${fmtD(to)})`;btn.style.display='flex';
 }
-async function execDR(){const from=document.getElementById('dr-from').value,to=document.getElementById('dr-to').value;if(!from||!to)return;const hits=S.passes.filter(p=>p.date>=from&&p.date<=to);if(!hits.length){gpToast('No records in range','inf');return;}const exited=hits.filter(p=>p.gateOutTime).length;if(!confirm(`Permanently delete ${hits.length} record${hits.length>1?'s':''} from ${fmtD(from)} to ${fmtD(to)}?\n(${exited} exited + ${hits.length-exited} pending)\n\nThis CANNOT be undone.`))return;const hitIds=hits.map(p=>p.id);S.passes=S.passes.filter(p=>!(p.date>=from&&p.date<=to));await Promise.all(hitIds.map(id=>deletePassFB(id)));gpToast(`🗑 ${hits.length} records deleted`,'err');closeDR();updBadge();}
+async function execDR(){const from=document.getElementById('dr-from').value,to=document.getElementById('dr-to').value;if(!from||!to)return;const hits=S.passes.filter(p=>p.date>=from&&p.date<=to);if(!hits.length){gpToast('No records in range','inf');return;}const exited=hits.filter(p=>p.gateOutTime).length;if(!confirm(`Permanently delete ${hits.length} record${hits.length>1?'s':''} from ${fmtD(from)} to ${fmtD(to)}?\n(${exited} exited + ${hits.length-exited} pending)\n\nThis CANNOT be undone.`))return;S.passes=S.passes.filter(p=>!(p.date>=from&&p.date<=to));await push('passes');gpToast(`🗑 ${hits.length} records deleted`,'err');closeDR();updBadge();}
 
 // ═══ PASSWORD ═══
 function recCheckPW(){const v=document.getElementById('pw-inp').value;if(v===PASS){document.getElementById('pw-gate').style.display='none';document.getElementById('set-ct').style.display='block';document.getElementById('pw-err').textContent='';loadCfgF();gpLoadStuCfg();gpLoadWACfg();gpLoadQPThresh();gpLoadPrintCfg();renderBuses();renderStu();gpUpdateSettingsSubs();var fb=document.getElementById('gacc-fb');if(fb&&!fb.classList.contains('open'))fb.classList.add('open');}else{document.getElementById('pw-err').textContent='❌ Wrong password';document.getElementById('pw-inp').value='';}}
 // ═══ GATEPASS STUDENT DB SHARED SYNC ═══
 var gpStuCfg={url:'',code:''};
 var gpStuIv=null;
-var gpStuLocalMod=0;
 
 function gpLoadStuCfg(){
   var u=localStorage.getItem('gp_stu_url'),cd=localStorage.getItem('gp_stu_code');
   var urlEl=document.getElementById('gp-stu-url'),codeEl=document.getElementById('gp-stu-code'),stEl=document.getElementById('gp-stu-status');
   if(urlEl)urlEl.value=u||'';if(codeEl)codeEl.value=cd||'';
-  if(u&&cd){gpStuCfg={url:u,code:cd};if(stEl)stEl.textContent='Connected: '+cd;if(gpStuIv){clearInterval(gpStuIv);gpStuIv=null;}startStuSSE();}
+  if(u&&cd){gpStuCfg={url:u,code:cd};if(stEl)stEl.textContent='Connected: '+cd;gpStuFetchShared();if(gpStuIv)clearInterval(gpStuIv);gpStuIv=setInterval(gpStuFetchShared,30000);}
   else{if(stEl)stEl.textContent='Not connected';}
   var sub=document.getElementById('gacc-studb-sub');if(sub)sub.textContent=u?'Connected':'Not connected';
 }
@@ -4561,13 +3989,13 @@ async function gpSaveStuCfg(){
     gpStuCfg={url,code};
     if(stEl)stEl.textContent='✅ Connected! Syncing…';
     var sub=document.getElementById('gacc-studb-sub');if(sub)sub.textContent='Connected';
-    if(gpStuIv){clearInterval(gpStuIv);gpStuIv=null;}startStuSSE();
+    gpStuFetchShared();if(gpStuIv)clearInterval(gpStuIv);gpStuIv=setInterval(gpStuFetchShared,30000);
   }catch{if(stEl)stEl.textContent='❌ Connection failed';}
 }
 function gpDisconnStu(){
   if(!confirm('Disconnect student DB sync?'))return;
   localStorage.removeItem('gp_stu_url');localStorage.removeItem('gp_stu_code');
-  gpStuCfg={url:'',code:''};if(gpStuIv)clearInterval(gpStuIv);gpStuIv=null;if(gpStuSSE){gpStuSSE.close();gpStuSSE=null;}
+  gpStuCfg={url:'',code:''};if(gpStuIv)clearInterval(gpStuIv);
   var stEl=document.getElementById('gp-stu-status');if(stEl)stEl.textContent='Disconnected';
   var sub=document.getElementById('gacc-studb-sub');if(sub)sub.textContent='Not connected';
   gpToast('Student sync disconnected','inf');
@@ -4575,28 +4003,19 @@ function gpDisconnStu(){
 async function gpStuFetchShared(){
   if(!gpStuCfg.url||!gpStuCfg.code)return;
   try{
-    var r=await fetch(gpStuCfg.url+'/'+gpStuCfg.code+'/students.json');
-    if(!r.ok)return;var raw=await r.json();
-    if(raw===null){
-      // Try old full-doc format and migrate
-      var r2=await fetch(gpStuCfg.url+'/'+gpStuCfg.code+'.json');
-      if(!r2.ok)return;var d2=await r2.json();
-      if(!d2||!d2.students)return;raw=d2.students;
-      // Migrate to split node
-      try{await fetch(gpStuCfg.url+'/'+gpStuCfg.code+'/students.json',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(raw)});}catch(e){}
-    }
-    var remote=Array.isArray(raw)?raw:(raw.__empty?[]:Object.values(raw));
+    var r=await fetch(gpStuCfg.url+'/'+gpStuCfg.code+'.json');
+    if(!r.ok)return;var d=await r.json();
+    if(!d||!d.students)return;
+    var remote=Array.isArray(d.students)?d.students:(d.students.__empty?[]:Object.values(d.students));
+    // Merge: remote students override local by admissionNumber
     var map={};
     S.students.forEach(function(s){map[s.admissionNumber]=s;});
     remote.forEach(function(rs){
       var adm=(rs.admNo||rs.admissionNumber||'').trim();
       if(!adm)return;
-      var ex=map[adm]||{};
-      var existingPhone=(ex.phone)||'';
-      var existingBus=(ex.busNumber)||'';
+      var existingPhone=(map[adm]&&map[adm].phone)||'';
       var remotePhone=(rs.phone||rs.mobile||rs.contact||'').replace(/[^0-9]/g,'');
-      var remoteBus=(rs.busNumber||rs.bus||'').trim();
-      map[adm]={name:rs.name||ex.name||'',admissionNumber:adm,class:rs.cls||rs.class||ex.class||'',fatherName:rs.fatherName||ex.fatherName||'',motherName:rs.motherName||ex.motherName||'',busNumber:remoteBus||existingBus,phone:remotePhone||existingPhone,address:rs.address||ex.address||''};
+      map[adm]={name:rs.name||'',admissionNumber:adm,class:rs.cls||rs.class||'',fatherName:rs.fatherName||'',motherName:rs.motherName||'',busNumber:rs.busNumber||rs.bus||'',phone:remotePhone||existingPhone};
     });
     S.students=Object.values(map);
     saveLocal();renderStu();popBusSel();updBadge();
@@ -4606,25 +4025,8 @@ async function gpStuFetchShared(){
 }
 async function gpStuPushShared(){
   if(!gpStuCfg.url||!gpStuCfg.code)return;
-  // Normalize: write both field name conventions so both apps can read correctly
-  const normalized=S.students.map(s=>({
-    admNo:s.admissionNumber||s.admNo||'',
-    admissionNumber:s.admissionNumber||s.admNo||'',
-    name:s.name||'',
-    cls:s.class||s.cls||'',
-    class:s.class||s.cls||'',
-    fatherName:s.fatherName||'',
-    motherName:s.motherName||'',
-    busNumber:s.busNumber||'',
-    bus:s.busNumber||'',
-    phone:s.phone||'',
-    address:s.address||''
-  }));
-  const sVal=normalized.length===0?{'__empty':true}:normalized;
-  try{
-    await fetch(gpStuCfg.url+'/'+gpStuCfg.code+'/students.json',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(sVal)});
-    fetch(gpStuCfg.url+'/'+gpStuCfg.code+'/lastMod.json',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(Date.now())}).catch(()=>{});
-  }catch(e){}
+  var sVal=S.students.length===0?{'__empty':true}:S.students;
+  try{await fetch(gpStuCfg.url+'/'+gpStuCfg.code+'.json',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({students:sVal,lastMod:Date.now()})});}catch(e){}
 }
 
 // ═══ GATEPASS WHATSAPP ═══
@@ -4795,7 +4197,7 @@ function gpTestWA(){
 }
 
 function recLockSet(){document.getElementById('pw-gate').style.display='block';document.getElementById('set-ct').style.display='none';document.getElementById('pw-inp').value='';document.getElementById('pw-err').textContent='';document.getElementById('mdlist').style.display='none';document.getElementById('drlist').style.display='none';document.getElementById('mdui').style.display='flex';}
-function loadCfgF(){document.getElementById('cfg-url').value=localStorage.getItem('gp_url')||'';document.getElementById('cfg-code').value=localStorage.getItem('gp_code')||'';const connected=!!(localStorage.getItem('gp_url')&&localStorage.getItem('gp_code'));document.getElementById('sync-status-info').textContent=connected?`✅ Connected to: ${localStorage.getItem('gp_url')} / ${localStorage.getItem('gp_code')}`:'⚪ Not connected — fill in details and click Save & Connect.';const piEl=document.getElementById('gp-sync-int');if(piEl)piEl.value=gpSyncInt();const siEl=document.getElementById('gp-stu-sync-int');if(siEl)siEl.value=gpStuSyncInt();}
+function loadCfgF(){document.getElementById('cfg-url').value=localStorage.getItem('gp_url')||'';document.getElementById('cfg-code').value=localStorage.getItem('gp_code')||'';const connected=!!(localStorage.getItem('gp_url')&&localStorage.getItem('gp_code'));document.getElementById('sync-status-info').textContent=connected?`✅ Connected to: ${localStorage.getItem('gp_url')} / ${localStorage.getItem('gp_code')}`:'⚪ Not connected — fill in details and click Save & Connect.';}
 async function testCfg(){const url=document.getElementById('cfg-url').value.trim().replace(/\/$/,'');const code=document.getElementById('cfg-code').value.trim().replace(/[^a-zA-Z0-9_-]/g,'');if(!url||!code){cfgSt('⚠️ Fill in both fields first','var(--amber)');return;}cfgSt('Testing…','var(--blue)');try{const r=await fetch(`${url}/${code}/ping.json`,{method:'PUT',body:JSON.stringify(1)});if(!r.ok)throw 0;cfgSt('✅ Connection successful!','var(--green)');}catch{cfgSt('❌ Failed — check URL & Firebase rules','var(--red)');}}
 async function saveCfg(){const url=document.getElementById('cfg-url').value.trim().replace(/\/$/,'');const code=document.getElementById('cfg-code').value.trim().replace(/[^a-zA-Z0-9_-]/g,'');if(!url||!code){cfgSt('⚠️ Fill both fields','var(--amber)');return;}document.getElementById('cfg-save-btn').disabled=true;cfgSt('Testing & saving…','var(--blue)');try{const r=await fetch(`${url}/${code}/ping.json`,{method:'PUT',body:JSON.stringify(1)});if(!r.ok)throw 0;localStorage.setItem('gp_url',url);localStorage.setItem('gp_code',code);cfg={url,code};cfgSt('✅ Saved! Syncing now…','var(--green)');startSync();loadCfgF();}catch{cfgSt('❌ Connection failed','var(--red)');}document.getElementById('cfg-save-btn').disabled=false;}
 function disconnectFB(){if(!confirm('Disconnect Firebase?'))return;localStorage.removeItem('gp_url');localStorage.removeItem('gp_code');cfg={url:'',code:''};if(syncIv)clearInterval(syncIv);setSS('off');loadCfgF();gpToast('✕ Firebase disconnected','inf');}
@@ -4875,7 +4277,6 @@ function gpLoadPrintCfg(){
   const enEl=document.getElementById('gp-print-enabled');if(enEl)enEl.checked=_gpPrintCfg.enabled!==false;
   const bwEl=document.getElementById('gp-print-bw');if(bwEl)bwEl.checked=!!_gpPrintCfg.bw;
   const phEl=document.getElementById('gp-print-photo');if(phEl)phEl.checked=!!_gpPrintCfg.printPhoto;
-  const alEl=document.getElementById('gp-auto-load-photo');if(alEl)alEl.checked=!!_gpPrintCfg.autoLoadPhoto;
   const sigHEl=document.getElementById('gp-sig-h');if(sigHEl)sigHEl.value=_gpPrintCfg.sigH||9;
   const sigWEl=document.getElementById('gp-sig-w');if(sigWEl)sigWEl.value=_gpPrintCfg.sigW||22;
   _updateSigPreview();
@@ -4914,91 +4315,9 @@ function gpSaveSigSize(){
 }
 
 // ── Lookup pass by ID then print ──
-// On-demand photo load for pass cards on devices that didn't issue the pass
-async function _loadPassPhoto(id){
-  const el=document.getElementById('ph-'+id);
-  if(el)el.textContent='📷 Loading…';
-  const p=S.passes.find(x=>x.id===id);if(!p)return;
-  const photo=await _resolvePhotoAsync(p);
-  if(photo){
-    p.pickerPhoto=photo; // cache in memory
-    if(el){const img=document.createElement('img');img.src=photo;img.style.cssText='max-height:80px;border-radius:6px;display:block;margin-top:6px';el.replaceWith(img);}
-  }else{if(el)el.textContent='📷 Photo not available';}
-}
-
-// ═══ MONTHLY EMAIL REPORT ═══
-let _gpEmailCfg={enabled:false,pubKey:'',serviceId:'',templateId:'',fromEmail:'',fromName:'',recipients:''};
-
-function gpLoadEmailCfg(){
-  try{const d=localStorage.getItem('gp_email_cfg');if(d)_gpEmailCfg=Object.assign({enabled:false,pubKey:'',serviceId:'',templateId:'',fromEmail:'',fromName:'',recipients:''},JSON.parse(d));}catch(e){}
-}
-function gpSaveEmailCfg(){
-  _gpEmailCfg.enabled=document.getElementById('gp-email-enabled')?.checked||false;
-  _gpEmailCfg.pubKey=document.getElementById('gp-ejs-pubkey')?.value.trim()||'';
-  _gpEmailCfg.serviceId=document.getElementById('gp-ejs-svcid')?.value.trim()||'';
-  _gpEmailCfg.templateId=document.getElementById('gp-ejs-tmpl')?.value.trim()||'';
-  _gpEmailCfg.fromEmail=document.getElementById('gp-email-from')?.value.trim()||'';
-  _gpEmailCfg.fromName=document.getElementById('gp-email-name')?.value.trim()||'';
-  _gpEmailCfg.recipients=document.getElementById('gp-email-to')?.value.trim()||'';
-  try{localStorage.setItem('gp_email_cfg',JSON.stringify(_gpEmailCfg));}catch(e){}
-}
-function gpLoadEmailCfgF(){
-  gpLoadEmailCfg();
-  const f=(id,val)=>{const el=document.getElementById(id);if(el)el.value=val||'';};
-  const cb=document.getElementById('gp-email-enabled');if(cb)cb.checked=!!_gpEmailCfg.enabled;
-  f('gp-ejs-pubkey',_gpEmailCfg.pubKey);f('gp-ejs-svcid',_gpEmailCfg.serviceId);
-  f('gp-ejs-tmpl',_gpEmailCfg.templateId);f('gp-email-from',_gpEmailCfg.fromEmail);
-  f('gp-email-name',_gpEmailCfg.fromName);
-  const ta=document.getElementById('gp-email-to');if(ta)ta.value=_gpEmailCfg.recipients||'';
-}
-
-// Build Excel attachment (base64) for a given month's passes
-function _gpBuildMonthlyExcel(year,month){
-  const passes=S.passes.filter(p=>{
-    if(!p.date)return false;
-    const [y,m]=p.date.split('-').map(Number);
-    return y===year&&m===month;
-  });
-  const rows=[['#','Date','Time','Student Name','Adm No','Class','Picked Up By','Relation','Bus','Address','Reason','Gate Out','Status']];
-  passes.forEach((p,i)=>rows.push([
-    i+1,p.date||'',p.time||'',p.studentName||'',p.admissionNumber||'',p.class||'',
-    p.pickedUpBy||'',p.relation||'',p.busNumber||'',p.address||'',p.reason||'',
-    p.gateOutTime||'',p.gateOutTime?'Exited':'Pending'
-  ]));
-  const ws=XLSX.utils.aoa_to_sheet(rows);
-  // Column widths
-  ws['!cols']=[{wch:4},{wch:12},{wch:10},{wch:20},{wch:10},{wch:8},{wch:18},{wch:12},{wch:6},{wch:24},{wch:20},{wch:10},{wch:8}];
-  const wb=XLSX.utils.book_new();
-  const mName=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][month-1];
-  XLSX.utils.book_append_sheet(wb,ws,`Gate Pass ${mName} ${year}`);
-  return {wb,passes,mName,year};
-}
-
-async function _gpSendViaEmailJS(params){
-  if(!_gpEmailCfg.pubKey||!_gpEmailCfg.serviceId||!_gpEmailCfg.templateId)throw new Error('EmailJS keys not configured');
-  const resp=await fetch('https://api.emailjs.com/api/v1.0/email/send',{
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({
-      service_id:_gpEmailCfg.serviceId,
-      template_id:_gpEmailCfg.templateId,
-      user_id:_gpEmailCfg.pubKey,
-      template_params:params
-    })
-  });
-  if(!resp.ok){const t=await resp.text();throw new Error(t);}
-  return true;
-}
-
-async function gpPrintPassById(id){
+function gpPrintPassById(id){
   const p=S.passes.find(x=>x.id===id);
   if(!p){gpToast('Pass not found','err');return;}
-  // Fetch photo from Firebase if not cached (other device printing)
-  if(p.pickerPhoto==='__has_photo'&&!_photoCache.get(p.id)){
-    gpToast('📷 Fetching photo…','inf');
-    const photo=await _resolvePhotoAsync(p);
-    if(photo)p.pickerPhoto=photo; // store in pass object for this session
-  }
   gpPrintA6Slip(p);
 }
 
@@ -5062,8 +4381,8 @@ function gpPrintA6Slip(p){
     +'/* @page handled in body style */'
     +'*{box-sizing:border-box;margin:0;padding:0}'
     +(_gpPrintCfg.bw?'body,*{color:#000!important;background:#fff!important;border-color:#555!important}':'')+'*{-webkit-print-color-adjust:exact;print-color-adjust:exact}'
-    +(()=>{const lp=_gpPrintCfg.logoPos||'left';let bodyStyle='@page{size:'+pageDecl+';margin:0}body{width:'+cW+';height:'+cH+';font-family:"Segoe UI",Arial,sans-serif;color:#1a1035;background:#fff;overflow:hidden;';if(lp==='center')bodyStyle+='margin:0 auto;}';else if(lp==='right')bodyStyle+='margin-left:auto;margin-right:0;}';else bodyStyle+='margin:0;}';return bodyStyle;})()
-    +'.wrap{width:'+cW+';height:'+cH+';padding:'+pad+';padding-bottom:6mm;display:flex;flex-direction:column;gap:1.5mm;overflow:hidden}'
+    +(()=>{const lp=_gpPrintCfg.logoPos||'left';let bodyStyle='@page{size:'+pageDecl+';margin:0}body{width:'+cW+';min-height:'+cH+';font-family:"Segoe UI",Arial,sans-serif;color:#1a1035;background:#fff;';if(lp==='center')bodyStyle+='margin:0 auto;}';else if(lp==='right')bodyStyle+='margin-left:auto;margin-right:0;}';else bodyStyle+='margin:0;}';return bodyStyle;})()
+    +'.wrap{width:'+cW+';min-height:'+cH+';padding:'+pad+';padding-bottom:4mm;display:flex;flex-direction:column;gap:1.5mm}'
     +'.top{display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:3mm}'
     +'.divider{border:none;border-top:2px solid #7c3aed;margin:0;width:100%}'
     +'.school{font-size:'+fSub+'pt;font-weight:900;color:#7c3aed;letter-spacing:.8px;text-transform:uppercase}'
@@ -5101,7 +4420,7 @@ function gpPrintA6Slip(p){
     +'<div class="box" style="overflow:hidden;max-height:11mm"><div class="lbl">Address</div><div style="font-size:6pt;font-weight:500;color:#1a1035;margin-top:.4mm;white-space:pre-wrap;word-break:break-word;line-height:1.3;overflow:hidden">'+xEsc(p.address||'—')+'</div></div>'
     +'</div>'
     +(p.reason?'<div class="rsn"><span style="font-weight:400;text-transform:uppercase;font-size:5.5pt;letter-spacing:.5px;color:#92400e">Reason: </span><b>'+xEsc(p.reason)+'</b></div>':'')
-    +(_gpPrintCfg.printPhoto&&_resolvePhoto(p)?'<div style="margin:1mm 0;border:2px solid #c9bdf0;border-radius:6px;background:#fff;padding:1mm;flex-shrink:1;display:flex;align-items:center;justify-content:center;min-height:0"><img src="'+_resolvePhoto(p)+'" style="max-width:100%;max-height:26mm;width:auto;height:auto;object-fit:contain;display:block;border-radius:2px"></div>':'')
+    +(_gpPrintCfg.printPhoto&&p.pickerPhoto?'<div style="margin:1mm 0;border:2px solid #c9bdf0;border-radius:6px;overflow:hidden;background:#f9f7ff;padding:2mm"><img src="'+p.pickerPhoto+'" style="width:100%;height:28mm;object-fit:cover;display:block;border-radius:3px"></div>':'')
     +'<div class="spacer"></div>'
     +'<div class="foot">'
     +'<div class="fi"><div class="fv">'+xEsc(gpFmtPrintDate(p.date))+'</div><div class="fl">Date</div></div>'
@@ -5167,10 +4486,10 @@ function gpPrintThermalSlip(p, cfg){
     +'<hr class="divider">'
     +'<div class="row"><span class="lbl">Picked By</span><span class="bold">'+xEsc(p.pickedUpBy||'—')+'</span></div>'
     +'<div class="row"><span class="lbl">Relation</span><span>'+xEsc(p.relation||'—')+'</span></div>'
-    +(p.busNumber?'<div class="row"><span class="lbl">Bus</span><span>'+xEsc(p.busNumber)+'</span></div>':'')
-    +'<div style="margin:1.5mm 0;border:1px solid #ccc;border-radius:3px;padding:1.5mm 2mm;overflow:hidden;max-height:10mm"><span class="lbl">Address: </span><span style="font-size:6pt;font-weight:500;white-space:pre-wrap;word-break:break-word;line-height:1.3">'+xEsc(p.address||'—')+'</span></div>'
+    +(p.busNumber?'<div class="row"><span class="lbl">Bus No.</span><span>'+xEsc(p.busNumber)+'</span></div>':'')
+    +(()=>{const stu=S.students.find(function(s){return s.admissionNumber===p.admissionNumber;});const addr=stu?stu.address||'':'';return addr?'<div class="row"><span class="lbl">Address</span><span style="font-size:'+(fBase-1)+'pt;max-width:80%;text-align:right">'+xEsc(addr)+'</span></div>':''})()
     +(p.reason?'<div class="reason"><span class="lbl">Reason: </span>'+xEsc(p.reason)+'</div>':'')
-    +((_gpPrintCfg.printPhoto&&_resolvePhoto(p))?'<div style="text-align:center;margin:2mm 0;border:1px solid #ccc;border-radius:3px;padding:3mm 2mm;background:#f9f9f9"><img src="'+_resolvePhoto(p)+'" style="max-width:100%;max-height:23mm;object-fit:contain;display:inline-block;border-radius:2px"></div>':'')
+    +((_gpPrintCfg.printPhoto&&p.pickerPhoto)?'<div style="text-align:center;margin:2mm 0;border:1px solid #ccc;border-radius:3px;padding:1.5mm;background:#f9f9f9"><img src="'+p.pickerPhoto+'" style="max-width:100%;max-height:25mm;object-fit:contain;display:inline-block;border-radius:2px"></div>':'')
     +'<hr class="divider">'
     +'<div class="row"><span class="lbl">Date</span><span>'+xEsc(p.date||'')+'</span></div>'
     +'<div class="row"><span class="lbl">Time</span><span>'+xEsc(p.time||'')+'</span></div>'
@@ -5242,7 +4561,6 @@ function _gpBatchPrint(passes){
       +'<div style="font-size:'+(fBase-1)+'px;color:#6b5b95">'+xEsc(p.class||'—')+' · Adm: '+xEsc(p.admissionNumber||'—')+'</div>'
       +'<div style="font-size:'+fBase+'px;color:#3b4a6b;margin-top:1px">👤 <b>'+xEsc(p.pickedUpBy||'—')+'</b>'+(p.relation?' ('+xEsc(p.relation)+')':'')+'</div>'
       +(p.busNumber?'<div style="font-size:'+(fBase-1)+'px;color:#3b4a6b">🚌 '+xEsc(p.busNumber)+'</div>':'')
-      +(p.address?'<div style="font-size:'+(fBase-1)+'px;color:#6b5b95;white-space:pre-wrap;word-break:break-word">🏠 '+xEsc(p.address)+'</div>':'')
       +(p.reason?'<div style="font-size:'+(fBase-1)+'px;color:#6b5b95;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">📝 '+xEsc(p.reason)+'</div>':'')
       +'<div style="display:flex;justify-content:space-between;margin-top:auto;padding-top:2px;border-top:1px solid #ede9fe">'
       +'<span style="font-family:monospace;font-size:'+(fBase-1)+'px;color:#5b21b6;font-weight:700">'+xEsc(p.time||'')+'</span>'
@@ -5267,6 +4585,31 @@ function _gpBatchPrint(passes){
 }
 
 // ═══ GATEPASS BACKUP & FORCE PUSH ═══
+async function gpForcePushAllData(){
+  const hasGP=cfg.url&&cfg.code;
+  const hasStu=gpStuCfg.url&&gpStuCfg.code;
+  if(!hasGP&&!hasStu){gpToast('⚠️ No Firebase DB connected','err');return;}
+  const st=document.getElementById('gp-fp-status');
+  const parts=[];
+  if(hasGP)parts.push('Passes: '+S.passes.length+', Buses: '+S.buses.length);
+  if(hasStu)parts.push('Students: '+S.students.length);
+  if(!confirm('Full Firebase sync karega:\n'+parts.join('\n')+'\n\nContinue?'))return;
+  st.textContent='🔥 Syncing all data…';st.style.color='var(--amber)';
+  try{
+    if(hasGP){
+      await fetch(`${cfg.url}/${cfg.code}/passes.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(S.passes.length===0?{'__empty':true}:S.passes)});
+      await fetch(`${cfg.url}/${cfg.code}/buses.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(S.buses.length===0?{'__empty':true}:S.buses)});
+    }
+    if(hasStu){
+      await fetch(`${gpStuCfg.url}/${gpStuCfg.code}.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:'null'});
+      await fetch(`${gpStuCfg.url}/${gpStuCfg.code}.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({students:S.students.length===0?{'__empty':true}:S.students,lastMod:Date.now()})});
+    }
+    st.textContent='✅ All data synced to Firebase!';st.style.color='var(--green)';
+    gpToast('✅ Full Firebase sync complete');
+  }catch(e){st.textContent='❌ Failed: '+e.message;st.style.color='var(--red)';}
+}
+
+
 async function gpForcePushFirebase(){
   const hasGP=cfg.url&&cfg.code;
   const hasStu=gpStuCfg.url&&gpStuCfg.code;
@@ -5320,33 +4663,78 @@ function gpImportJSON(input){
   reader.readAsText(file);
 }
 
+// ═══ CSV COLUMN MAPPING MODAL ═══
+let _csvRawLines=[], _csvRawHeaders=[];
+
 async function gpCSVUploadAndPush(input){
   const file=input.files[0];if(!file)return;
   const st=document.getElementById('gp-csv-push-status');
   st.textContent='📂 Reading file…';st.style.color='var(--blue)';
   try{
-    let headers,rows;
-    const name=file.name.toLowerCase();
-    if(name.endsWith('.xlsx')||name.endsWith('.xls')){
-      // Parse Excel via SheetJS
-      const ab=await file.arrayBuffer();
-      const wb=XLSX.read(ab,{type:'array'});
-      const ws=wb.Sheets[wb.SheetNames[0]];
-      const data=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
-      if(data.length<2){st.textContent='⚠️ Need header + data rows';st.style.color='var(--amber)';return;}
-      headers=data[0].map(h=>(h||'').toString().trim());
-      rows=data.slice(1).map(r=>headers.map((_,i)=>(r[i]||'').toString().trim()));
-    } else {
-      const text=await file.text();
-      const lines=text.split(/\r?\n/).filter(l=>l.trim());
-      if(lines.length<2){st.textContent='⚠️ Need header + data rows';st.style.color='var(--amber)';return;}
-      headers=lines[0].split(',').map(h=>h.trim().replace(/^"|"$/g,''));
-      rows=lines.slice(1).map(l=>l.split(',').map(v=>v.trim().replace(/^"|"$/g,'')));
-    }
-    st.textContent=`📊 ${rows.length} rows detected — mapping columns…`;st.style.color='var(--blue)';
-    gpShowColMap(headers,rows);
+    const text=await file.text();
+    const lines=text.split(/\r?\n/).filter(l=>l.trim());
+    if(lines.length<2){st.textContent='⚠️ Need header + data rows';st.style.color='var(--amber)';input.value='';return;}
+    _csvRawLines=lines;
+    _csvRawHeaders=lines[0].split(',').map(h=>h.trim().replace(/^"|"$/g,''));
+    // Auto-detect mappings
+    const autoDetect=(kws)=>{const idx=_csvRawHeaders.findIndex(h=>kws.some(k=>h.toLowerCase().includes(k)));return idx>=0?String(idx):'';};
+    document.getElementById('csv-map-name').value=autoDetect(['name','student']);
+    document.getElementById('csv-map-adm').value=autoDetect(['admission','adm','roll','id']);
+    document.getElementById('csv-map-class').value=autoDetect(['class','grade','section']);
+    document.getElementById('csv-map-father').value=autoDetect(['father','dad']);
+    document.getElementById('csv-map-mother').value=autoDetect(['mother','mom','mum']);
+    document.getElementById('csv-map-bus').value=autoDetect(['bus','route','van']);
+    document.getElementById('csv-map-phone').value=autoDetect(['phone','mobile','contact','whatsapp','cell']);
+    document.getElementById('csv-map-address').value=autoDetect(['address','addr','location','village','city']);
+    // Fill column dropdowns
+    const opts='<option value="">— Skip —</option>'+_csvRawHeaders.map((h,i)=>`<option value="${i}">${h}</option>`).join('');
+    document.querySelectorAll('.csv-map-sel').forEach(sel=>{const cur=sel.value;sel.innerHTML=opts;if(cur!=='')sel.value=cur;});
+    document.getElementById('csv-map-preview').textContent=`${lines.length-1} rows found · ${_csvRawHeaders.length} columns`;
+    document.getElementById('csv-map-modal').style.display='flex';
   }catch(err){st.textContent='❌ Error: '+err.message;st.style.color='var(--red)';}
   input.value='';
+}
+
+async function gpApplyCSVMapping(){
+  const st=document.getElementById('gp-csv-push-status');
+  const gv=id=>parseInt(document.getElementById(id).value);
+  const nI=gv('csv-map-name'),aI=gv('csv-map-adm'),cI=gv('csv-map-class'),
+        fI=gv('csv-map-father'),mI=gv('csv-map-mother'),bI=gv('csv-map-bus'),
+        phI=gv('csv-map-phone'),addrI=gv('csv-map-address');
+  if(isNaN(nI)||nI<0){gpToast('⚠️ Name column required','err');return;}
+  document.getElementById('csv-map-modal').style.display='none';
+  st.textContent='⚙️ Processing…';st.style.color='var(--blue)';
+  try{
+    const parseCSVLine=line=>{const cols=[];let cur='',inQ=false;for(let i=0;i<line.length;i++){const c=line[i];if(c==='"'){inQ=!inQ;}else if(c===','&&!inQ){cols.push(cur.trim());cur='';}else{cur+=c;}}cols.push(cur.trim());return cols;};
+    const map={};S.students.forEach(s=>s.admissionNumber&&(map[String(s.admissionNumber).trim()]=s));
+    let added=0,updated=0;
+    for(let i=1;i<_csvRawLines.length;i++){
+      const c=parseCSVLine(_csvRawLines[i]);
+      const name=(c[nI]||'').trim();
+      const adm=(!isNaN(aI)&&aI>=0?(c[aI]||''):'').trim();
+      if(!name&&!adm)continue;
+      const phone=(!isNaN(phI)&&phI>=0?(c[phI]||''):'').replace(/[^0-9]/g,'');
+      const stu={
+        name,
+        admissionNumber:adm,
+        class:(!isNaN(cI)&&cI>=0?c[cI]:'').trim(),
+        fatherName:(!isNaN(fI)&&fI>=0?c[fI]:'').trim(),
+        motherName:(!isNaN(mI)&&mI>=0?c[mI]:'').trim(),
+        busNumber:(!isNaN(bI)&&bI>=0?c[bI]:'').trim(),
+        phone,
+        address:(!isNaN(addrI)&&addrI>=0?c[addrI]:'').trim()
+      };
+      if(adm&&map[adm]){Object.assign(map[adm],stu);updated++;}else{map[adm||('_'+i)]=stu;added++;}
+    }
+    S.students=Object.values(map);
+    await push('students');
+    syncGpStudentsToRef&&syncGpStudentsToRef();
+    renderStu&&renderStu();
+    st.textContent=`✅ ${added} added · ${updated} updated · Total: ${S.students.length} — pushed to Firebase`;
+    st.style.color='var(--green)';
+    gpToast(`✅ ${S.students.length} students synced`);
+  }catch(err){st.textContent='❌ Error: '+err.message;st.style.color='var(--red)';}
+  _csvRawLines=[];_csvRawHeaders=[];
 }
 
 // ═══ CUT PASS — BUS SUMMARY ═══
@@ -5365,7 +4753,6 @@ function renderCpBusSummary(){
   const byBus = {};
   todayPasses.forEach(p=>{const k=p.busNumber||'Walk / Other';if(!byBus[k])byBus[k]=[];byBus[k].push(p);});
   cardsEl.innerHTML = Object.entries(byBus).sort((a,b)=>b[1].length-a[1].length).map(([bus,passes])=>{
-    const pending = passes.filter(p=>!p.gateOutTime).length;
     const isActive = _cpActiveBus === bus;
     return `<div class="cp-buscard${isActive?' active':''}" onclick="cpToggleBus('${e(bus)}')">
       <div class="cp-buscard-num">${passes.length}</div>
@@ -5468,9 +4855,9 @@ function _refInit(){
   initTheme();loadCFG();loadFSCfg();loadODCfg();loadGPODCfg();loadTGCfg();loadPTGCfg();loadRefTGCfg();loadWixCfg();_gpRestoreCfgFromStorage();startTGApprovalPolling();
   if(CFG.adminAlertEnabled===undefined)CFG.adminAlertEnabled=true;
   const fu=localStorage.getItem('ref_fb_url'),fc=localStorage.getItem('ref_fb_code');
-  if(fu&&fc){fbCfg={url:fu,code:fc};fbFetchAll();if(fbIv)clearInterval(fbIv);fbIv=setInterval(fbFetchAll,refSyncInt()*1000);}
+  if(fu&&fc){fbCfg={url:fu,code:fc};fbFetchAll();if(fbIv)clearInterval(fbIv);fbIv=setInterval(fbFetchAll,8000);}
   const su=localStorage.getItem('ref_fb_stu_url'),sc=localStorage.getItem('ref_fb_stu_code');
-  if(su&&sc){fbStuCfg={url:su,code:sc};fbStuFetch();if(fbStuIv)clearInterval(fbStuIv);fbStuIv=setInterval(fbStuFetch,refStuSyncInt()*1000);}
+  if(su&&sc){fbStuCfg={url:su,code:sc};fbStuFetch();if(fbStuIv)clearInterval(fbStuIv);fbStuIv=setInterval(fbStuFetch,15000);}
   loadLocal();curFY=getCurrentFY();applyLabels();renderFYSelect();renderDashboard();
   populateDataLists();document.getElementById('f-date').value=todayStr();renderStatusSelect();renderStudentList();
   const exS=document.getElementById('ex-scope');
@@ -6000,8 +5387,7 @@ function deleteEntry(id){
     toast('🗑 Entry deleted: '+en.to+(en.refno?' ('+en.refno+')':''),'err');
     if(RefTGCfg.enabled&&RefTGCfg.token&&RefTGCfg.notifyDel!==false){
       sendRefTGNotification('deleted',en);
-      // FIX: await lagaya — pehle await nahi tha, Promise silently fail hoti thi
-      if(en.tgMsgId) await deleteTGMessage(RefTGCfg.token,RefTGCfg.chatId,en.tgMsgId);
+      if(en.tgMsgId) deleteTGMessage(RefTGCfg.token,RefTGCfg.chatId,en.tgMsgId);
     }
   };
   if(perm==='password'){
@@ -6195,8 +5581,8 @@ function addSingleStudent(){
   const name=document.getElementById('ns-name').value.trim();const admNo=document.getElementById('ns-adm').value.trim();
   if(!name){toast('Name required','err');return;}
   if(admNo&&STUDENTS.find(s=>s.admNo===admNo)){toast('Admission No already exists','err');return;}
-  STUDENTS.push({id:uid(),name,admNo,cls:document.getElementById('ns-class').value.trim(),phone:cleanPhone(document.getElementById('ns-phone').value),fatherName:document.getElementById('ns-father').value.trim(),motherName:document.getElementById('ns-mother').value.trim(),address:(document.getElementById('ns-address').value||'').trim()});
-  ['ns-name','ns-adm','ns-class','ns-phone','ns-father','ns-mother','ns-address'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  STUDENTS.push({id:uid(),name,admNo,cls:document.getElementById('ns-class').value.trim(),phone:cleanPhone(document.getElementById('ns-phone').value),fatherName:document.getElementById('ns-father').value.trim(),motherName:document.getElementById('ns-mother').value.trim()});
+  ['ns-name','ns-adm','ns-class','ns-phone','ns-father','ns-mother'].forEach(id=>document.getElementById(id).value='');
   fbStuPush();renderStudentList();populateDataLists();toast('Student added to database.');
 }
 function renderStudentList(){
@@ -6441,83 +5827,25 @@ async function fbPushPublic(){
 // ─── FIREBASE — REGISTER ─────────────────────────────────
 async function fbFetchAll(){
   if(!fbCfg.url||!fbCfg.code)return;
-  try{
-    // Lightweight lastMod check first
-    const mr=await fetch(`${fbCfg.url}/${fbCfg.code}/lastMod.json`);
-    if(!mr.ok)throw 0;const sm=(await mr.json())||0;
-    if(sm===fbLocalMod)return; // nothing changed
-    // Changed — fetch full document
-    const r=await fetch(`${fbCfg.url}/${fbCfg.code}.json`);if(!r.ok)throw 0;const d=await r.json();
-  if(d){const toArr=v=>Array.isArray(v)?v:(v&&v.__empty)?[]:(v!=null?v:null);const ents=toArr(d.entries);if(ents!==null)R.entries=ents;if(d.nextSeq)R.nextSeq=d.nextSeq;if(d.overrideSeq)R.overrideSeq=d.overrideSeq;if(d.reclaimedSeqs)R.reclaimedSeqs=d.reclaimedSeqs;fbLocalMod=sm;saveLocal();renderFYSelect();renderRegister();renderDashboard();populateDataLists();
-    // Check for remote config changes
-    if(d._cfg)refApplyRemoteCfg(d._cfg);
-  }}catch(e){}
-}
-
-// Apply remote config (sync intervals) from Firebase _cfg node
-function refApplyRemoteCfg(rc){
-  if(!rc)return;
-  const si=rc.syncIntervals||{};
-  let changed=false;
-  if(si.refEntries&&si.refEntries!==refSyncInt()){localStorage.setItem('ref_sync_int',si.refEntries);changed=true;}
-  if(si.refStu&&si.refStu!==refStuSyncInt()){localStorage.setItem('ref_stu_sync_int',si.refStu);changed=true;}
-  if(changed){
-    if(fbIv){clearInterval(fbIv);fbIv=setInterval(fbFetchAll,refSyncInt()*1000);}
-    if(fbStuIv){clearInterval(fbStuIv);fbStuIv=setInterval(fbStuFetch,refStuSyncInt()*1000);}
-    const ei=document.getElementById('ref-sync-int');if(ei)ei.value=refSyncInt();
-    const si2=document.getElementById('ref-stu-sync-int');if(si2)si2.value=refStuSyncInt();
-  }
-}
-
-function refSyncInt(){return parseInt(localStorage.getItem('ref_sync_int')||'30',10)||30;}
-function refStuSyncInt(){return parseInt(localStorage.getItem('ref_stu_sync_int')||'60',10)||60;}
-
-async function refPushRemoteCfg(){
-  if(!fbCfg.url||!fbCfg.code)return;
-  const c={syncIntervals:{refEntries:refSyncInt(),refStu:refStuSyncInt()}};
-  try{await fetch(`${fbCfg.url}/${fbCfg.code}/_cfg.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(c)});}catch(e){}
-  try{await fetch(`${fbCfg.url}/${fbCfg.code}/lastMod.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(Date.now())});}catch(e){}
-}
-
-async function refSaveSyncInt(){
-  const v=parseInt(document.getElementById('ref-sync-int').value,10);
-  const sv=parseInt(document.getElementById('ref-stu-sync-int').value,10);
-  if(v<5||v>600){toast('⚠️ Entries interval must be 5–600s','err');return;}
-  if(sv<10||sv>600){toast('⚠️ Student interval must be 10–600s','err');return;}
-  localStorage.setItem('ref_sync_int',v);
-  localStorage.setItem('ref_stu_sync_int',sv);
-  if(fbIv){clearInterval(fbIv);fbIv=setInterval(fbFetchAll,v*1000);}
-  if(fbStuIv){clearInterval(fbStuIv);fbStuIv=setInterval(fbStuFetch,sv*1000);}
-  await refPushRemoteCfg();
-  toast('✅ Sync intervals saved & pushed to all devices');
-}
-
-async function refFullSync(){
-  fbLocalMod=-1;fbStuLocalMod=-1;
-  await fbFetchAll();await fbStuFetch();
-  toast('🔄 Full sync complete');
+  try{const r=await fetch(`${fbCfg.url}/${fbCfg.code}.json`);if(!r.ok)throw 0;const d=await r.json();
+  if(d){const sm=d.lastMod||0;if(sm!==fbLocalMod){const toArr=v=>Array.isArray(v)?v:(v&&v.__empty)?[]:(v!=null?v:null);const ents=toArr(d.entries);if(ents!==null)R.entries=ents;if(d.nextSeq)R.nextSeq=d.nextSeq;if(d.overrideSeq)R.overrideSeq=d.overrideSeq;if(d.reclaimedSeqs)R.reclaimedSeqs=d.reclaimedSeqs;fbLocalMod=sm;saveLocal();renderFYSelect();renderRegister();renderDashboard();populateDataLists();}}}catch(e){}
 }
 async function fbPush(){
   R.lastMod=Date.now();fbLocalMod=R.lastMod;saveLocal();if(!fbCfg.url||!fbCfg.code)return;
   const eVal=R.entries.length===0?{'__empty':true}:R.entries;
   try{await fetch(`${fbCfg.url}/${fbCfg.code}.json`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({entries:eVal,nextSeq:R.nextSeq,overrideSeq:R.overrideSeq||{},reclaimedSeqs:R.reclaimedSeqs||{},lastMod:R.lastMod})});}catch(e){}
 }
-function loadFBCfg(){document.getElementById('fb-url').value=localStorage.getItem('ref_fb_url')||'';document.getElementById('fb-code').value=localStorage.getItem('ref_fb_code')||'';const ei=document.getElementById('ref-sync-int');if(ei)ei.value=refSyncInt();const si=document.getElementById('ref-stu-sync-int');if(si)si.value=refStuSyncInt();}
+function loadFBCfg(){document.getElementById('fb-url').value=localStorage.getItem('ref_fb_url')||'';document.getElementById('fb-code').value=localStorage.getItem('ref_fb_code')||'';}
 async function testFBCfg(){const url=document.getElementById('fb-url').value.trim().replace(/\/$/,'');const code=document.getElementById('fb-code').value.trim();if(!url||!code){fbSt('Fill both fields','var(--red)');return;}fbSt('Testing…','var(--amber)');try{const r=await fetch(`${url}/${code}/ping.json`,{method:'PUT',body:JSON.stringify(1)});if(!r.ok)throw 0;fbSt('Connected!','var(--green)');}catch{fbSt('Connection failed','var(--red)');}}
-async function saveFBCfg(){const url=document.getElementById('fb-url').value.trim().replace(/\/$/,'');const code=document.getElementById('fb-code').value.trim();if(!url||!code){fbSt('Fill both fields','var(--red)');return;}fbSt('Saving…','var(--amber)');try{const r=await fetch(`${url}/${code}/ping.json`,{method:'PUT',body:JSON.stringify(1)});if(!r.ok)throw 0;localStorage.setItem('ref_fb_url',url);localStorage.setItem('ref_fb_code',code);fbCfg={url,code};fbSt('Connected!','var(--green)');fbFetchAll();if(fbIv)clearInterval(fbIv);fbIv=setInterval(fbFetchAll,refSyncInt()*1000);}catch{fbSt('Connection failed','var(--red)');}}
+async function saveFBCfg(){const url=document.getElementById('fb-url').value.trim().replace(/\/$/,'');const code=document.getElementById('fb-code').value.trim();if(!url||!code){fbSt('Fill both fields','var(--red)');return;}fbSt('Saving…','var(--amber)');try{const r=await fetch(`${url}/${code}/ping.json`,{method:'PUT',body:JSON.stringify(1)});if(!r.ok)throw 0;localStorage.setItem('ref_fb_url',url);localStorage.setItem('ref_fb_code',code);fbCfg={url,code};fbSt('Connected!','var(--green)');fbFetchAll();if(fbIv)clearInterval(fbIv);fbIv=setInterval(fbFetchAll,8000);}catch{fbSt('Connection failed','var(--red)');}}
 function disconnFB(){if(!confirm('Disconnect from this database?'))return;localStorage.removeItem('ref_fb_url');localStorage.removeItem('ref_fb_code');fbCfg={url:'',code:''};if(fbIv)clearInterval(fbIv);fbSt('Disconnected','var(--muted)');toast('Database disconnected.','inf');}
 function fbSt(m,c){const el=document.getElementById('fb-status');el.textContent=m;el.style.color=c;}
 
 // ─── FIREBASE — STUDENTS ─────────────────────────────────
 async function fbStuFetch(){
   if(!fbStuCfg.url||!fbStuCfg.code)return;
-  try{
-    // Lightweight lastMod check first
-    const mr=await fetch(`${fbStuCfg.url}/${fbStuCfg.code}/lastMod.json`);
-    if(!mr.ok)throw 0;const sm=(await mr.json())||0;
-    if(sm===fbStuLocalMod)return; // no change
-    const r=await fetch(`${fbStuCfg.url}/${fbStuCfg.code}.json`);if(!r.ok)throw 0;const d=await r.json();
-  if(d){const toArr=v=>Array.isArray(v)?v:(v&&v.__empty)?[]:(v!=null?v:null);const stus=toArr(d.students);if(stus!==null){STUDENTS=stus;if(typeof syncRefStudentsToGp==='function')syncRefStudentsToGp();}fbStuLocalMod=sm;saveLocal();renderStudentList();populateDataLists();}}catch(e){}
+  try{const r=await fetch(`${fbStuCfg.url}/${fbStuCfg.code}.json`);if(!r.ok)throw 0;const d=await r.json();
+  if(d){const sm=d.lastMod||0;if(sm!==fbStuLocalMod){const toArr=v=>Array.isArray(v)?v:(v&&v.__empty)?[]:(v!=null?v:null);const stus=toArr(d.students);if(stus!==null){STUDENTS=stus;if(typeof syncRefStudentsToGp==='function')syncRefStudentsToGp();}fbStuLocalMod=sm;saveLocal();renderStudentList();populateDataLists();}}}catch(e){}
 }
 // Sync ref register students into gatepass S.students (same page)
 function syncRefStudentsToGp(){
@@ -6530,7 +5858,7 @@ function syncRefStudentsToGp(){
     if(!adm||!rs.name)return;
     const key=adm.toLowerCase();
     if(!map[key]){
-      S.students.push({name:rs.name,admissionNumber:adm,class:rs.cls||rs.class||'',fatherName:rs.fatherName||'',motherName:rs.motherName||'',busNumber:rs.busNumber||rs.bus||'',phone:rs.phone||'',address:rs.address||''});
+      S.students.push({name:rs.name,admissionNumber:adm,class:rs.cls||rs.class||'',fatherName:rs.fatherName||'',motherName:rs.motherName||'',busNumber:''});
       map[key]=S.students[S.students.length-1];
       added++;
     } else {
@@ -6538,9 +5866,6 @@ function syncRefStudentsToGp(){
       if(!ex.fatherName&&rs.fatherName)ex.fatherName=rs.fatherName;
       if(!ex.motherName&&rs.motherName)ex.motherName=rs.motherName;
       if(!ex.class&&(rs.cls||rs.class))ex.class=rs.cls||rs.class||'';
-      if(!ex.phone&&rs.phone)ex.phone=rs.phone;
-      if(!ex.busNumber&&(rs.busNumber||rs.bus))ex.busNumber=rs.busNumber||rs.bus||'';
-      if(!ex.address&&rs.address)ex.address=rs.address;
     }
   });
   if(added){
@@ -6550,29 +5875,14 @@ function syncRefStudentsToGp(){
 }
 async function fbStuPush(){
   const lastMod=Date.now();fbStuLocalMod=lastMod;saveLocal();
-  syncRefStudentsToGp();
+  syncRefStudentsToGp(); // keep gatepass in sync
   if(!fbStuCfg.url||!fbStuCfg.code)return;
-  // Normalize field names so both Gatepass and Ref Register can read correctly
-  const normalized=STUDENTS.map(s=>({
-    admNo:s.admNo||s.admissionNumber||'',
-    admissionNumber:s.admNo||s.admissionNumber||'',
-    id:s.id||'',
-    name:s.name||'',
-    cls:s.cls||s.class||'',
-    class:s.cls||s.class||'',
-    fatherName:s.fatherName||'',
-    motherName:s.motherName||'',
-    busNumber:s.busNumber||s.bus||'',
-    bus:s.busNumber||s.bus||'',
-    phone:s.phone||'',
-    address:s.address||''
-  }));
-  const sVal=normalized.length===0?{'__empty':true}:normalized;
+  const sVal=STUDENTS.length===0?{'__empty':true}:STUDENTS;
   try{await fetch(`${fbStuCfg.url}/${fbStuCfg.code}.json`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({students:sVal,lastMod})});}catch(e){}
 }
 function loadFBStuCfg(){document.getElementById('fb-stu-url').value=localStorage.getItem('ref_fb_stu_url')||'';document.getElementById('fb-stu-code').value=localStorage.getItem('ref_fb_stu_code')||'';}
 async function testFBStuCfg(){const url=document.getElementById('fb-stu-url').value.trim().replace(/\/$/,'');const code=document.getElementById('fb-stu-code').value.trim();if(!url||!code){fbStuSt('Fill both fields','var(--red)');return;}fbStuSt('Testing…','var(--amber)');try{const r=await fetch(`${url}/${code}/ping.json`,{method:'PUT',body:JSON.stringify(1)});if(!r.ok)throw 0;fbStuSt('Connected!','var(--green)');}catch{fbStuSt('Failed','var(--red)');}}
-async function saveFBStuCfg(){const url=document.getElementById('fb-stu-url').value.trim().replace(/\/$/,'');const code=document.getElementById('fb-stu-code').value.trim();if(!url||!code){fbStuSt('Fill both fields','var(--red)');return;}fbStuSt('Saving…','var(--amber)');try{const r=await fetch(`${url}/${code}/ping.json`,{method:'PUT',body:JSON.stringify(1)});if(!r.ok)throw 0;localStorage.setItem('ref_fb_stu_url',url);localStorage.setItem('ref_fb_stu_code',code);fbStuCfg={url,code};fbStuSt('Connected!','var(--green)');fbStuFetch();if(fbStuIv)clearInterval(fbStuIv);fbStuIv=setInterval(fbStuFetch,refStuSyncInt()*1000);}catch{fbStuSt('Failed','var(--red)');}}
+async function saveFBStuCfg(){const url=document.getElementById('fb-stu-url').value.trim().replace(/\/$/,'');const code=document.getElementById('fb-stu-code').value.trim();if(!url||!code){fbStuSt('Fill both fields','var(--red)');return;}fbStuSt('Saving…','var(--amber)');try{const r=await fetch(`${url}/${code}/ping.json`,{method:'PUT',body:JSON.stringify(1)});if(!r.ok)throw 0;localStorage.setItem('ref_fb_stu_url',url);localStorage.setItem('ref_fb_stu_code',code);fbStuCfg={url,code};fbStuSt('Connected!','var(--green)');fbStuFetch();if(fbStuIv)clearInterval(fbStuIv);fbStuIv=setInterval(fbStuFetch,15000);}catch{fbStuSt('Failed','var(--red)');}}
 function disconnFBStu(){if(!confirm('Disconnect the student database?'))return;localStorage.removeItem('ref_fb_stu_url');localStorage.removeItem('ref_fb_stu_code');fbStuCfg={url:'',code:''};if(fbStuIv)clearInterval(fbStuIv);fbStuSt('Disconnected','var(--muted)');toast('Student database disconnected.','inf');}
 function fbStuSt(m,c){const el=document.getElementById('fb-stu-status');el.textContent=m;el.style.color=c;}
 
@@ -6993,12 +6303,11 @@ async function testTGCfg(){
     st.textContent='✓ Test sent to all '+ok+' chat(s)!';st.style.color='var(--green)';
   }
 }
-// ─── SHARED: Build TG caption from pass data ──────────────
 async function sendToTelegramLog(pass){
   const ids=TGCfg.chatIds&&TGCfg.chatIds.length?TGCfg.chatIds:(TGCfg.chatId?[TGCfg.chatId]:[]);
   if(!TGCfg.enabled||!TGCfg.token||!ids.length)return;
   try{
-    const caption=`🚪 *Gate Pass Issued*\n\n👤 *${pass.studentName}* (${pass.class||'—'})\n📋 Adm: ${pass.admissionNumber||'—'}\n🧑 Picked by: *${pass.pickedUpBy}* (${pass.relation||'—'})\n📝 Reason: ${pass.reason||'—'}\n🚌 Bus: ${pass.busNumber||'—'}\n🕐 Time: ${pass.time} | 📅 ${pass.date}\n🆔 Pass: #${pass.id.substr(-6).toUpperCase()}`;
+    const caption=`\ud83d\udeaa *Gate Pass Issued*\n\n\ud83d\udc64 *${pass.studentName}* (${pass.class||'\u2014'})\n\ud83d\udccb Adm: ${pass.admissionNumber||'\u2014'}\n\ud83e\uddd1 Picked by: *${pass.pickedUpBy}* (${pass.relation||'\u2014'})\n\ud83d\udcdd Reason: ${pass.reason||'\u2014'}\n\ud83d\ude8c Bus: ${pass.busNumber||'\u2014'}\n\ud83d\udd50 Time: ${pass.time} | \ud83d\udcc5 ${pass.date}\n\ud83c\udd94 Pass: #${pass.id.substr(-6).toUpperCase()}`;
     const inlineKb=TGCfg.approveEnabled?{inline_keyboard:[[
       {text:'\u2705 Approve',callback_data:'APPROVE_'+pass.id},
       {text:'\u274c Deny',callback_data:'DENY_'+pass.id}
@@ -7007,10 +6316,9 @@ async function sendToTelegramLog(pass){
     // Send to all chat IDs simultaneously
     const results=await Promise.allSettled(ids.map(async chatId=>{
       let msgId=null;
-      const _tgPhoto=_resolvePhoto(pass);
-      if(_tgPhoto){
-        const b64=_tgPhoto.split(',')[1]||_tgPhoto;
-        const mime=(_tgPhoto.match(/data:([^;]+)/)||[])[1]||'image/jpeg';
+      if(pass.pickerPhoto){
+        const b64=pass.pickerPhoto.split(',')[1]||pass.pickerPhoto;
+        const mime=(pass.pickerPhoto.match(/data:([^;]+)/)||[])[1]||'image/jpeg';
         const bytes=Uint8Array.from(atob(b64),c2=>c2.charCodeAt(0));
         const blob=new Blob([bytes],{type:mime});
         const form=new FormData();
@@ -7036,18 +6344,13 @@ async function sendToTelegramLog(pass){
       return {chatId,msgId};
     }));
 
-    // Save first successful msgId + chatId
-    const firstOk=results.find(r=>r.status==='fulfilled'&&r.value.msgId);
+    // Save first successful msgId (used for delete/approve)
+    const firstOk=results.find(r=>r.status==='fulfilled');
     const msgId=firstOk?firstOk.value.msgId:null;
-    const chatId=firstOk?firstOk.value.chatId:null;
     const failCount=results.filter(r=>r.status==='rejected').length;
-    if(msgId){
-      const pidx=S.passes.findIndex(p=>p.id===pass.id);
-      if(pidx>-1){S.passes[pidx].tgMsgId=msgId;S.passes[pidx].tgChatId=chatId;}
-      patchPassFields(pass.id,{tgMsgId:msgId,tgChatId:chatId},true);
-    }
+    if(msgId){const pidx=S.passes.findIndex(p=>p.id===pass.id);if(pidx>-1){S.passes[pidx].tgMsgId=msgId;push('passes');}}
     const okCount=results.length-failCount;
-    if(_resolvePhoto(pass))gpToast('\u2708\ufe0f Gate pass photo sent to Admin'+(okCount>1?' ('+okCount+' chats)':''));
+    if(pass.pickerPhoto)gpToast('\u2708\ufe0f Gate pass photo sent to Admin'+(okCount>1?' ('+okCount+' chats)':''));
     else gpToast('\u2708\ufe0f Gate pass logged to Telegram'+(okCount>1?' ('+okCount+' chats)':''));
     if(failCount)gpToast('⚠️ '+failCount+' chat(s) failed','err');
   }catch(e){gpToast('Telegram error: '+e.message,'err');console.error('TG:',e);}
@@ -7113,7 +6416,7 @@ function handleTGApproval(passId,approved,from){
   pass.tgApproved=approved;
   const byName=from?(from.first_name+(from.last_name?' '+from.last_name:'')+(from.username?' (@'+from.username+')':'')).trim():'Unknown';
   pass.tgApprovedBy=byName;
-  patchPassFields(pass.id,{tgApproved:approved,tgApprovedBy:byName},true);
+  push('passes');
   // Always remove the inline keyboard buttons after any action
   if(pass.tgMsgId){
     fetch(`https://api.telegram.org/bot${TGCfg.token}/editMessageReplyMarkup`,{
@@ -7134,11 +6437,10 @@ function handleTGApproval(passId,approved,from){
 
 // ─── ONEDRIVE GATE PASS PHOTO UPLOAD ──────────────────────
 async function uploadGatePassPhotoToOneDrive(pass){
-  const _odPhoto=_resolvePhoto(pass);
-  if(!GPODCfg.enabled||!GPODCfg.user||!GPODCfg.pass||!_odPhoto)return;
+  if(!GPODCfg.enabled||!GPODCfg.user||!GPODCfg.pass||!pass.pickerPhoto)return;
   try{
     const token=await getGPODToken();
-    const ext=(_odPhoto.match(/data:[^/]+\/([^;]+)/)||[])[1]||'jpg';
+    const ext=(pass.pickerPhoto.match(/data:[^/]+\/([^;]+)/)||[])[1]||'jpg';
     const safeName=(pass.studentName||'Unknown').replace(/[/\\:*?"<>|]/g,'-');
     const safeDate=(pass.date||todayStr()).replace(/-/g,'');
     const safeTime=(pass.time||'').replace(/:/g,'').replace(/\s/g,'');
@@ -7146,7 +6448,7 @@ async function uploadGatePassPhotoToOneDrive(pass){
     const fileName=`GatePass_${safeName}_${pass.admissionNumber||'NA'}_${safeDate}_${safeTime}_${shortId}.${ext}`;
     const folder=GPODCfg.folder?GPODCfg.folder+'/GatePasses':'GatePasses';
     const path=`/me/drive/root:/${folder}/${fileName}:/content`;
-    const b64=_odPhoto.split(',')[1]||_odPhoto;
+    const b64=pass.pickerPhoto.split(',')[1]||pass.pickerPhoto;
     const bytes=Uint8Array.from(atob(b64),c=>c.charCodeAt(0));
     const up=await fetch('https://graph.microsoft.com/v1.0'+path,{
       method:'PUT',headers:{Authorization:'Bearer '+token,'Content-Type':'application/octet-stream'},body:bytes
@@ -8285,17 +7587,10 @@ function gpSavePrintEnabled(){
   _gpSavePrintCfg();
   gpToast(_gpPrintCfg.enabled?'Auto-print enabled':'Auto-print disabled');
 }
-
 function gpSavePrintPhoto(){
   const el=document.getElementById('gp-print-photo');
   _gpPrintCfg.printPhoto=el?el.checked:false;
   _gpSavePrintCfg();
-}
-function gpSaveAutoLoadPhoto(){
-  const el=document.getElementById('gp-auto-load-photo');
-  _gpPrintCfg.autoLoadPhoto=el?el.checked:false;
-  _gpSavePrintCfg();
-  gpToast(_gpPrintCfg.autoLoadPhoto?'📷 Auto-load ON — photos will fetch automatically on new passes':'Auto-load OFF');
 }
 let _gpSignatureData='';
 function loadSignature(){
@@ -8331,16 +7626,13 @@ function switchTGSubTab(tab){
 
 // ─── TELEGRAM MESSAGE DELETE (shared helper) ──────────────
 async function deleteTGMessage(token,chatId,msgId){
-  if(!token||!chatId||!msgId)return false;
+  if(!token||!chatId||!msgId)return;
   try{
-    const r=await fetch(`https://api.telegram.org/bot${token}/deleteMessage`,{
+    await fetch(`https://api.telegram.org/bot${token}/deleteMessage`,{
       method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({chat_id:String(chatId),message_id:Number(msgId)})
+      body:JSON.stringify({chat_id:chatId,message_id:msgId})
     });
-    const d=await r.json();
-    if(!d.ok)console.warn('TG deleteMessage failed:',d.description,'chatId:',chatId,'msgId:',msgId);
-    return d.ok;
-  }catch(e){console.error('TG delete error:',e);return false;}
+  }catch(e){console.error('TG delete error:',e);}
 }
 
 // ─── PARENT WHATSAPP DIRECT ───────────────────────────────
@@ -8599,11 +7891,9 @@ const SETTINGS_EXPORT_KEYS=[
   // Gatepass
   'gp_url','gp_code','gp_tg_cfg','gp_ptg_cfg','gp_wa_cfg','gp_print_cfg',
   'gp_signature','gp_stu_url','gp_stu_code','gp_od_cfg','gp_qp_thresh','gp_qp_window',
-  'gp_sync_int','gp_stu_sync_int',
   // Reference Register
   'ref_fb_url','ref_fb_code','ref_fb_stu_url','ref_fb_stu_code','ref_tg_cfg',
   'ref_cfg','ref_fs_cfg','ref_od_cfg','ref_wix_cfg',
-  'ref_sync_int','ref_stu_sync_int',
   // Fee QR
   'feeqr_fb','feeqr_settings','feeqr_wa_enabled',
   // Theme
@@ -8650,6 +7940,61 @@ function importAllSettings(input){
   reader.readAsText(file);
 }
 </script>
+
+<!-- ═══ CSV COLUMN MAPPING MODAL ═══ -->
+<div id="csv-map-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9100;align-items:center;justify-content:center;padding:16px">
+  <div style="background:var(--surf,#fff);border:2px solid var(--brand,#7c5cbf);border-radius:18px;padding:24px;max-width:460px;width:100%;max-height:92vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.35);font-family:'Plus Jakarta Sans',sans-serif">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+      <span style="font-size:22px">🗂️</span>
+      <div style="flex:1">
+        <div style="font-size:15px;font-weight:800;color:var(--brand,#7c5cbf)">CSV Column Mapping</div>
+        <div id="csv-map-preview" style="font-size:11px;color:var(--sub,#6b5b95);margin-top:2px"></div>
+      </div>
+      <button onclick="document.getElementById('csv-map-modal').style.display='none'" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted,#b0a0d0)">✕</button>
+    </div>
+    <div style="font-size:11px;color:var(--sub,#6b5b95);margin-bottom:14px;padding:8px 10px;background:var(--card,#f7f5ff);border-radius:8px;border:1px solid var(--bdr,#e0d9f5)">
+      📌 CSV ke columns apne fields se match karo. Auto-detect ho gaya hai — confirm karke Import karo.
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
+      <div>
+        <div style="font-size:10px;font-weight:700;color:var(--sub,#6b5b95);text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px">👤 Name <span style="color:var(--red,#d04040)">*</span></div>
+        <select id="csv-map-name" class="csv-map-sel" style="width:100%;padding:8px 10px;border-radius:8px;border:1.5px solid var(--bdr2,#c9bdf0);background:var(--card,#f7f5ff);color:var(--txt,#1a1035);font-family:inherit;font-size:12px;outline:none"></select>
+      </div>
+      <div>
+        <div style="font-size:10px;font-weight:700;color:var(--sub,#6b5b95);text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px">🆔 Admission No</div>
+        <select id="csv-map-adm" class="csv-map-sel" style="width:100%;padding:8px 10px;border-radius:8px;border:1.5px solid var(--bdr2,#c9bdf0);background:var(--card,#f7f5ff);color:var(--txt,#1a1035);font-family:inherit;font-size:12px;outline:none"></select>
+      </div>
+      <div>
+        <div style="font-size:10px;font-weight:700;color:var(--sub,#6b5b95);text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px">🏫 Class</div>
+        <select id="csv-map-class" class="csv-map-sel" style="width:100%;padding:8px 10px;border-radius:8px;border:1.5px solid var(--bdr2,#c9bdf0);background:var(--card,#f7f5ff);color:var(--txt,#1a1035);font-family:inherit;font-size:12px;outline:none"></select>
+      </div>
+      <div>
+        <div style="font-size:10px;font-weight:700;color:var(--sub,#6b5b95);text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px">👨 Father Name</div>
+        <select id="csv-map-father" class="csv-map-sel" style="width:100%;padding:8px 10px;border-radius:8px;border:1.5px solid var(--bdr2,#c9bdf0);background:var(--card,#f7f5ff);color:var(--txt,#1a1035);font-family:inherit;font-size:12px;outline:none"></select>
+      </div>
+      <div>
+        <div style="font-size:10px;font-weight:700;color:var(--sub,#6b5b95);text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px">👩 Mother Name</div>
+        <select id="csv-map-mother" class="csv-map-sel" style="width:100%;padding:8px 10px;border-radius:8px;border:1.5px solid var(--bdr2,#c9bdf0);background:var(--card,#f7f5ff);color:var(--txt,#1a1035);font-family:inherit;font-size:12px;outline:none"></select>
+      </div>
+      <div>
+        <div style="font-size:10px;font-weight:700;color:var(--sub,#6b5b95);text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px">🚌 Bus Number</div>
+        <select id="csv-map-bus" class="csv-map-sel" style="width:100%;padding:8px 10px;border-radius:8px;border:1.5px solid var(--bdr2,#c9bdf0);background:var(--card,#f7f5ff);color:var(--txt,#1a1035);font-family:inherit;font-size:12px;outline:none"></select>
+      </div>
+      <div>
+        <div style="font-size:10px;font-weight:700;color:var(--sub,#6b5b95);text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px">📱 Phone</div>
+        <select id="csv-map-phone" class="csv-map-sel" style="width:100%;padding:8px 10px;border-radius:8px;border:1.5px solid var(--bdr2,#c9bdf0);background:var(--card,#f7f5ff);color:var(--txt,#1a1035);font-family:inherit;font-size:12px;outline:none"></select>
+      </div>
+      <div>
+        <div style="font-size:10px;font-weight:700;color:var(--sub,#6b5b95);text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px">🏠 Address</div>
+        <select id="csv-map-address" class="csv-map-sel" style="width:100%;padding:8px 10px;border-radius:8px;border:1.5px solid var(--bdr2,#c9bdf0);background:var(--card,#f7f5ff);color:var(--txt,#1a1035);font-family:inherit;font-size:12px;outline:none"></select>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button onclick="gpApplyCSVMapping()" style="flex:1;background:var(--brand,#7c5cbf);color:#fff;border:none;border-radius:10px;padding:12px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .2s" onmouseover="this.style.opacity='.88'" onmouseout="this.style.opacity='1'">✅ Import Students</button>
+      <button onclick="document.getElementById('csv-map-modal').style.display='none'" style="background:var(--card,#f7f5ff);border:1.5px solid var(--bdr,#e0d9f5);border-radius:10px;padding:12px 18px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;color:var(--sub,#6b5b95)">Cancel</button>
+    </div>
+  </div>
+</div>
 
 <!-- PWA Install Banner -->
 <div id="pwa-install-bar" style="display:none;position:fixed;bottom:62px;left:8px;right:8px;z-index:9999;
