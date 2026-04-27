@@ -3234,9 +3234,11 @@ function mergeRefStudents(){
         if(!ex.motherName&&rs.motherName)ex.motherName=rs.motherName;
         if(!ex.class&&(rs.cls||rs.class))ex.class=rs.cls||rs.class||'';
         if(!ex.name&&rs.name)ex.name=rs.name;
+        if(!ex.phone&&(rs.phone||rs.mobile))ex.phone=(rs.phone||rs.mobile||'').replace(/[^0-9]/g,'');
+        if(!ex.address&&(rs.address||rs.addr))ex.address=rs.address||rs.addr||'';
         updated++;
       } else {
-        S.students.push({name:rs.name,admissionNumber:adm,class:rs.cls||rs.class||'',fatherName:rs.fatherName||'',motherName:rs.motherName||'',busNumber:''});
+        S.students.push({name:rs.name,admissionNumber:adm,class:rs.cls||rs.class||'',fatherName:rs.fatherName||'',motherName:rs.motherName||'',busNumber:'',phone:(rs.phone||rs.mobile||'').replace(/[^0-9]/g,''),address:rs.address||rs.addr||''});
         map[key]=S.students[S.students.length-1];
         added++;
       }
@@ -3340,7 +3342,7 @@ function syncGpStudentsToRef(){
     if(!adm||!gs.name)return;
     var key=adm.toLowerCase();
     if(!map[key]){
-      STUDENTS.push({id:'gp_'+adm,name:gs.name,admNo:adm,cls:gs.class||'',fatherName:gs.fatherName||'',motherName:gs.motherName||''});
+      STUDENTS.push({id:'gp_'+adm,name:gs.name,admNo:adm,cls:gs.class||'',fatherName:gs.fatherName||'',motherName:gs.motherName||'',phone:gs.phone||''});
       map[key]=STUDENTS[STUDENTS.length-1];
       added++;
     } else {
@@ -3349,6 +3351,7 @@ function syncGpStudentsToRef(){
       if(!ex.fatherName&&gs.fatherName)ex.fatherName=gs.fatherName;
       if(!ex.motherName&&gs.motherName)ex.motherName=gs.motherName;
       if(!ex.cls&&gs.class)ex.cls=gs.class;
+      if(!ex.phone&&gs.phone)ex.phone=gs.phone;
     }
   });
   if(added){
@@ -4015,7 +4018,8 @@ async function gpStuFetchShared(){
       if(!adm)return;
       var existingPhone=(map[adm]&&map[adm].phone)||'';
       var remotePhone=(rs.phone||rs.mobile||rs.contact||'').replace(/[^0-9]/g,'');
-      map[adm]={name:rs.name||'',admissionNumber:adm,class:rs.cls||rs.class||'',fatherName:rs.fatherName||'',motherName:rs.motherName||'',busNumber:rs.busNumber||rs.bus||'',phone:remotePhone||existingPhone};
+      var existingAddress=(map[adm]&&map[adm].address)||'';
+      map[adm]={name:rs.name||'',admissionNumber:adm,class:rs.cls||rs.class||'',fatherName:rs.fatherName||'',motherName:rs.motherName||'',busNumber:rs.busNumber||rs.bus||'',phone:remotePhone||existingPhone,address:rs.address||rs.addr||existingAddress};
     });
     S.students=Object.values(map);
     saveLocal();renderStu();popBusSel();updBadge();
