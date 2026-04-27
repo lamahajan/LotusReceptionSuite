@@ -3395,7 +3395,6 @@ function _gpSSEput(ev){
     let passes=null;
     if(Array.isArray(raw)){passes=raw;}
     else if(raw&&typeof raw==='object'){
-      // Filter out __empty marker, keep only real pass objects
       passes=Object.values(raw).filter(p=>p&&typeof p==='object'&&p.id);
       passes.forEach(p=>{
         if(p.pickerPhoto==='__has_photo'){
@@ -3518,24 +3517,18 @@ async function fetchAll(){
       let fetched;
       if(Array.isArray(raw)){fetched=raw;}
       else if(raw&&typeof raw==='object'){
-        // Filter out __empty marker, keep only real pass objects
         fetched=Object.values(raw).filter(p=>p&&typeof p==='object'&&p.id);
         fetched.sort((a,b)=>((b.date||'')+(b.time||'')).localeCompare((a.date||'')+(a.time||'')));
       } else {fetched=[];}
-      // ── DELTA MERGE ──
-      // Preserve local passes for photos that are already resolved
       fetched.forEach(p=>{
         if(p.pickerPhoto==='__has_photo'){
           const lp=S.passes.find(x=>x.id===p.id);
           if(lp&&lp.pickerPhoto&&lp.pickerPhoto!=='__has_photo')p.pickerPhoto=lp.pickerPhoto;
         }
       });
-      // Merge: keep local old passes, update/add recent from Firebase
       S.passes=_mergePasses(S.passes,fetched);
       saveLocal();renderAll();
     } else {
-      // Fresh Firebase — passes node doesn't exist yet
-      // Initialize it so SSE has a node to listen on, then check for old format
       await fetch(`${cfg.url}/${cfg.code}/passes.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({'__empty':true})}).catch(()=>{});
       await _gpMigratePasses();
     }
@@ -3684,7 +3677,9 @@ async function pushOnePass(pass){
   }catch{setSS('err');}
 }
 
-async function patchPassFields(id,fields){
+async function patchPassFields(id,fields,_skipTGUpdate){
+  const pidx=S.passes.findIndex(p=>p.id===id);
+  if(pidx>-1)Object.assign(S.passes[pidx],fields);
   saveLocal();
   if(!cfg.url||!cfg.code)return;
   try{
@@ -4430,7 +4425,7 @@ function renderRec(){
     const _rphoto=_resolvePhoto(p);
     const photoEl=p.pickerPhoto==='__has_photo'&&!_rphoto
       ?`<div id="ph-${p.id}" style="margin-top:6px;font-size:11px;color:var(--muted);cursor:pointer" onclick="_loadPassPhoto('${p.id}')">📷 Photo available — tap to load</div>`
-      :(_rphoto?`<div style="margin-top:6px;border:1.5px solid var(--border);border-radius:6px;background:var(--bg2);padding:4px 0;overflow:hidden;text-align:center"><img src="${_rphoto}" style="max-height:80px;max-width:100%;border-radius:4px;display:inline-block;object-fit:contain;padding:0 4px;box-sizing:border-box"></div>`:'');
+      :(_rphoto?`<div style="margin-top:6px;border:1.5px solid var(--border);border-radius:6px;background:var(--bg2);overflow:hidden;text-align:center"><img src="${_rphoto}" style="max-height:80px;max-width:100%;border-radius:4px;display:block;margin:0 auto;object-fit:contain;"></div>`:'');
     const printBtn=`<button onclick="event.stopPropagation();gpPrintPassById('${p.id}')" class="btn bgh" style="font-size:12px;padding:6px 12px;background:var(--purple-l);border-color:var(--purple);color:var(--purple)">🖨️ Print</button>`;
     const expandBody=`${lockedMsg}${infoLine?`<div style="font-size:11px;color:var(--sub);line-height:1.7">${infoLine}</div>`:''}${photoEl}<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:7px">${waBtn}${printBtn}${delBtn}</div>`;
     return `<div class="card" onclick="tgCard('${p.id}')" style="cursor:pointer">
@@ -4463,36 +4458,24 @@ function cfmD(id){document.getElementById('dc-'+id).classList.add('show');}
 async function delPass(id){
   if(!confirm('Delete this gate pass record? This cannot be undone.'))return;
   const pass=S.passes.find(p=>p.id===id);
-  // Remove from local state and update UI immediately (don't wait for Firebase)
+  if(pass&&TGCfg.enabled&&pass.tgMsgId) deleteTGMessage(TGCfg.token,TGCfg.chatId,pass.tgMsgId);
   S.passes=S.passes.filter(p=>p.id!==id);
-  _photoCache.del(id); // clean up cached photo
+  _photoCache.del(id);
   saveLocal();
   renderRec();updBadge();
   gpToast('🗑 Pass deleted','err');
-  // Firebase + Telegram delete in background
-  if(pass&&TGCfg.enabled&&TGCfg.token){
-    _gpTGDeleteMsgs(pass).catch(()=>{});
-  }
   await deletePassFB(id);
 }
 
-// Central TG message delete — handles all storage formats
+// Central TG delete — uses saved chatId, fallback to all configured chatIds
 async function _gpTGDeleteMsgs(pass){
-  if(!TGCfg.token)return;
-  // Format 1: parallel arrays (newest — Firebase-safe)
-  if(pass.tgChatIds&&pass.tgMsgIds_arr&&pass.tgChatIds.length){
-    await Promise.all(pass.tgChatIds.map((cid,i)=>deleteTGMessage(TGCfg.token,cid,pass.tgMsgIds_arr[i])));
-    return;
-  }
-  // Format 2: single chatId + msgId (common case — 1 chat configured)
-  if(pass.tgMsgId&&pass.tgChatId){
-    await deleteTGMessage(TGCfg.token,pass.tgChatId,pass.tgMsgId);
-    return;
-  }
-  // Format 3: msgId only — try all currently configured chatIds
-  if(pass.tgMsgId){
-    const chatIds=TGCfg.chatIds&&TGCfg.chatIds.length?TGCfg.chatIds:(TGCfg.chatId?[TGCfg.chatId]:[]);
-    await Promise.all(chatIds.map(cid=>deleteTGMessage(TGCfg.token,cid,pass.tgMsgId)));
+  if(!TGCfg.enabled||!TGCfg.token||!pass.tgMsgId)return;
+  const cid=pass.tgChatId||TGCfg.chatId;
+  if(cid){
+    deleteTGMessage(TGCfg.token,cid,pass.tgMsgId);
+  } else {
+    const ids=TGCfg.chatIds&&TGCfg.chatIds.length?TGCfg.chatIds:[];
+    ids.forEach(c=>deleteTGMessage(TGCfg.token,c,pass.tgMsgId));
   }
 }
 
@@ -4523,9 +4506,9 @@ async function execDel(){
   saveLocal();
   closeMD();updBadge();renderRec();
   gpToast(ids.length+' record'+(ids.length>1?'s':'')+' deleted','err');
-  // Firebase + Telegram in background
-  if(TGCfg.enabled){
-    Promise.all(toDelPasses.map(p=>_gpTGDeleteMsgs(p))).catch(()=>{});
+  // TG: delete messages for all deleted passes
+  if(TGCfg.enabled&&TGCfg.token){
+    toDelPasses.forEach(p=>{if(p.tgMsgId) deleteTGMessage(TGCfg.token,p.tgChatId||TGCfg.chatId,p.tgMsgId);});
   }
   await Promise.all(ids.map(id=>deletePassFB(id)));
 }
@@ -5118,7 +5101,7 @@ function gpPrintA6Slip(p){
     +'<div class="box" style="overflow:hidden;max-height:11mm"><div class="lbl">Address</div><div style="font-size:6pt;font-weight:500;color:#1a1035;margin-top:.4mm;white-space:pre-wrap;word-break:break-word;line-height:1.3;overflow:hidden">'+xEsc(p.address||'—')+'</div></div>'
     +'</div>'
     +(p.reason?'<div class="rsn"><span style="font-weight:400;text-transform:uppercase;font-size:5.5pt;letter-spacing:.5px;color:#92400e">Reason: </span><b>'+xEsc(p.reason)+'</b></div>':'')
-    +(_gpPrintCfg.printPhoto&&_resolvePhoto(p)?'<div style="margin:1mm 0;border:2px solid #c9bdf0;border-radius:6px;background:#fff;padding:3mm 2mm;flex-shrink:1;display:flex;align-items:center;justify-content:center;min-height:0"><img src="'+_resolvePhoto(p)+'" style="max-width:100%;max-height:28mm;width:auto;height:auto;object-fit:contain;display:block;border-radius:2px"></div>':'')
+    +(_gpPrintCfg.printPhoto&&_resolvePhoto(p)?'<div style="margin:1mm 0;border:2px solid #c9bdf0;border-radius:6px;background:#fff;padding:3mm 2mm;flex-shrink:1;display:flex;align-items:center;justify-content:center;min-height:0"><img src="'+_resolvePhoto(p)+'" style="max-width:100%;max-height:22mm;width:auto;height:auto;object-fit:contain;display:block;border-radius:2px"></div>':'')
     +'<div class="spacer"></div>'
     +'<div class="foot">'
     +'<div class="fi"><div class="fv">'+xEsc(gpFmtPrintDate(p.date))+'</div><div class="fl">Date</div></div>'
@@ -6017,7 +6000,8 @@ function deleteEntry(id){
     toast('🗑 Entry deleted: '+en.to+(en.refno?' ('+en.refno+')':''),'err');
     if(RefTGCfg.enabled&&RefTGCfg.token&&RefTGCfg.notifyDel!==false){
       sendRefTGNotification('deleted',en);
-      if(en.tgMsgId) deleteTGMessage(RefTGCfg.token,RefTGCfg.chatId,en.tgMsgId);
+      // FIX: await lagaya — pehle await nahi tha, Promise silently fail hoti thi
+      if(en.tgMsgId) await deleteTGMessage(RefTGCfg.token,RefTGCfg.chatId,en.tgMsgId);
     }
   };
   if(perm==='password'){
@@ -7009,13 +6993,12 @@ async function testTGCfg(){
     st.textContent='✓ Test sent to all '+ok+' chat(s)!';st.style.color='var(--green)';
   }
 }
+// ─── SHARED: Build TG caption from pass data ──────────────
 async function sendToTelegramLog(pass){
-  // Guard: already sent for this pass (e.g. from a re-render or race condition)
-  if(pass.tgMsgId)return;
   const ids=TGCfg.chatIds&&TGCfg.chatIds.length?TGCfg.chatIds:(TGCfg.chatId?[TGCfg.chatId]:[]);
   if(!TGCfg.enabled||!TGCfg.token||!ids.length)return;
   try{
-    const caption=`\ud83d\udeaa *Gate Pass Issued*\n\n\ud83d\udc64 *${pass.studentName}* (${pass.class||'\u2014'})\n\ud83d\udccb Adm: ${pass.admissionNumber||'\u2014'}\n\ud83e\uddd1 Picked by: *${pass.pickedUpBy}* (${pass.relation||'\u2014'})\n\ud83d\udcdd Reason: ${pass.reason||'\u2014'}\n\ud83d\ude8c Bus: ${pass.busNumber||'\u2014'}\n\ud83d\udd50 Time: ${pass.time} | \ud83d\udcc5 ${pass.date}\n\ud83c\udd94 Pass: #${pass.id.substr(-6).toUpperCase()}`;
+    const caption=`🚪 *Gate Pass Issued*\n\n👤 *${pass.studentName}* (${pass.class||'—'})\n📋 Adm: ${pass.admissionNumber||'—'}\n🧑 Picked by: *${pass.pickedUpBy}* (${pass.relation||'—'})\n📝 Reason: ${pass.reason||'—'}\n🚌 Bus: ${pass.busNumber||'—'}\n🕐 Time: ${pass.time} | 📅 ${pass.date}\n🆔 Pass: #${pass.id.substr(-6).toUpperCase()}`;
     const inlineKb=TGCfg.approveEnabled?{inline_keyboard:[[
       {text:'\u2705 Approve',callback_data:'APPROVE_'+pass.id},
       {text:'\u274c Deny',callback_data:'DENY_'+pass.id}
@@ -7053,23 +7036,15 @@ async function sendToTelegramLog(pass){
       return {chatId,msgId};
     }));
 
-    // Store tgMsgId + tgChatIds array (flat — Firebase-safe, no object keys)
-    const sentResults=results.filter(r=>r.status==='fulfilled'&&r.value.msgId);
-    const firstMsgId=sentResults.length?sentResults[0].value.msgId:null;
-    const firstChatId=sentResults.length?sentResults[0].value.chatId:null;
-    // Store all (chatId,msgId) pairs as parallel arrays — safe for Firebase
-    const tgChatIds=sentResults.map(r=>String(r.value.chatId));
-    const tgMsgIds_arr=sentResults.map(r=>Number(r.value.msgId));
+    // Save first successful msgId + chatId
+    const firstOk=results.find(r=>r.status==='fulfilled'&&r.value.msgId);
+    const msgId=firstOk?firstOk.value.msgId:null;
+    const chatId=firstOk?firstOk.value.chatId:null;
     const failCount=results.filter(r=>r.status==='rejected').length;
-    if(sentResults.length){
+    if(msgId){
       const pidx=S.passes.findIndex(p=>p.id===pass.id);
-      if(pidx>-1){
-        S.passes[pidx].tgMsgId=firstMsgId;
-        S.passes[pidx].tgChatId=firstChatId;
-        S.passes[pidx].tgChatIds=tgChatIds;
-        S.passes[pidx].tgMsgIds_arr=tgMsgIds_arr;
-        patchPassFields(pass.id,{tgMsgId:firstMsgId,tgChatId:firstChatId,tgChatIds,tgMsgIds_arr});
-      }
+      if(pidx>-1){S.passes[pidx].tgMsgId=msgId;S.passes[pidx].tgChatId=chatId;}
+      patchPassFields(pass.id,{tgMsgId:msgId,tgChatId:chatId},true);
     }
     const okCount=results.length-failCount;
     if(_resolvePhoto(pass))gpToast('\u2708\ufe0f Gate pass photo sent to Admin'+(okCount>1?' ('+okCount+' chats)':''));
@@ -7138,7 +7113,7 @@ function handleTGApproval(passId,approved,from){
   pass.tgApproved=approved;
   const byName=from?(from.first_name+(from.last_name?' '+from.last_name:'')+(from.username?' (@'+from.username+')':'')).trim():'Unknown';
   pass.tgApprovedBy=byName;
-  patchPassFields(pass.id,{tgApproved:approved,tgApprovedBy:byName});
+  patchPassFields(pass.id,{tgApproved:approved,tgApprovedBy:byName},true);
   // Always remove the inline keyboard buttons after any action
   if(pass.tgMsgId){
     fetch(`https://api.telegram.org/bot${TGCfg.token}/editMessageReplyMarkup`,{
