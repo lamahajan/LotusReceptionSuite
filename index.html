@@ -3219,6 +3219,17 @@ let camStream=null,photo=null,cpSel=null,isDark=false;
 let qpSel=null;
 const PASS=(()=>{const _e='bWFoYWphbg==';try{return atob(_e);}catch{return '';}})();
 
+// ═══ PAGE VISIBILITY — immediate re-sync when app comes to foreground ═══
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState==='visible'&&cfg.url&&cfg.code){
+    // Force next fetchAll to bypass lastMod cache so fresh data is guaranteed
+    localMod=0;
+    fetchAll();
+    // Restart SSE if it died in background
+    if(!gpSSE)_gpSSEOpen();
+  }
+});
+
 // ═══ INIT ═══
 function _recInit(){
   initTheme();
@@ -3394,7 +3405,12 @@ function _gpSSEput(ev){
       });
       passes.sort((a,b)=>((b.date||'')+(b.time||'')).localeCompare((a.date||'')+(a.time||'')));
     }
-    if(passes!==null){S.passes=passes;saveLocal();renderAll();}
+    if(passes!==null){
+      S.passes=_mergePasses(S.passes,passes);
+      saveLocal();renderAll();
+      // Sync localMod so next poll doesn't redundantly re-fetch
+      fetch(`${cfg.url}/${cfg.code}/lastMod.json`).then(r=>r.json()).then(v=>{if(v)localMod=v;}).catch(()=>{});
+    }
     setSS('ok');
   }catch(e){}
 }
@@ -3430,7 +3446,6 @@ function _gpSSEpatch(ev){
     }
 
     // Case 2: path is "/" — bulk update, data is {passId: passObj, ...}
-    if(typeof updates==='object'&&!Array.isArray(updates)){
       Object.entries(updates).forEach(([k,v])=>{
         const byId=S.passes.findIndex(p=>p.id===k);
         if(byId>-1){
@@ -3717,7 +3732,7 @@ function gpApplyRemoteCfg(rc){
     const siEl=document.getElementById('gp-stu-sync-int');if(siEl)siEl.value=gpStuSyncInt();
   }
 }
-function gpSyncInt(){return parseInt(localStorage.getItem('gp_sync_int')||'30',10)||30;}
+function gpSyncInt(){return parseInt(localStorage.getItem('gp_sync_int')||'10',10)||10;}
 function gpStuSyncInt(){return parseInt(localStorage.getItem('gp_stu_sync_int')||'60',10)||60;}
 
 async function gpPushRemoteCfg(){
