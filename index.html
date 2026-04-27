@@ -3446,6 +3446,7 @@ function _gpSSEpatch(ev){
     }
 
     // Case 2: path is "/" — bulk update, data is {passId: passObj, ...}
+    if(typeof updates==='object'&&!Array.isArray(updates)){
       Object.entries(updates).forEach(([k,v])=>{
         const byId=S.passes.findIndex(p=>p.id===k);
         if(byId>-1){
