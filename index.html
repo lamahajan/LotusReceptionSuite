@@ -1595,6 +1595,15 @@ Reason: {reason}"></textarea>
                 <div style="font-size:11px;color:var(--muted);margin-top:3px">Adds ✅ Approve and ❌ Deny buttons to each Telegram message. If approved, signature prints on the slip; if denied, blank signature line.</div>
               </div>
             </label>
+            <div style="margin-top:10px;border-top:1px solid var(--border);padding-top:10px">
+              <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+                <input type="checkbox" id="tg-approve-sync" style="accent-color:#2196F3;width:15px;height:15px">
+                <div>
+                  <div style="font-size:12px;font-weight:700;color:var(--text)">&#127760; Sync to all devices</div>
+                  <div style="font-size:10.5px;color:var(--muted);margin-top:2px">On/Off will apply on every device connected to same Firebase. Uncheck = only this device.</div>
+                </div>
+              </label>
+            </div>
           </div>
           <div id="tg-status" style="font-size:12px;min-height:16px;margin-bottom:10px;color:var(--sub)"></div>
           <div class="row" style="gap:8px">
@@ -3315,6 +3324,10 @@ async function fetchAll(){
         S.passes=ps;
       }
       if(d.buses&&!d.buses.__empty&&d.buses.length)S.buses=d.buses;
+      if(d.tgApproveSynced&&typeof d.tgApproveEnabled!=='undefined'){
+        const rv=!!d.tgApproveEnabled;
+        if(TGCfg.approveEnabled!==rv){TGCfg.approveEnabled=rv;localStorage.setItem('gp_tg_cfg',JSON.stringify(TGCfg));const el=document.getElementById('tg-approve-enabled');if(el)el.checked=rv;startTGApprovalPolling();gpToast((rv?'✅':'❌')+' Approve/Deny '+(rv?'ON':'OFF')+' (synced from another device)');}
+      }
       localMod=sm;saveLocal();renderAll();
     }
     setSS('ok');
@@ -5715,6 +5728,7 @@ function renderSettingsPage(){
   _tgRenderChatIdRows();
   document.getElementById('tg-enabled').checked=TGCfg.enabled||false;
   const tgApprEl=document.getElementById('tg-approve-enabled');if(tgApprEl)tgApprEl.checked=!!TGCfg.approveEnabled;
+  const tgSyncEl=document.getElementById('tg-approve-sync');if(tgSyncEl)tgSyncEl.checked=!!TGCfg.approveSync;
   if(document.getElementById('ptg-token')){
     document.getElementById('ptg-token').value=PTGCfg.token||'';
     document.getElementById('ptg-enabled').checked=PTGCfg.enabled||false;
@@ -6281,9 +6295,14 @@ function saveTGCfg(){
   TGCfg.chatId=TGCfg.chatIds[0]||''; // keep backward compat
   TGCfg.enabled=document.getElementById('tg-enabled').checked;
   TGCfg.approveEnabled=document.getElementById('tg-approve-enabled')?document.getElementById('tg-approve-enabled').checked:false;
+  TGCfg.approveSync=document.getElementById('tg-approve-sync')?document.getElementById('tg-approve-sync').checked:false;
   localStorage.setItem('gp_tg_cfg',JSON.stringify(TGCfg));
+  // Push approve setting to Firebase so all devices get it
+  if(TGCfg.approveSync&&cfg.url&&cfg.code){
+    fetch(`${cfg.url}/${cfg.code}.json`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({tgApproveEnabled:TGCfg.approveEnabled,tgApproveSynced:true,lastMod:Date.now()})}).catch(()=>{});
+  }
   const st=document.getElementById('tg-status');
-  st.textContent='✓ Saved — '+TGCfg.chatIds.length+' chat ID'+(TGCfg.chatIds.length!==1?'s':'');st.style.color='var(--green)';
+  st.textContent='✓ Saved — '+TGCfg.chatIds.length+' chat ID'+(TGCfg.chatIds.length!==1?'s':'')+(TGCfg.approveSync?' · Synced to all devices':'');st.style.color='var(--green)';
   gpUpdateSettingsSubs();
   toast('Telegram Bot settings saved.');
   startTGApprovalPolling();
