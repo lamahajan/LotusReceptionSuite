@@ -344,7 +344,7 @@ body{color:var(--text);font-family:var(--sans);min-height:100vh}
 #screen-rec .card {background:var(--bg2);border:1.5px solid var(--border);border-radius:var(--r);margin-bottom:8px;overflow:hidden;box-shadow:var(--sha);transition:border .2s}
 #screen-rec .card:hover {border-color:var(--border2);box-shadow:var(--sha-md)}
 #screen-rec .ch {padding:12px 14px;cursor:pointer;display:flex;align-items:flex-start;justify-content:space-between;gap:10px;width:100%;background:none;border:none;text-align:left;color:inherit;font-family:var(--sans)}
-#screen-rec .cb {border-top:1px solid var(--border);padding:8px 14px 10px;background:var(--bg3);display:none}
+#screen-rec .cb {border-top:1px solid var(--border);padding:8px 14px 10px;background:var(--bg2);display:none}
 #screen-rec .cb.open {display:block}
 #screen-rec .cn {font-size:14px;font-weight:700}
 #screen-rec .cs {font-size:12px;color:var(--sub);margin-top:2px;line-height:1.5}
@@ -3322,6 +3322,15 @@ async function fetchAll(){
       const toArr=v=>Array.isArray(v)?v:(v&&v.__empty)?[]:(v!=null?v:null);
       const ps=toArr(d.passes);
       if(ps!==null){
+        // Detect newly-exited passes (gateOutTime just appeared) → edit Telegram message
+        if(TGCfg.enabled&&TGCfg.token){
+          const oldMap={};S.passes.forEach(p=>{if(p.id)oldMap[p.id]=p.gateOutTime||null;});
+          ps.forEach(p=>{
+            if(p.id&&p.tgMsgId&&p.gateOutTime&&!oldMap[p.id]){
+              editTelegramOnExit(p);
+            }
+          });
+        }
         // Restore locally cached photos into fetched passes
         ps.forEach(p=>{
           if(p.pickerPhoto==='__has_photo'){
@@ -3901,7 +3910,6 @@ function renderRec(){
     const lockedMsg=lk?`<div style="font-size:11px;color:var(--red);font-weight:600;margin-bottom:6px">🔒 Locked — Delete via Settings → Master Delete</div>`:'';
     // Compact info line
     const infoLine=[
-      p.fatherName?`👨 ${e(p.fatherName)}`:'',
       p.gateOutTime?`✅ Out: ${p.gateOutTime}`:'',
       p.reason?`📝 ${e(p.reason)}`:'',
     ].filter(Boolean).join(' &nbsp;·&nbsp; ');
@@ -6360,6 +6368,27 @@ async function testTGCfg(){
     st.textContent='✓ Test sent to all '+ok+' chat(s)!';st.style.color='var(--green)';
   }
 }
+async function editTelegramOnExit(pass){
+  if(!TGCfg.enabled||!TGCfg.token||!pass.tgMsgId)return;
+  const ids=TGCfg.chatIds&&TGCfg.chatIds.length?TGCfg.chatIds:(TGCfg.chatId?[TGCfg.chatId]:[]);
+  if(!ids.length)return;
+  const caption=`🚪 *Gate Pass — Exited*\n\n👤 *${pass.studentName}* (${pass.class||'—'})\n📋 Adm: ${pass.admissionNumber||'—'}\n🧑 Picked by: *${pass.pickedUpBy}* (${pass.relation||'—'})\n📝 Reason: ${pass.reason||'—'}\n🚌 Bus: ${pass.busNumber||'—'}\n🕐 In: ${pass.time} | ✅ Out: ${pass.gateOutTime}\n📅 ${pass.date}\n🆔 Pass: #${pass.id.substr(-6).toUpperCase()}`;
+  const chatId=ids[0]; // edit only first chat (primary log)
+  try{
+    if(pass.pickerPhoto){
+      await fetch(`https://api.telegram.org/bot${TGCfg.token}/editMessageCaption`,{
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({chat_id:chatId,message_id:pass.tgMsgId,caption,parse_mode:'Markdown'})
+      });
+    } else {
+      await fetch(`https://api.telegram.org/bot${TGCfg.token}/editMessageText`,{
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({chat_id:chatId,message_id:pass.tgMsgId,text:caption,parse_mode:'Markdown'})
+      });
+    }
+  }catch(e){console.log('TG edit error:',e);}
+}
+
 async function sendToTelegramLog(pass){
   const ids=TGCfg.chatIds&&TGCfg.chatIds.length?TGCfg.chatIds:(TGCfg.chatId?[TGCfg.chatId]:[]);
   if(!TGCfg.enabled||!TGCfg.token||!ids.length)return;
