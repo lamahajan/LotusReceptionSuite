@@ -3383,7 +3383,7 @@ function setSS(st){
 function startSync(){setSS('ing');fetchAll();if(syncIv)clearInterval(syncIv);syncIv=setInterval(fetchAll,6000);}
 // Re-sync immediately when tab/app comes back to foreground
 document.addEventListener('visibilitychange',()=>{
-  if(document.visibilityState==='visible'&&cfg.url&&cfg.code){localMod=0;fetchAll();}
+  if(document.visibilityState==='visible'&&cfg.url&&cfg.code){fetchAll();}
 });
 function renderAll(){popBusSel();updBadge();const a=document.querySelector('.tb.active');if(!a)return;const f=a.getAttribute('onclick')||'';if(f.includes('rec'))renderRec();if(f.includes('cut'))renderCpBusSummary();if(f.includes('set')&&document.getElementById('set-ct').style.display!=='none'){renderBuses();renderStu();}renderQGSidebar();}
 
@@ -3984,6 +3984,7 @@ function recCheckPW(){const v=document.getElementById('pw-inp').value;if(v===PAS
 // ═══ GATEPASS STUDENT DB SHARED SYNC ═══
 var gpStuCfg={url:'',code:''};
 var gpStuIv=null;
+var gpStuLocalMod=0;
 
 function gpLoadStuCfg(){
   var u=localStorage.getItem('gp_stu_url'),cd=localStorage.getItem('gp_stu_code');
@@ -4020,9 +4021,14 @@ function gpDisconnStu(){
 async function gpStuFetchShared(){
   if(!gpStuCfg.url||!gpStuCfg.code)return;
   try{
+    // ── Step 1: Cheap lastMod check (~50 bytes) — skip full download if unchanged ──
+    const lmr=await fetch(gpStuCfg.url+'/'+gpStuCfg.code+'/lastMod.json');
+    if(lmr.ok){const remMod=await lmr.json();if(remMod&&remMod===gpStuLocalMod)return;}
+    // ── Step 2: Full fetch only when something changed ──
     var r=await fetch(gpStuCfg.url+'/'+gpStuCfg.code+'.json');
     if(!r.ok)return;var d=await r.json();
     if(!d||!d.students)return;
+    gpStuLocalMod=d.lastMod||0;
     var remote=Array.isArray(d.students)?d.students:(d.students.__empty?[]:Object.values(d.students));
     // Merge: remote students override local by admissionNumber
     var map={};
@@ -5846,8 +5852,14 @@ async function fbPushPublic(){
 // ─── FIREBASE — REGISTER ─────────────────────────────────
 async function fbFetchAll(){
   if(!fbCfg.url||!fbCfg.code)return;
-  try{const r=await fetch(`${fbCfg.url}/${fbCfg.code}.json`);if(!r.ok)throw 0;const d=await r.json();
-  if(d){const sm=d.lastMod||0;if(sm!==fbLocalMod){const toArr=v=>Array.isArray(v)?v:(v&&v.__empty)?[]:(v!=null?v:null);const ents=toArr(d.entries);if(ents!==null)R.entries=ents;if(d.nextSeq)R.nextSeq=d.nextSeq;if(d.overrideSeq)R.overrideSeq=d.overrideSeq;if(d.reclaimedSeqs)R.reclaimedSeqs=d.reclaimedSeqs;fbLocalMod=sm;saveLocal();renderFYSelect();renderRegister();renderDashboard();populateDataLists();}}}catch(e){}
+  try{
+    // ── Step 1: Cheap lastMod check (~50 bytes) — skip full download if unchanged ──
+    const lmr=await fetch(`${fbCfg.url}/${fbCfg.code}/lastMod.json`);
+    if(lmr.ok){const remMod=await lmr.json();if(remMod&&remMod===fbLocalMod)return;}
+    // ── Step 2: Full fetch only when something changed ──
+    const r=await fetch(`${fbCfg.url}/${fbCfg.code}.json`);if(!r.ok)throw 0;const d=await r.json();
+    if(d){const sm=d.lastMod||0;if(sm!==fbLocalMod){const toArr=v=>Array.isArray(v)?v:(v&&v.__empty)?[]:(v!=null?v:null);const ents=toArr(d.entries);if(ents!==null)R.entries=ents;if(d.nextSeq)R.nextSeq=d.nextSeq;if(d.overrideSeq)R.overrideSeq=d.overrideSeq;if(d.reclaimedSeqs)R.reclaimedSeqs=d.reclaimedSeqs;fbLocalMod=sm;saveLocal();renderFYSelect();renderRegister();renderDashboard();populateDataLists();}}
+  }catch(e){}
 }
 async function fbPush(){
   R.lastMod=Date.now();fbLocalMod=R.lastMod;saveLocal();if(!fbCfg.url||!fbCfg.code)return;
@@ -5863,8 +5875,14 @@ function fbSt(m,c){const el=document.getElementById('fb-status');el.textContent=
 // ─── FIREBASE — STUDENTS ─────────────────────────────────
 async function fbStuFetch(){
   if(!fbStuCfg.url||!fbStuCfg.code)return;
-  try{const r=await fetch(`${fbStuCfg.url}/${fbStuCfg.code}.json`);if(!r.ok)throw 0;const d=await r.json();
-  if(d){const sm=d.lastMod||0;if(sm!==fbStuLocalMod){const toArr=v=>Array.isArray(v)?v:(v&&v.__empty)?[]:(v!=null?v:null);const stus=toArr(d.students);if(stus!==null){STUDENTS=stus;if(typeof syncRefStudentsToGp==='function')syncRefStudentsToGp();}fbStuLocalMod=sm;saveLocal();renderStudentList();populateDataLists();}}}catch(e){}
+  try{
+    // ── Step 1: Cheap lastMod check (~50 bytes) — skip full download if unchanged ──
+    const lmr=await fetch(`${fbStuCfg.url}/${fbStuCfg.code}/lastMod.json`);
+    if(lmr.ok){const remMod=await lmr.json();if(remMod&&remMod===fbStuLocalMod)return;}
+    // ── Step 2: Full fetch only when something changed ──
+    const r=await fetch(`${fbStuCfg.url}/${fbStuCfg.code}.json`);if(!r.ok)throw 0;const d=await r.json();
+    if(d){const sm=d.lastMod||0;if(sm!==fbStuLocalMod){const toArr=v=>Array.isArray(v)?v:(v&&v.__empty)?[]:(v!=null?v:null);const stus=toArr(d.students);if(stus!==null){STUDENTS=stus;if(typeof syncRefStudentsToGp==='function')syncRefStudentsToGp();}fbStuLocalMod=sm;saveLocal();renderStudentList();populateDataLists();}}
+  }catch(e){}
 }
 // Sync ref register students into gatepass S.students (same page)
 function syncRefStudentsToGp(){
