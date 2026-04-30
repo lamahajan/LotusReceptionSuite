@@ -1751,6 +1751,31 @@ Reason: {reason}"></textarea>
         </div>
       </div>
 
+      <!-- ── CLEAR LOCAL STORAGE (Gatepass Settings) ── -->
+      <div class="gset-acc" id="gacc-clear">
+        <button class="gset-hdr" onclick="gpToggleAcc('gacc-clear')">
+          <span style="font-size:16px">🧹</span>
+          <span class="gset-title">Clear Local Storage</span>
+          <span class="gset-sub">App-wise ya full reset</span>
+          <span class="gset-chev">▼</span>
+        </button>
+        <div class="gset-body">
+          <div style="font-size:11px;color:var(--sub);margin-bottom:12px;line-height:1.6;background:var(--amber-l);border:1.5px solid var(--amber);border-radius:var(--rs);padding:9px 12px;">
+            ⚠️ Sirf local device ka data clear hoga — Firebase ka data safe rehega. Page reload hoga.
+          </div>
+          <div style="font-size:10px;font-weight:800;color:var(--sub);text-transform:uppercase;letter-spacing:.7px;margin-bottom:7px">App-wise Clear</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+            <button onclick="clearAppStorage('gatepass')" style="background:var(--amber-l);border:1.5px solid var(--amber);color:var(--amber);border-radius:9px;padding:9px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:var(--sans);transition:all .15s" onmouseover="this.style.background='var(--amber)';this.style.color='#fff'" onmouseout="this.style.background='var(--amber-l)';this.style.color='var(--amber)'">🚪 Gatepass Data</button>
+            <button onclick="clearAppStorage('register')" style="background:var(--amber-l);border:1.5px solid var(--amber);color:var(--amber);border-radius:9px;padding:9px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:var(--sans);transition:all .15s" onmouseover="this.style.background='var(--amber)';this.style.color='#fff'" onmouseout="this.style.background='var(--amber-l)';this.style.color='var(--amber)'">📒 Register Data</button>
+            <button onclick="clearAppStorage('feeqr')" style="background:var(--amber-l);border:1.5px solid var(--amber);color:var(--amber);border-radius:9px;padding:9px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:var(--sans);transition:all .15s" onmouseover="this.style.background='var(--amber)';this.style.color='#fff'" onmouseout="this.style.background='var(--amber-l)';this.style.color='var(--amber)'">💳 Fee QR Data</button>
+            <button onclick="clearAppStorage('theme')" style="background:var(--amber-l);border:1.5px solid var(--amber);color:var(--amber);border-radius:9px;padding:9px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:var(--sans);transition:all .15s" onmouseover="this.style.background='var(--amber)';this.style.color='#fff'" onmouseout="this.style.background='var(--amber-l)';this.style.color='var(--amber)'">🎨 Theme / UI</button>
+          </div>
+          <div style="font-size:10px;font-weight:800;color:var(--sub);text-transform:uppercase;letter-spacing:.7px;margin-bottom:7px">Full Reset</div>
+          <button onclick="clearAppStorage('all')" style="width:100%;background:var(--red-l);border:2px solid var(--red);color:var(--red);border-radius:10px;padding:11px;font-size:13px;font-weight:800;cursor:pointer;font-family:var(--sans);transition:all .15s;display:flex;align-items:center;justify-content:center;gap:6px" onmouseover="this.style.background='var(--red)';this.style.color='#fff'" onmouseout="this.style.background='var(--red-l)';this.style.color='var(--red)'">🗑️ Clear ALL Local Storage (Full Reset)</button>
+          <div id="gp-clear-status" style="font-size:11px;color:var(--sub);margin-top:8px;min-height:14px"></div>
+        </div>
+      </div><!-- /gacc-clear -->
+
     </div>
   </div>
 
@@ -8081,6 +8106,11 @@ const APP_STORAGE_KEYS = {
 };
 function clearAppStorage(app){
   const stEl=document.getElementById('global-clear-status');
+  const gpEl=document.getElementById('gp-clear-status');
+  function setStatus(msg,color){
+    if(stEl){stEl.textContent=msg;stEl.style.color=color;}
+    if(gpEl){gpEl.textContent=msg;gpEl.style.color=color;}
+  }
   let keys=[], label='';
   if(app==='all'){
     const confirmMsg='⚠️ POORA Local Storage clear hoga!\n\nIs mein shamil hai:\n• Gatepass ka data, passes, students\n• Register ke records\n• Fee QR students\n• Firebase URLs aur tokens\n• Theme settings\n\nFirebase ka data safe rehega.\n\nPage reload hoga. Continue?';
@@ -8089,7 +8119,7 @@ function clearAppStorage(app){
     const toDelete=[];
     for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&(k.startsWith('gp_')||k.startsWith('ref_')||k.startsWith('feeqr_')||k.startsWith('lis_')))toDelete.push(k);}
     toDelete.forEach(k=>localStorage.removeItem(k));
-    if(stEl){stEl.textContent='✅ All local storage cleared ('+toDelete.length+' keys) — reloading…';stEl.style.color='var(--green)';}
+    setStatus('✅ All local storage cleared ('+toDelete.length+' keys) — reloading…','var(--green)');
     if(typeof toast==='function')toast('🗑️ Full reset — reloading','err');
     setTimeout(()=>location.reload(),900);
     return;
@@ -8106,7 +8136,7 @@ function clearAppStorage(app){
     photoKeys.forEach(k=>localStorage.removeItem(k));
   }
   keys.forEach(k=>localStorage.removeItem(k));
-  if(stEl){stEl.textContent='✅ '+label+' data cleared — reloading…';stEl.style.color='var(--green)';}
+  setStatus('✅ '+label+' data cleared — reloading…','var(--green)');
   if(typeof toast==='function')toast('🧹 '+label+' storage cleared','err');
   setTimeout(()=>location.reload(),900);
 }
