@@ -1595,15 +1595,6 @@ Reason: {reason}"></textarea>
                 <div style="font-size:11px;color:var(--muted);margin-top:3px">Adds ✅ Approve and ❌ Deny buttons to each Telegram message. If approved, signature prints on the slip; if denied, blank signature line.</div>
               </div>
             </label>
-            <div style="margin-top:10px;border-top:1px solid var(--border);padding-top:10px">
-              <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
-                <input type="checkbox" id="tg-approve-sync" style="accent-color:#2196F3;width:15px;height:15px">
-                <div>
-                  <div style="font-size:12px;font-weight:700;color:var(--text)">&#127760; Sync to all devices</div>
-                  <div style="font-size:10.5px;color:var(--muted);margin-top:2px">On/Off will apply on every device connected to same Firebase. Uncheck = only this device.</div>
-                </div>
-              </label>
-            </div>
           </div>
           <div id="tg-status" style="font-size:12px;min-height:16px;margin-bottom:10px;color:var(--sub)"></div>
           <div class="row" style="gap:8px">
@@ -3324,10 +3315,6 @@ async function fetchAll(){
         S.passes=ps;
       }
       if(d.buses&&!d.buses.__empty&&d.buses.length)S.buses=d.buses;
-      if(d.tgApproveSynced&&typeof d.tgApproveEnabled!=='undefined'){
-        const rv=!!d.tgApproveEnabled;
-        if(TGCfg.approveEnabled!==rv){TGCfg.approveEnabled=rv;localStorage.setItem('gp_tg_cfg',JSON.stringify(TGCfg));const el=document.getElementById('tg-approve-enabled');if(el)el.checked=rv;startTGApprovalPolling();gpToast((rv?'✅':'❌')+' Approve/Deny '+(rv?'ON':'OFF')+' (synced from another device)');}
-      }
       localMod=sm;saveLocal();renderAll();
     }
     setSS('ok');
@@ -3602,7 +3589,7 @@ async function issuePass(){
   const by=document.getElementById('cpby').value.trim();if(!by){gpToast('⚠️ Enter picker name','err');return;}
   const existing=S.passes.find(p=>p.admissionNumber===cpSel.admissionNumber&&p.date===todayStr());
   if(existing){gpToast(`🚫 Pass already issued for ${cpSel.name} today (${existing.time})`,'err');return;}
-  const pass={id:uid(),date:todayStr(),time:nowT(),_ts:Date.now(),gateOutTime:null,studentName:cpSel.name,admissionNumber:cpSel.admissionNumber,class:cpSel.class||'',fatherName:cpSel.fatherName||'',motherName:cpSel.motherName||'',pickedUpBy:by,relation:document.getElementById('cprel').value,reason:document.getElementById('cpreason').value.trim(),busNumber:document.getElementById('cpbus').value||cpSel.busNumber||'',pickerPhoto:photo};
+  const pass={id:uid(),date:todayStr(),time:nowT(),gateOutTime:null,studentName:cpSel.name,admissionNumber:cpSel.admissionNumber,class:cpSel.class||'',fatherName:cpSel.fatherName||'',motherName:cpSel.motherName||'',pickedUpBy:by,relation:document.getElementById('cprel').value,reason:document.getElementById('cpreason').value.trim(),busNumber:document.getElementById('cpbus').value||cpSel.busNumber||'',pickerPhoto:photo};
   S.passes.unshift(pass);
   await push('passes');
   gpToast(`✅ Pass issued for ${pass.studentName}`);
@@ -3766,7 +3753,7 @@ async function issueQuickPass(){
   const stu=qpSel.stu||S.students.find(s=>s.admissionNumber===qpSel.adm);
   const existing=S.passes.find(p=>p.admissionNumber===qpSel.adm&&p.date===todayStr());
   if(existing){gpToast(`🚫 Pass already issued for ${qpSel.name} today`,'err');return;}
-  const pass={id:uid(),date:todayStr(),time:nowT(),_ts:Date.now(),gateOutTime:null,studentName:qpSel.name,admissionNumber:qpSel.adm,class:qpSel.cls||'',fatherName:stu?stu.fatherName||'':'',motherName:stu?stu.motherName||'':'',pickedUpBy:by,relation:document.getElementById('qprel').value,reason:document.getElementById('qpreason').value.trim(),busNumber:stu?stu.busNumber||'':'',pickerPhoto:null};
+  const pass={id:uid(),date:todayStr(),time:nowT(),gateOutTime:null,studentName:qpSel.name,admissionNumber:qpSel.adm,class:qpSel.cls||'',fatherName:stu?stu.fatherName||'':'',motherName:stu?stu.motherName||'':'',pickedUpBy:by,relation:document.getElementById('qprel').value,reason:document.getElementById('qpreason').value.trim(),busNumber:stu?stu.busNumber||'':'',pickerPhoto:null};
   S.passes.unshift(pass);
   await push('passes');
   gpToast(`⚡ Quick pass issued for ${pass.studentName}`);
@@ -3876,7 +3863,8 @@ function renderRec(){
   const list=S.passes.filter(p=>{const dOk=!df||p.date===df;const sOk=!q||[p.studentName,p.admissionNumber,p.class,p.pickedUpBy,p.busNumber,p.reason].some(v=>(v||'').toLowerCase().includes(q));return dOk&&sOk;});
   document.getElementById('rccnt').textContent=list.length+' record'+(list.length!==1?'s':'');
   const lkchip=`<span class="lkchip">🔒 Locked</span>`;
-  document.getElementById('rclist').innerHTML=list.length?list.map(p=>{
+  const sortedList=[...list].sort((a,b)=>(b.date+b.time).localeCompare(a.date+a.time));
+  document.getElementById('rclist').innerHTML=sortedList.length?sortedList.map(p=>{
     const lk=!!p.gateOutTime;
     const stu=S.students.find(s=>s.admissionNumber===p.admissionNumber);
     const ph=(stu?stu.phone||'':'').replace(/[^0-9]/g,'');
@@ -3912,6 +3900,7 @@ function renderRec(){
       <div class="cb" id="b-${p.id}">${expandBody}</div>
     </div>`;
   }).join(''):'<div class="empty"><div class="ei">📋</div>No records found.</div>';
+
 }
 // Open WA modal for a pass record — looks up phone safely by id
 function gpOpenWAForPass(passId){
@@ -4437,7 +4426,7 @@ function gpPrintA6Slip(p){
     +(()=>{const _stu=S.students.find(function(s){return s.admissionNumber===p.admissionNumber;});const _addr=(_stu&&_stu.address)||p.address||'';return '<div class="box" style="overflow:hidden;max-height:11mm"><div class="lbl">Address</div><div style="font-size:6pt;font-weight:500;color:#1a1035;margin-top:.4mm;white-space:pre-wrap;word-break:break-word;line-height:1.3;overflow:hidden">'+xEsc(_addr||'—')+'</div></div>';})()
     +'</div>'
     +(p.reason?'<div class="rsn"><span style="font-weight:400;text-transform:uppercase;font-size:5.5pt;letter-spacing:.5px;color:#92400e">Reason: </span><b>'+xEsc(p.reason)+'</b></div>':'')
-    +(()=>{const _ph=_gpPrintCfg.printPhoto&&_resolvePhoto(p);return _ph?'<div style="margin:1mm 0;border:2px solid #c9bdf0;border-radius:6px;background:#fff;padding:3mm 2mm;flex-shrink:1;display:flex;align-items:center;justify-content:center;min-height:0"><img src="'+_ph+'" style="max-width:100%;max-height:40mm;width:auto;height:auto;object-fit:contain;display:block;border-radius:2px"></div>':'';})() 
+    +(_gpPrintCfg.printPhoto&&p.pickerPhoto?'<div style="margin:1mm 0;border:2px solid #c9bdf0;border-radius:6px;overflow:hidden;background:#f9f7ff;padding:2mm;text-align:center"><img src="'+p.pickerPhoto+'" style="max-width:100%;max-height:40mm;object-fit:contain;display:inline-block;border-radius:3px"></div>':'')
     +'<div class="spacer"></div>'
     +'<div class="foot">'
     +'<div class="fi"><div class="fv">'+xEsc(gpFmtPrintDate(p.date))+'</div><div class="fl">Date</div></div>'
@@ -4506,7 +4495,7 @@ function gpPrintThermalSlip(p, cfg){
     +(p.busNumber?'<div class="row"><span class="lbl">Bus No.</span><span>'+xEsc(p.busNumber)+'</span></div>':'')
     +(()=>{const stu=S.students.find(function(s){return s.admissionNumber===p.admissionNumber;});const addr=stu?stu.address||'':'';return addr?'<div class="row"><span class="lbl">Address</span><span style="font-size:'+(fBase-1)+'pt;max-width:80%;text-align:right">'+xEsc(addr)+'</span></div>':''})()
     +(p.reason?'<div class="reason"><span class="lbl">Reason: </span>'+xEsc(p.reason)+'</div>':'')
-    +(()=>{const _ph=_gpPrintCfg.printPhoto&&_resolvePhoto(p);return _ph?'<div style="text-align:center;margin:2mm 0;border:1px solid #ccc;border-radius:3px;padding:1.5mm;background:#fff"><img src="'+_ph+'" style="max-width:100%;max-height:25mm;width:auto;height:auto;object-fit:contain;display:inline-block;border-radius:2px"></div>':'';})() 
+    +((_gpPrintCfg.printPhoto&&p.pickerPhoto)?'<div style="text-align:center;margin:2mm 0;border:1px solid #ccc;border-radius:3px;padding:1.5mm;background:#f9f9f9"><img src="'+p.pickerPhoto+'" style="max-width:100%;max-height:25mm;object-fit:contain;display:inline-block;border-radius:2px"></div>':'')
     +'<hr class="divider">'
     +'<div class="row"><span class="lbl">Date</span><span>'+xEsc(p.date||'')+'</span></div>'
     +'<div class="row"><span class="lbl">Time</span><span>'+xEsc(p.time||'')+'</span></div>'
@@ -5728,7 +5717,6 @@ function renderSettingsPage(){
   _tgRenderChatIdRows();
   document.getElementById('tg-enabled').checked=TGCfg.enabled||false;
   const tgApprEl=document.getElementById('tg-approve-enabled');if(tgApprEl)tgApprEl.checked=!!TGCfg.approveEnabled;
-  const tgSyncEl=document.getElementById('tg-approve-sync');if(tgSyncEl)tgSyncEl.checked=!!TGCfg.approveSync;
   if(document.getElementById('ptg-token')){
     document.getElementById('ptg-token').value=PTGCfg.token||'';
     document.getElementById('ptg-enabled').checked=PTGCfg.enabled||false;
@@ -6256,15 +6244,13 @@ async function testGPOD(){
 }
 
 // ─── TELEGRAM BOT CONFIG ──────────────────────────────────
-let TGCfg={token:'',chatId:'',chatIds:[],enabled:false,approveEnabled:false};
+let TGCfg={token:'',chatId:'',chatIds:[],enabled:false};
 function loadTGCfg(){
-  try{const d=localStorage.getItem('gp_tg_cfg');if(d)TGCfg={...TGCfg,...JSON.parse(d)};}catch(e){}
+  try{const d=localStorage.getItem('gp_tg_cfg');if(d)TGCfg=JSON.parse(d);}catch(e){}
   // Migrate old single chatId to array
   if(!TGCfg.chatIds||!TGCfg.chatIds.length){
     TGCfg.chatIds=TGCfg.chatId?[TGCfg.chatId]:[];
   }
-  // Ensure approveEnabled is always boolean
-  TGCfg.approveEnabled=!!TGCfg.approveEnabled;
 }
 function _tgGetChatIds(){
   // Returns deduplicated non-empty array of chat IDs from UI rows
@@ -6295,14 +6281,9 @@ function saveTGCfg(){
   TGCfg.chatId=TGCfg.chatIds[0]||''; // keep backward compat
   TGCfg.enabled=document.getElementById('tg-enabled').checked;
   TGCfg.approveEnabled=document.getElementById('tg-approve-enabled')?document.getElementById('tg-approve-enabled').checked:false;
-  TGCfg.approveSync=document.getElementById('tg-approve-sync')?document.getElementById('tg-approve-sync').checked:false;
   localStorage.setItem('gp_tg_cfg',JSON.stringify(TGCfg));
-  // Push approve setting to Firebase so all devices get it
-  if(TGCfg.approveSync&&cfg.url&&cfg.code){
-    fetch(`${cfg.url}/${cfg.code}.json`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({tgApproveEnabled:TGCfg.approveEnabled,tgApproveSynced:true,lastMod:Date.now()})}).catch(()=>{});
-  }
   const st=document.getElementById('tg-status');
-  st.textContent='✓ Saved — '+TGCfg.chatIds.length+' chat ID'+(TGCfg.chatIds.length!==1?'s':'')+(TGCfg.approveSync?' · Synced to all devices':'');st.style.color='var(--green)';
+  st.textContent='✓ Saved — '+TGCfg.chatIds.length+' chat ID'+(TGCfg.chatIds.length!==1?'s':'');st.style.color='var(--green)';
   gpUpdateSettingsSubs();
   toast('Telegram Bot settings saved.');
   startTGApprovalPolling();
