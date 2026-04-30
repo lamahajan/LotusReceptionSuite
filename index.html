@@ -1144,6 +1144,13 @@ body.dark .fq-mtitle{color:#f4ede0}
             <button class="btn bgh" onclick="disconnectFB()" style="font-size:12px;padding:8px 12px;color:var(--red)">✕</button>
           </div>
           <div id="sync-status-info" style="margin-top:8px;font-size:12px;color:var(--sub)"></div>
+          <div style="margin-top:10px;display:flex;align-items:flex-start;gap:10px;padding:10px 12px;background:var(--brand-s);border-radius:var(--rs);border:1px solid var(--bdr)">
+            <input type="checkbox" id="gp-force-refresh" style="accent-color:var(--brand);width:16px;height:16px;margin-top:2px;flex-shrink:0" onchange="saveForceRefreshSetting()">
+            <div>
+              <div style="font-size:13px;font-weight:600;color:var(--txt)">Force refresh on tab focus</div>
+              <div style="font-size:11px;color:var(--sub);margin-top:3px;line-height:1.5">Tab pe wapas aane par fresh fetch karega (localMod reset). OFF karne se ~45 MB/month bandwidth bachega. <b>Firebase se sync hota hai</b> — kisi bhi device se change karo.</div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -3189,6 +3196,7 @@ const S={students:[],passes:[],buses:['Bus 1','Bus 2','Bus 3','Walk'],lastMod:0}
 window.S=S;
 // localMod persisted — app reopen won't re-fetch if Firebase hasn't changed
 let localMod=parseInt(localStorage.getItem('gp_local_mod')||'0',10)||0;
+let gpForceRefreshOnFocus=localStorage.getItem('gp_force_refresh')!=='0';// default ON
 let cfg={url:'',code:''},syncIv=null;
 let camStream=null,photo=null,cpSel=null,isDark=false;
 let qpSel=null;
@@ -3328,6 +3336,10 @@ async function fetchAll(){
         const rv=!!d.tgApproveEnabled;
         if(TGCfg.approveEnabled!==rv){TGCfg.approveEnabled=rv;localStorage.setItem('gp_tg_cfg',JSON.stringify(TGCfg));const el=document.getElementById('tg-approve-enabled');if(el)el.checked=rv;startTGApprovalPolling();gpToast((rv?'✅':'❌')+' Approve/Deny '+(rv?'ON':'OFF')+' (synced from another device)');}
       }
+      if(typeof d.gpForceRefreshOnFocus!=='undefined'){
+        const rv=!!d.gpForceRefreshOnFocus;
+        if(gpForceRefreshOnFocus!==rv){gpForceRefreshOnFocus=rv;localStorage.setItem('gp_force_refresh',rv?'1':'0');const el=document.getElementById('gp-force-refresh');if(el)el.checked=rv;gpToast((rv?'✅':'❌')+' Force refresh on focus '+(rv?'ON':'OFF')+' (synced)');}
+      }
       localMod=sm;saveLocal();renderAll();
     }
     setSS('ok');
@@ -3383,7 +3395,7 @@ function setSS(st){
 function startSync(){setSS('ing');fetchAll();if(syncIv)clearInterval(syncIv);syncIv=setInterval(fetchAll,6000);}
 // Re-sync immediately when tab/app comes back to foreground
 document.addEventListener('visibilitychange',()=>{
-  if(document.visibilityState==='visible'&&cfg.url&&cfg.code){fetchAll();}
+  if(document.visibilityState==='visible'&&cfg.url&&cfg.code){if(gpForceRefreshOnFocus)localMod=0;fetchAll();}
 });
 function renderAll(){popBusSel();updBadge();const a=document.querySelector('.tb.active');if(!a)return;const f=a.getAttribute('onclick')||'';if(f.includes('rec'))renderRec();if(f.includes('cut'))renderCpBusSummary();if(f.includes('set')&&document.getElementById('set-ct').style.display!=='none'){renderBuses();renderStu();}renderQGSidebar();}
 
@@ -4221,10 +4233,11 @@ function gpTestWA(){
 }
 
 function recLockSet(){document.getElementById('pw-gate').style.display='block';document.getElementById('set-ct').style.display='none';document.getElementById('pw-inp').value='';document.getElementById('pw-err').textContent='';document.getElementById('mdlist').style.display='none';document.getElementById('drlist').style.display='none';document.getElementById('mdui').style.display='flex';}
-function loadCfgF(){document.getElementById('cfg-url').value=localStorage.getItem('gp_url')||'';document.getElementById('cfg-code').value=localStorage.getItem('gp_code')||'';const connected=!!(localStorage.getItem('gp_url')&&localStorage.getItem('gp_code'));document.getElementById('sync-status-info').textContent=connected?`✅ Connected to: ${localStorage.getItem('gp_url')} / ${localStorage.getItem('gp_code')}`:'⚪ Not connected — fill in details and click Save & Connect.';}
+function loadCfgF(){document.getElementById('cfg-url').value=localStorage.getItem('gp_url')||'';document.getElementById('cfg-code').value=localStorage.getItem('gp_code')||'';const connected=!!(localStorage.getItem('gp_url')&&localStorage.getItem('gp_code'));document.getElementById('sync-status-info').textContent=connected?`✅ Connected to: ${localStorage.getItem('gp_url')} / ${localStorage.getItem('gp_code')}`:'⚪ Not connected — fill in details and click Save & Connect.';const frEl=document.getElementById('gp-force-refresh');if(frEl)frEl.checked=gpForceRefreshOnFocus;}
 async function testCfg(){const url=document.getElementById('cfg-url').value.trim().replace(/\/$/,'');const code=document.getElementById('cfg-code').value.trim().replace(/[^a-zA-Z0-9_-]/g,'');if(!url||!code){cfgSt('⚠️ Fill in both fields first','var(--amber)');return;}cfgSt('Testing…','var(--blue)');try{const r=await fetch(`${url}/${code}/ping.json`,{method:'PUT',body:JSON.stringify(1)});if(!r.ok)throw 0;cfgSt('✅ Connection successful!','var(--green)');}catch{cfgSt('❌ Failed — check URL & Firebase rules','var(--red)');}}
 async function saveCfg(){const url=document.getElementById('cfg-url').value.trim().replace(/\/$/,'');const code=document.getElementById('cfg-code').value.trim().replace(/[^a-zA-Z0-9_-]/g,'');if(!url||!code){cfgSt('⚠️ Fill both fields','var(--amber)');return;}document.getElementById('cfg-save-btn').disabled=true;cfgSt('Testing & saving…','var(--blue)');try{const r=await fetch(`${url}/${code}/ping.json`,{method:'PUT',body:JSON.stringify(1)});if(!r.ok)throw 0;localStorage.setItem('gp_url',url);localStorage.setItem('gp_code',code);cfg={url,code};cfgSt('✅ Saved! Syncing now…','var(--green)');startSync();loadCfgF();}catch{cfgSt('❌ Connection failed','var(--red)');}document.getElementById('cfg-save-btn').disabled=false;}
 function disconnectFB(){if(!confirm('Disconnect Firebase?'))return;localStorage.removeItem('gp_url');localStorage.removeItem('gp_code');cfg={url:'',code:''};if(syncIv)clearInterval(syncIv);setSS('off');loadCfgF();gpToast('✕ Firebase disconnected','inf');}
+function saveForceRefreshSetting(){const el=document.getElementById('gp-force-refresh');gpForceRefreshOnFocus=el?el.checked:true;localStorage.setItem('gp_force_refresh',gpForceRefreshOnFocus?'1':'0');if(cfg.url&&cfg.code){fetch(`${cfg.url}/${cfg.code}.json`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({gpForceRefreshOnFocus:gpForceRefreshOnFocus,lastMod:Date.now()})}).catch(()=>{});}gpToast((gpForceRefreshOnFocus?'✅':'❌')+' Force refresh on focus '+(gpForceRefreshOnFocus?'ON':'OFF'));}
 function cfgSt(m,c){const el=document.getElementById('cfg-status');el.textContent=m;el.style.color=c;}
 
 // ═══ BUSES ═══
