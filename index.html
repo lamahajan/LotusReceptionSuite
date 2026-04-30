@@ -1169,9 +1169,11 @@ body.dark .fq-mtitle{color:#f4ede0}
           <div id="gp-stu-status" style="font-size:12px;min-height:14px;margin-bottom:8px;color:var(--sub)"></div>
           <div style="display:flex;gap:8px;flex-wrap:wrap">
             <button class="btn bp flex1" onclick="gpSaveStuCfg()">💾 Save &amp; Sync</button>
+            <button class="btn bgh" onclick="gpForceFetchStu()" style="font-size:12px;padding:8px 12px;color:var(--blue)" title="Aaj already fetch ho chuki ho tab bhi force refresh karo">🔄 Force Fetch</button>
             <button class="btn bgh" onclick="gpDisconnStu()" style="font-size:12px;padding:8px 12px;color:var(--red)">✕</button>
           </div>
-          <div style="font-size:11px;color:var(--muted);margin-top:8px">Students sync every 30s. Changes push instantly.</div>
+          <div id="gp-stu-fetch-status" style="font-size:11px;color:var(--sub);margin-top:6px;min-height:14px"></div>
+          <div style="font-size:11px;color:var(--muted);margin-top:4px">Students sync every 30s. Changes push instantly. Force Fetch se aaj ki cache ignore ho jaati hai.</div>
         </div>
       </div>
 
@@ -2755,8 +2757,10 @@ Reason: {reason}"></textarea>
             <div style="display:flex;gap:8px;flex-wrap:wrap">
               <button class="fq-btn fq-btn-gold" onclick="fqSaveFBConfig()">💾 Save &amp; Connect</button>
               <button class="fq-btn fq-btn-blue" onclick="fqTestFBConnection()" style="font-size:12px">🔌 Test Connection</button>
+              <button class="fq-btn fq-btn-outline" onclick="fqForceFetch()" style="font-size:12px;color:#2563eb;border-color:#2563eb" title="Aaj already sync hua ho tab bhi force re-fetch karo">🔄 Force Fetch Now</button>
               <button class="fq-btn fq-btn-outline" onclick="fqDisconnectFB()" style="font-size:12px;color:#d04040;border-color:#d04040">✕ Disconnect</button>
             </div>
+            <div id="fq-force-fetch-status" style="font-size:11px;color:#a89f92;margin-top:8px;min-height:14px"></div>
           </div>
         </div>
 
@@ -2973,6 +2977,32 @@ Thank you 🙏</textarea>
           <span style="margin-left:auto;color:var(--mut)">›</span>
         </button>
       </div>
+    </div>
+
+    <!-- Data Management -->
+    <div style="background:var(--surf);border:1.5px solid var(--bdr);border-radius:var(--r);padding:16px 18px;margin-bottom:14px;box-shadow:var(--sha)">
+      <div style="font-size:13px;font-weight:800;color:var(--txt);margin-bottom:4px">🗄️ Data Management</div>
+      <div style="font-size:11px;color:var(--sub);margin-bottom:14px">App-wise ya sabka ek saath local data clear karo. Force Fetch se aaj ki cache ignore ho jaati hai aur fresh data Firebase se aata hai.</div>
+
+      <!-- Force Fetch Row -->
+      <div style="font-size:11px;font-weight:800;color:var(--sub);text-transform:uppercase;letter-spacing:.7px;margin-bottom:7px">🔄 Force Fetch (Today's Cache Reset)</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
+        <button onclick="gpForceFetchStu()" style="flex:1;min-width:130px;background:var(--blue-l);border:1.5px solid var(--blue);color:var(--blue-d);border-radius:9px;padding:9px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--sans);transition:all .15s" onmouseover="this.style.background='var(--blue)';this.style.color='#fff'" onmouseout="this.style.background='var(--blue-l)';this.style.color='var(--blue-d)'">🚪 Gatepass Student Fetch</button>
+        <button onclick="fqForceFetch()" style="flex:1;min-width:130px;background:var(--blue-l);border:1.5px solid var(--blue);color:var(--blue-d);border-radius:9px;padding:9px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--sans);transition:all .15s" onmouseover="this.style.background='var(--blue)';this.style.color='#fff'" onmouseout="this.style.background='var(--blue-l)';this.style.color='var(--blue-d)'">💳 Fee QR Student Fetch</button>
+      </div>
+      <div id="global-force-fetch-status" style="font-size:11px;color:var(--sub);margin-bottom:14px;min-height:14px"></div>
+
+      <!-- Clear LocalStorage Row -->
+      <div style="font-size:11px;font-weight:800;color:var(--sub);text-transform:uppercase;letter-spacing:.7px;margin-bottom:7px">🧹 Clear Local Storage</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+        <button onclick="clearAppStorage('gatepass')" style="background:var(--amber-l);border:1.5px solid var(--amber);color:var(--amber);border-radius:9px;padding:9px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:var(--sans);transition:all .15s" onmouseover="this.style.background='var(--amber)';this.style.color='#fff'" onmouseout="this.style.background='var(--amber-l)';this.style.color='var(--amber)'">🚪 Gatepass Data</button>
+        <button onclick="clearAppStorage('register')" style="background:var(--amber-l);border:1.5px solid var(--amber);color:var(--amber);border-radius:9px;padding:9px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:var(--sans);transition:all .15s" onmouseover="this.style.background='var(--amber)';this.style.color='#fff'" onmouseout="this.style.background='var(--amber-l)';this.style.color='var(--amber)'">📒 Register Data</button>
+        <button onclick="clearAppStorage('feeqr')" style="background:var(--amber-l);border:1.5px solid var(--amber);color:var(--amber);border-radius:9px;padding:9px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:var(--sans);transition:all .15s" onmouseover="this.style.background='var(--amber)';this.style.color='#fff'" onmouseout="this.style.background='var(--amber-l)';this.style.color='var(--amber)'">💳 Fee QR Data</button>
+        <button onclick="clearAppStorage('theme')" style="background:var(--amber-l);border:1.5px solid var(--amber);color:var(--amber);border-radius:9px;padding:9px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:var(--sans);transition:all .15s" onmouseover="this.style.background='var(--amber)';this.style.color='#fff'" onmouseout="this.style.background='var(--amber-l)';this.style.color='var(--amber)'">🎨 Theme / UI</button>
+      </div>
+      <button onclick="clearAppStorage('all')" style="width:100%;background:var(--red-l);border:2px solid var(--red);color:var(--red);border-radius:10px;padding:11px;font-size:13px;font-weight:800;cursor:pointer;font-family:var(--sans);transition:all .15s;display:flex;align-items:center;justify-content:center;gap:6px" onmouseover="this.style.background='var(--red)';this.style.color='#fff'" onmouseout="this.style.background='var(--red-l)';this.style.color='var(--red)'">🗑️ Clear ALL Local Storage (Full Reset)</button>
+      <div id="global-clear-status" style="font-size:11px;color:var(--sub);margin-top:8px;min-height:14px"></div>
+      <div style="font-size:10px;color:var(--mut);margin-top:6px;line-height:1.5">⚠️ Clear karne se sirf local data jaata hai — Firebase ka data safe rehta hai. Page reload hoga.</div>
     </div>
 
     <!-- About -->
@@ -4006,6 +4036,28 @@ var gpStuCfg={url:'',code:''};
 var gpStuIv=null;
 var gpStuLocalMod=0;
 
+// ── Daily Auto-Refresh: subah app open hone pe purani student list clear ho aur fresh fetch ho ──
+(function gpDailyReset(){
+  var today=new Date().toISOString().slice(0,10); // "YYYY-MM-DD"
+  var lastDay=localStorage.getItem('gp_stu_last_fetch_date')||'';
+  if(lastDay!==today){
+    // Naya din hai — localMod reset karo taaki full fresh fetch ho Firebase se
+    gpStuLocalMod=0;
+    localStorage.setItem('gp_stu_last_fetch_date',today);
+  }
+  // Har midnight pe bhi reset karo (tab khuli ho to)
+  var now=new Date();
+  var msToMidnight=(new Date(now.getFullYear(),now.getMonth(),now.getDate()+1)-now)+1000;
+  setTimeout(function midnightReset(){
+    gpStuLocalMod=0;
+    localStorage.setItem('gp_stu_last_fetch_date',new Date().toISOString().slice(0,10));
+    // Agar sync chal rahi hai toh turant re-fetch karo
+    if(gpStuCfg.url&&gpStuCfg.code)gpStuFetchShared();
+    // Agli midnight ke liye schedule karo
+    setTimeout(midnightReset,24*60*60*1000);
+  },msToMidnight);
+})();
+
 function gpLoadStuCfg(){
   var u=localStorage.getItem('gp_stu_url'),cd=localStorage.getItem('gp_stu_code');
   var urlEl=document.getElementById('gp-stu-url'),codeEl=document.getElementById('gp-stu-code'),stEl=document.getElementById('gp-stu-status');
@@ -4029,6 +4081,22 @@ async function gpSaveStuCfg(){
     var sub=document.getElementById('gacc-studb-sub');if(sub)sub.textContent='Connected';
     gpStuFetchShared();if(gpStuIv)clearInterval(gpStuIv);gpStuIv=setInterval(gpStuFetchShared,30000);
   }catch{if(stEl)stEl.textContent='❌ Connection failed';}
+}
+function gpForceFetchStu(){
+  if(!gpStuCfg.url||!gpStuCfg.code){gpToast('Student DB configured nahi hai — pehle save karo','err');return;}
+  // Daily cache reset karo — aaj bhi fresh fetch hogi
+  gpStuLocalMod=0;
+  localStorage.removeItem('gp_stu_last_fetch_date');
+  var stEl=document.getElementById('gp-stu-status');if(stEl)stEl.textContent='Force fetching…';
+  var fsEl=document.getElementById('gp-stu-fetch-status');if(fsEl)fsEl.textContent='⏳ Fetching from Firebase…';
+  gpStuFetchShared().then(function(){
+    var fsEl2=document.getElementById('gp-stu-fetch-status');
+    if(fsEl2)fsEl2.textContent='✅ Force fetch complete — '+new Date().toLocaleTimeString();
+    gpToast('✅ Students force fetched from Firebase');
+  }).catch(function(){
+    var fsEl2=document.getElementById('gp-stu-fetch-status');
+    if(fsEl2)fsEl2.textContent='❌ Fetch failed — check connection';
+  });
 }
 function gpDisconnStu(){
   if(!confirm('Disconnect student DB sync?'))return;
@@ -4070,7 +4138,11 @@ async function gpStuFetchShared(){
 async function gpStuPushShared(){
   if(!gpStuCfg.url||!gpStuCfg.code)return;
   var sVal=S.students.length===0?{'__empty':true}:S.students;
-  try{await fetch(gpStuCfg.url+'/'+gpStuCfg.code+'.json',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({students:sVal,lastMod:Date.now()})});}catch(e){}
+  var lm=Date.now();
+  try{
+    await fetch(gpStuCfg.url+'/'+gpStuCfg.code+'.json',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({students:sVal,lastMod:lm})});
+    gpStuLocalMod=lm; // local mod update — turant wapas re-fetch na ho
+  }catch(e){}
 }
 
 // ═══ GATEPASS WHATSAPP ═══
@@ -7478,6 +7550,20 @@ window.fqDisconnectFB=function(){
   fqToast('Firebase disconnected','inf');
 };
 function fqGetFBCfg(){ try{ const d=localStorage.getItem('feeqr_fb'); return d?JSON.parse(d):null; }catch(e){return null;} }
+window.fqForceFetch=async function(){
+  const cfg=fqGetFBCfg();
+  if(!cfg||!cfg.url){fqToast('Pehle Firebase configure karo — Save & Connect karo','err');return;}
+  const stEl=document.getElementById('fq-force-fetch-status');
+  const infoEl=document.getElementById('fq-fb-sync-info');
+  if(stEl){stEl.textContent='⏳ Force fetching…';stEl.style.color='#b5883e';}
+  const btn=document.getElementById('fq-fb-sync-btn'); if(btn){btn.textContent='⏳ Syncing…';btn.disabled=true;}
+  try{
+    await window.fqFetchFromFirebase();
+    if(stEl){stEl.textContent='✅ Force fetch complete — '+new Date().toLocaleTimeString();stEl.style.color='#2d9e6b';}
+  }catch(e){
+    if(stEl){stEl.textContent='❌ Fetch failed: '+e.message;stEl.style.color='#d04040';}
+  }
+};
 function fqAutoFillFromGatepass(){
   const url=localStorage.getItem('gp_stu_url')||'';
   const code=localStorage.getItem('gp_stu_code')||'';
@@ -7985,6 +8071,45 @@ const SETTINGS_EXPORT_KEYS=[
   // Theme
   'lis_theme'
 ];
+
+// ═══ CLEAR LOCAL STORAGE (App-wise + Combined) ═══
+const APP_STORAGE_KEYS = {
+  gatepass: ['gp_url','gp_code','gp_local','gp_local_mod','gp_wa_cfg','gp_tg_cfg','gp_force_refresh','gp_qp_thresh','gp_qp_window','gp_signature','gp_stu_url','gp_stu_code','gp_stu_last_fetch_date','gp_od_cfg','gp_ptg_cfg'],
+  register: ['ref_cfg','ref_data','ref_fb_url','ref_fb_code','ref_fb_stu_url','ref_fb_stu_code','ref_fs_cfg','ref_od_cfg','ref_tg_cfg','ref_wix_cfg','ref_students','ref_extra_fys'],
+  feeqr:    ['feeqr_fb','feeqr_settings','feeqr_settings_pw','feeqr_students','feeqr_wa_enabled'],
+  theme:    ['lis_theme','lis_sb'],
+};
+function clearAppStorage(app){
+  const stEl=document.getElementById('global-clear-status');
+  let keys=[], label='';
+  if(app==='all'){
+    const confirmMsg='⚠️ POORA Local Storage clear hoga!\n\nIs mein shamil hai:\n• Gatepass ka data, passes, students\n• Register ke records\n• Fee QR students\n• Firebase URLs aur tokens\n• Theme settings\n\nFirebase ka data safe rehega.\n\nPage reload hoga. Continue?';
+    if(!confirm(confirmMsg))return;
+    // Sab gp_, ref_, feeqr_, lis_ keys delete karo
+    const toDelete=[];
+    for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&(k.startsWith('gp_')||k.startsWith('ref_')||k.startsWith('feeqr_')||k.startsWith('lis_')))toDelete.push(k);}
+    toDelete.forEach(k=>localStorage.removeItem(k));
+    if(stEl){stEl.textContent='✅ All local storage cleared ('+toDelete.length+' keys) — reloading…';stEl.style.color='var(--green)';}
+    if(typeof toast==='function')toast('🗑️ Full reset — reloading','err');
+    setTimeout(()=>location.reload(),900);
+    return;
+  }
+  keys=APP_STORAGE_KEYS[app]||[];
+  const appNames={gatepass:'Gatepass',register:'Register',feeqr:'Fee QR',theme:'Theme / UI'};
+  label=appNames[app]||app;
+  if(!keys.length)return;
+  if(!confirm('Clear '+label+' ka local data?\n\nFirebase data safe rahega.\nPage reload hoga.'))return;
+  // Also remove photo keys for gatepass
+  if(app==='gatepass'){
+    const photoKeys=[];
+    for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.startsWith('gp_photo_'))photoKeys.push(k);}
+    photoKeys.forEach(k=>localStorage.removeItem(k));
+  }
+  keys.forEach(k=>localStorage.removeItem(k));
+  if(stEl){stEl.textContent='✅ '+label+' data cleared — reloading…';stEl.style.color='var(--green)';}
+  if(typeof toast==='function')toast('🧹 '+label+' storage cleared','err');
+  setTimeout(()=>location.reload(),900);
+}
 
 function exportAllSettings(){
   const out={exported:new Date().toISOString(),version:1,settings:{}};
