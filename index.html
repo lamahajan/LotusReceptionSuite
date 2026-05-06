@@ -3253,6 +3253,8 @@ window.S=S;
 let localMod=parseInt(localStorage.getItem('gp_local_mod')||'0',10)||0;
 let gpForceRefreshOnFocus=localStorage.getItem('gp_force_refresh')!=='0';// default ON
 let cfg={url:'',code:''},syncIv=null;
+let _issuingPass=false; // guard against double-tap on issue button
+let _pendingPushKeys=new Set(); // keys that failed to push — retry on next fetchAll
 let camStream=null,photo=null,cpSel=null,isDark=false;
 let qpSel=null;
 const PASS=(()=>{const _e='bWFoYWphbg==';try{return atob(_e);}catch{return '';}})();
@@ -3329,6 +3331,23 @@ const _photoCache={
     keys.forEach(k=>{const id=k.slice(9);const p=S.passes.find(x=>x.id===id);if(!p||(p.date||'')<cutoff)localStorage.removeItem(k);});
   }
 };
+// Push a single photo to Firebase separately (keeps main passes array small)
+async function _pushPhotoToFB(passId, photoData){
+  if(!cfg.url||!cfg.code||!passId||!photoData)return;
+  try{await fetch(`${cfg.url}/${cfg.code}/photos/${passId}.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(photoData)});}
+  catch(e){}
+}
+// Fetch a single photo from Firebase and cache it locally
+async function _fetchPhotoFromFB(passId){
+  if(!cfg.url||!cfg.code||!passId)return null;
+  try{
+    const r=await fetch(`${cfg.url}/${cfg.code}/photos/${passId}.json`);
+    if(!r.ok)return null;
+    const d=await r.json();
+    if(d&&typeof d==='string'&&d.length>10){_photoCache.set(passId,d);return d;}
+  }catch(e){}
+  return null;
+}
 function _resolvePhoto(pass){
   if(!pass)return null;
   if(pass.pickerPhoto&&pass.pickerPhoto!=='__has_photo')return pass.pickerPhoto;
@@ -3367,6 +3386,11 @@ async function fetchAll(){
     if(lmr.ok){
       const remMod=(await lmr.json())||0;
       if(remMod===localMod){setSS('ok');return;} // nothing changed — skip full fetch
+      // If local is newer than Firebase → we have unsynced changes, retry push first
+      if(remMod<localMod&&_pendingPushKeys.size>0){
+        for(const k of [..._pendingPushKeys])await push(k);
+        setSS(_pendingPushKeys.size===0?'ok':'err');return;
+      }
     }
     // ── STEP 2: Full fetch only when something changed ────────────────────────
     const r=await fetch(`${cfg.url}/${cfg.code}.json`);
@@ -3374,7 +3398,7 @@ async function fetchAll(){
     const d=await r.json();
     if(d){
       const sm=d.lastMod||0;
-      const toArr=v=>Array.isArray(v)?v:(v&&v.__empty)?[]:(v!=null?v:null);
+      const toArr=v=>Array.isArray(v)?v:(v&&v.__empty)?[]:(v!=null&&typeof v==='object'?Object.values(v).filter(x=>x!=null):null);
       const ps=toArr(d.passes);
       if(ps!==null){
         // Detect newly-exited passes (gateOutTime just appeared) → edit Telegram message
@@ -3386,16 +3410,31 @@ async function fetchAll(){
             }
           });
         }
-        // Restore locally cached photos into fetched passes
+        // Restore locally cached photos, then fetch missing ones from Firebase for recent passes
+        const _today=new Date().toISOString().slice(0,10);
+        const _yesterday=new Date(Date.now()-86400000).toISOString().slice(0,10);
+        const _missingPhotos=[];
         ps.forEach(p=>{
           if(p.pickerPhoto==='__has_photo'){
             const cached=_photoCache.get(p.id);
-            if(cached)p.pickerPhoto=cached;
+            if(cached){p.pickerPhoto=cached;}
+            else if(p.date===_today||p.date===_yesterday){_missingPhotos.push(p);}
           }
         });
         S.passes=ps;
+        // Fetch missing photos from Firebase (only today+yesterday, max 10 at a time)
+        if(_missingPhotos.length&&cfg.url&&cfg.code){
+          _missingPhotos.slice(0,10).forEach(async p=>{
+            const ph=await _fetchPhotoFromFB(p.id);
+            if(ph){
+              p.pickerPhoto=ph;
+              const sp=S.passes.find(x=>x.id===p.id);
+              if(sp)sp.pickerPhoto=ph;
+            }
+          });
+        }
       }
-      if(d.buses&&!d.buses.__empty&&d.buses.length)S.buses=d.buses;
+      if(d.buses&&!d.buses.__empty){const _raw=Array.isArray(d.buses)?d.buses:Object.values(d.buses);const _clean=_raw.filter(b=>b!=null&&b!=='');if(_clean.length)S.buses=_clean;}
       if(d.tgApproveSynced&&typeof d.tgApproveEnabled!=='undefined'){
         const rv=!!d.tgApproveEnabled;
         if(TGCfg.approveEnabled!==rv){TGCfg.approveEnabled=rv;localStorage.setItem('gp_tg_cfg',JSON.stringify(TGCfg));const el=document.getElementById('tg-approve-enabled');if(el)el.checked=rv;startTGApprovalPolling();gpToast((rv?'✅':'❌')+' Approve/Deny '+(rv?'ON':'OFF')+' (synced from another device)');}
@@ -3416,9 +3455,14 @@ async function push(k){
   S.lastMod=Date.now();localMod=S.lastMod;setSS('ing');
   if(k==='students')return;
   // Photos are compressed (~50KB) so safe to send to Firebase for multi-device sync
-  const val=Array.isArray(S[k])&&S[k].length===0?{'__empty':true}:S[k];
-  try{await fetch(`${cfg.url}/${cfg.code}.json`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({[k]:val,lastMod:S.lastMod})});setSS('ok');}
-  catch{setSS('err');}
+  // Strip photos from passes before Firebase push (photos stored separately under /photos/)
+  const _stripP=arr=>Array.isArray(arr)?arr.map(p=>p&&p.pickerPhoto&&p.pickerPhoto!=='__has_photo'?{...p,pickerPhoto:'__has_photo'}:p):arr;
+  const val=Array.isArray(S[k])&&S[k].length===0?{'__empty':true}:(k==='passes'?_stripP(S[k]):S[k]);
+  try{
+    if(k==='buses'||k==='passes'){await fetch(`${cfg.url}/${cfg.code}/${k}.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(val)});await fetch(`${cfg.url}/${cfg.code}/lastMod.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(S.lastMod)});}
+    else{await fetch(`${cfg.url}/${cfg.code}.json`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({[k]:val,lastMod:S.lastMod})});}
+    _pendingPushKeys.delete(k);setSS('ok');
+  }catch{_pendingPushKeys.add(k);setSS('err');}
 }
 // Sync gatepass students directly into ref register STUDENTS array (same page)
 function syncGpStudentsToRef(){
@@ -3674,13 +3718,22 @@ function clrPhoto(){photo=null;document.getElementById('phprev').style.display='
 
 // ═══ ISSUE PASS ═══
 async function issuePass(){
+  if(_issuingPass){gpToast('⏳ Please wait…','inf');return;}
   if(!cpSel){gpToast('⚠️ Select a student first','err');return;}
   const by=document.getElementById('cpby').value.trim();if(!by){gpToast('⚠️ Enter picker name','err');return;}
   const existing=S.passes.find(p=>p.admissionNumber===cpSel.admissionNumber&&p.date===todayStr());
   if(existing){gpToast(`🚫 Pass already issued for ${cpSel.name} today (${existing.time})`,'err');return;}
+  _issuingPass=true;
+  const _issueBtn=document.querySelector('[onclick="issuePass()"]');
+  if(_issueBtn){_issueBtn.disabled=true;_issueBtn.textContent='⏳ Issuing…';}
+  try{
   const pass={id:uid(),date:todayStr(),time:nowT(),gateOutTime:null,studentName:cpSel.name,admissionNumber:cpSel.admissionNumber,class:cpSel.class||'',fatherName:cpSel.fatherName||'',motherName:cpSel.motherName||'',pickedUpBy:by,relation:document.getElementById('cprel').value,reason:document.getElementById('cpreason').value.trim(),busNumber:document.getElementById('cpbus').value||cpSel.busNumber||'',pickerPhoto:photo};
+  // Cache photo locally before push strips it
+  if(pass.pickerPhoto&&pass.pickerPhoto!=='__has_photo')_photoCache.set(pass.id,pass.pickerPhoto);
   S.passes.unshift(pass);
   await push('passes');
+  // Push photo separately to Firebase so other devices can fetch it
+  if(pass.pickerPhoto&&pass.pickerPhoto!=='__has_photo')_pushPhotoToFB(pass.id,pass.pickerPhoto);
   gpToast(`✅ Pass issued for ${pass.studentName}`);
   if(_gpPrintCfg.enabled!==false)gpPrintA6Slip(pass);
   // Telegram school log — always fires (photo or text-only)
@@ -3707,6 +3760,11 @@ async function issuePass(){
       const delay=gpWACfg.parentEnabled!==false&&pPhone&&pPhone.length>=10 ? (gpWACfg.waDelay||3)*1000 : 0;
       setTimeout(showAdminBtn, delay);
     }
+  }
+  }finally{
+    _issuingPass=false;
+    const _issueBtn=document.querySelector('[onclick="issuePass()"]');
+    if(_issueBtn){_issueBtn.disabled=false;_issueBtn.textContent='✂️ Issue Gate Pass';}
   }
 }
 
@@ -3836,12 +3894,17 @@ function pickQPBy(name,rel,reason){
   document.getElementById('qp-by-sug').style.display='none';
 }
 async function issueQuickPass(){
+  if(_issuingPass){gpToast('⏳ Please wait…','inf');return;}
   if(!qpSel){gpToast('⚠️ No student selected','err');return;}
   const by=document.getElementById('qpby').value.trim();
   if(!by){gpToast('⚠️ Enter picker name','err');return;}
   const stu=qpSel.stu||S.students.find(s=>s.admissionNumber===qpSel.adm);
   const existing=S.passes.find(p=>p.admissionNumber===qpSel.adm&&p.date===todayStr());
   if(existing){gpToast(`🚫 Pass already issued for ${qpSel.name} today`,'err');return;}
+  _issuingPass=true;
+  const _qpBtn=document.querySelector('[onclick="issueQuickPass()"]');
+  if(_qpBtn){_qpBtn.disabled=true;_qpBtn.textContent='⏳ Issuing…';}
+  try{
   const pass={id:uid(),date:todayStr(),time:nowT(),gateOutTime:null,studentName:qpSel.name,admissionNumber:qpSel.adm,class:qpSel.cls||'',fatherName:stu?stu.fatherName||'':'',motherName:stu?stu.motherName||'':'',pickedUpBy:by,relation:document.getElementById('qprel').value,reason:document.getElementById('qpreason').value.trim(),busNumber:stu?stu.busNumber||'':'',pickerPhoto:null};
   S.passes.unshift(pass);
   await push('passes');
@@ -3859,6 +3922,11 @@ async function issueQuickPass(){
     const showBtn=()=>gpShowAdminWABtn(gpWACfg.adminPhone,aMsg,pass.studentName);
     if(gpWACfg.delayEnabled===false){showBtn();}
     else{const d=gpWACfg.parentEnabled!==false&&qpPhone&&qpPhone.length>=10?(gpWACfg.waDelay||3)*1000:0;setTimeout(showBtn,d);}
+  }
+  }finally{
+    _issuingPass=false;
+    const _qpBtn=document.querySelector('[onclick="issueQuickPass()"]');
+    if(_qpBtn){_qpBtn.disabled=false;_qpBtn.textContent='⚡ Issue Quick Pass';}
   }
 }
 
