@@ -3422,21 +3422,32 @@ async function fetchAll(){
       const toArr=v=>Array.isArray(v)?v:(v&&v.__empty)?[]:(v!=null&&typeof v==='object'?Object.values(v).filter(x=>x!=null):null);
       const ps=toArr(d.passes);
       if(ps!==null){
-        // Detect newly-exited passes (gateOutTime just appeared) → edit Telegram message
+        // ── Step A: gateout node merge PEHLE (Gate app ke gateOutTimes apply karo) ──
+        // TG detection se pehle zaroori hai warna gateOutTime null milega
+        if(d.gateout&&typeof d.gateout==='object'){
+          const _goMap={};Object.entries(d.gateout).forEach(([pid,rec])=>{if(rec&&rec.gateOutTime)_goMap[pid]=rec;});
+          ps.forEach(p=>{
+            const rec=_goMap[p.id];
+            if(rec&&!p.gateOutTime){
+              p.gateOutTime=rec.gateOutTime;
+              if(rec.busNumber)p.busNumber=rec.busNumber;
+              if(rec._ts)p._ts=rec._ts;
+            }
+          });
+        }
+        // ── Step B: Detect newly-exited passes → edit Telegram message ──
         if(TGCfg.enabled&&TGCfg.token){
           const oldMap={};S.passes.forEach(p=>{if(p.id)oldMap[p.id]=p.gateOutTime||null;});
           ps.forEach(p=>{
-            // Only edit if: pass existed before (in oldMap), had no gateOutTime, now has one
             const wasKnown=p.id in oldMap;
             if(wasKnown&&p.tgMsgId&&p.gateOutTime&&!oldMap[p.id]){
-              // Restore photo info for correct editMessageCaption vs editMessageText
               const localPass=S.passes.find(x=>x.id===p.id);
               if(localPass&&localPass._hasPhoto)p._hasPhoto=true;
               editTelegramOnExit(p);
             }
           });
         }
-        // Restore locally cached photos, then fetch missing ones from Firebase for recent passes
+        // ── Step C: Photo restore ──
         const _today=new Date().toISOString().slice(0,10);
         const _yesterday=new Date(Date.now()-86400000).toISOString().slice(0,10);
         const _missingPhotos=[];
@@ -3447,6 +3458,8 @@ async function fetchAll(){
             else if(p.date===_today||p.date===_yesterday){_missingPhotos.push(p);}
           }
         });
+        // Sort passes — newest on top (by date+time descending)
+        ps.sort((a,b)=>(b.date+b.time).localeCompare(a.date+a.time));
         S.passes=ps;
         // Fetch missing photos from Firebase (only today+yesterday, max 10 at a time)
         if(_missingPhotos.length&&cfg.url&&cfg.code){
@@ -3461,18 +3474,6 @@ async function fetchAll(){
         }
       }
       if(d.buses&&!d.buses.__empty){const _raw=Array.isArray(d.buses)?d.buses:Object.values(d.buses);const _clean=_raw.filter(b=>b!=null&&b!=='');if(_clean.length)S.buses=_clean;}
-      // Read /gateout/ node — Gate app ke gate-out timestamps merge karo
-      if(d.gateout&&typeof d.gateout==='object'){
-        Object.entries(d.gateout).forEach(([passId,rec])=>{
-          if(!rec||!rec.gateOutTime)return;
-          const pass=S.passes.find(p=>p.id===passId);
-          if(pass&&!pass.gateOutTime){
-            pass.gateOutTime=rec.gateOutTime;
-            if(rec.busNumber)pass.busNumber=rec.busNumber;
-            if(rec._ts)pass._ts=rec._ts;
-          }
-        });
-      }
       if(d.tgApproveSynced&&typeof d.tgApproveEnabled!=='undefined'){
         const rv=!!d.tgApproveEnabled;
         if(TGCfg.approveEnabled!==rv){TGCfg.approveEnabled=rv;localStorage.setItem('gp_tg_cfg',JSON.stringify(TGCfg));const el=document.getElementById('tg-approve-enabled');if(el)el.checked=rv;startTGApprovalPolling();gpToast((rv?'✅':'❌')+' Approve/Deny '+(rv?'ON':'OFF')+' (synced from another device)');}
@@ -3488,7 +3489,7 @@ async function fetchAll(){
 }
 async function push(k){
   saveLocal();
-  if(k==='students'){syncGpStudentsToRef();gpStuPushShared();}
+  if(k==='students'){syncGpStudentsToRef();} // Student DB: no auto-push to Firebase — only explicit edits push
   if(!cfg.url||!cfg.code)return;
   S.lastMod=Date.now();localMod=S.lastMod;setSS('ing');
   if(k==='students')return;
@@ -3789,6 +3790,7 @@ async function issuePass(){
   // Cache photo locally before push strips it
   if(pass.pickerPhoto&&pass.pickerPhoto!=='__has_photo')_photoCache.set(pass.id,pass.pickerPhoto);
   S.passes.unshift(pass);
+  S.passes.sort((a,b)=>(b.date+b.time).localeCompare(a.date+a.time));
   await push('passes');
   // Push photo separately to Firebase so other devices can fetch it
   if(pass.pickerPhoto&&pass.pickerPhoto!=='__has_photo'){_pushPhotoToFB(pass.id,pass.pickerPhoto);}
@@ -4264,6 +4266,13 @@ function gpDisconnStu(){
 async function gpStuFetchShared(){
   if(!gpStuCfg.url||!gpStuCfg.code)return;
   try{
+    // Date change pe force fresh fetch — local cache clear karo
+    const _stuToday=new Date().toISOString().slice(0,10);
+    const _stuLastDate=localStorage.getItem('gp_stu_last_date')||'';
+    if(_stuLastDate!==_stuToday){
+      gpStuLocalMod=0; // force fetch
+      localStorage.setItem('gp_stu_last_date',_stuToday);
+    }
     // ── Step 1: Cheap lastMod check (~50 bytes) — skip full download if unchanged ──
     const lmr=await fetch(gpStuCfg.url+'/'+gpStuCfg.code+'/lastMod.json');
     if(lmr.ok){const remMod=await lmr.json();if(remMod&&remMod===gpStuLocalMod)return;}
