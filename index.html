@@ -3459,8 +3459,15 @@ async function push(k){
   const _stripP=arr=>Array.isArray(arr)?arr.map(p=>p&&p.pickerPhoto&&p.pickerPhoto!=='__has_photo'?{...p,pickerPhoto:'__has_photo'}:p):arr;
   const val=Array.isArray(S[k])&&S[k].length===0?{'__empty':true}:(k==='passes'?_stripP(S[k]):S[k]);
   try{
-    if(k==='buses'||k==='passes'){await fetch(`${cfg.url}/${cfg.code}/${k}.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(val)});await fetch(`${cfg.url}/${cfg.code}/lastMod.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(S.lastMod)});}
-    else{await fetch(`${cfg.url}/${cfg.code}.json`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({[k]:val,lastMod:S.lastMod})});}
+    if(k==='passes'){
+      await fetch(`${cfg.url}/${cfg.code}/passes.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(val)});
+      await fetch(`${cfg.url}/${cfg.code}/lastMod.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(S.lastMod)});
+    } else if(k==='buses'){
+      await fetch(`${cfg.url}/${cfg.code}/buses.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(val)});
+      await fetch(`${cfg.url}/${cfg.code}/lastMod.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(S.lastMod)});
+    } else {
+      await fetch(`${cfg.url}/${cfg.code}.json`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({[k]:val,lastMod:S.lastMod})});
+    }
     _pendingPushKeys.delete(k);setSS('ok');
   }catch{_pendingPushKeys.add(k);setSS('err');}
 }
