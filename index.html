@@ -3331,6 +3331,14 @@ const _photoCache={
     keys.forEach(k=>{const id=k.slice(9);const p=S.passes.find(x=>x.id===id);if(!p||(p.date||'')<cutoff)localStorage.removeItem(k);});
   }
 };
+// Delete a pass's photo from Firebase /photos/ node
+async function _deletePhotoFromFB(passId){
+  if(!cfg.url||!cfg.code||!passId)return;
+  try{
+    await fetch(`${cfg.url}/${cfg.code}/photos/${passId}.json`,{method:'DELETE'});
+    localStorage.removeItem('gp_photo_'+passId);
+  }catch(e){}
+}
 // Push a single photo to Firebase separately (keeps main passes array small)
 async function _pushPhotoToFB(passId, photoData){
   if(!cfg.url||!cfg.code||!passId||!photoData)return;
@@ -3387,11 +3395,19 @@ async function fetchAll(){
     if(lmr.ok){
       const remMod=(await lmr.json())||0;
       if(remMod===localMod){setSS('ok');return;} // nothing changed — skip full fetch
-      // If local is newer than Firebase → we have unsynced changes, retry push first
-      if(remMod<localMod&&_pendingPushKeys.size>0){
-        for(const k of [..._pendingPushKeys])await push(k);
-        setSS(_pendingPushKeys.size===0?'ok':'err');return;
+      // Local is newer than Firebase: our push is either in-flight or failed
+      // Either way, DO NOT overwrite local with stale Firebase data
+      // Just retry any known-failed pushes and return
+      if(remMod<localMod){
+        if(_pendingPushKeys.size>0){
+          for(const k of [..._pendingPushKeys])await push(k);
+          setSS(_pendingPushKeys.size===0?'ok':'err');
+        }else{
+          setSS('ok'); // push is in-flight, do nothing
+        }
+        return;
       }
+      // remMod > localMod: Firebase is newer, proceed with full fetch
     }
     // ── STEP 2: Full fetch only when something changed ────────────────────────
     const r=await fetch(`${cfg.url}/${cfg.code}.json`);
@@ -3406,7 +3422,12 @@ async function fetchAll(){
         if(TGCfg.enabled&&TGCfg.token){
           const oldMap={};S.passes.forEach(p=>{if(p.id)oldMap[p.id]=p.gateOutTime||null;});
           ps.forEach(p=>{
-            if(p.id&&p.tgMsgId&&p.gateOutTime&&!oldMap[p.id]){
+            // Only edit if: pass existed before (in oldMap), had no gateOutTime, now has one
+            const wasKnown=p.id in oldMap;
+            if(wasKnown&&p.tgMsgId&&p.gateOutTime&&!oldMap[p.id]){
+              // Restore photo info for correct editMessageCaption vs editMessageText
+              const localPass=S.passes.find(x=>x.id===p.id);
+              if(localPass&&localPass._hasPhoto)p._hasPhoto=true;
               editTelegramOnExit(p);
             }
           });
@@ -3508,7 +3529,20 @@ function setSS(st){
   t.textContent=msgs[st]||'';
   if(st==='ok')ti.textContent=new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',hour12:true});
 }
-function startSync(){setSS('ing');fetchAll();if(syncIv)clearInterval(syncIv);syncIv=setInterval(fetchAll,6000);}
+function startSync(){
+  setSS('ing');
+  // Once-per-day full fetch: agar aaj pehli baar app khula → force fresh Firebase fetch
+  // Yeh ensure karta hai ki doosre device ke deletions/changes reflect hon
+  const _today=new Date().toISOString().slice(0,10);
+  const _lastFullFetch=localStorage.getItem('gp_last_full_fetch')||'';
+  if(_lastFullFetch!==_today){
+    localMod=0; // force full fetch
+    localStorage.setItem('gp_last_full_fetch',_today);
+  }
+  fetchAll();
+  if(syncIv)clearInterval(syncIv);
+  syncIv=setInterval(fetchAll,6000);
+}
 // Re-sync immediately when tab/app comes back to foreground
 document.addEventListener('visibilitychange',()=>{
   if(document.visibilityState==='visible'&&cfg.url&&cfg.code){if(gpForceRefreshOnFocus)localMod=0;fetchAll();}
@@ -3954,7 +3988,7 @@ async function saveStu(){
 }
 async function delStu(a){if(!confirm('Delete this student?'))return;S.students=S.students.filter(s=>s.admissionNumber!==a);await push('students');gpStuPushShared();gpToast('🗑 Student deleted','err');renderStu();}
 async function delAllStudents(){if(!S.students.length){gpToast('No students','inf');return;}if(!confirm(`DELETE ALL ${S.students.length} students? Cannot be undone.`))return;S.students=[];await push('students');gpToast('🗑 All students deleted','err');renderStu();renderQGSidebar();}
-async function delAllPasses(){if(!S.passes.length){gpToast('No records','inf');return;}if(!confirm(`DELETE ALL ${S.passes.length} records? CANNOT be undone.`))return;S.passes=[];await push('passes');gpToast('🗑 All records deleted','err');updBadge();renderQGSidebar();}
+async function delAllPasses(){if(!S.passes.length){gpToast('No records','inf');return;}if(!confirm(`DELETE ALL ${S.passes.length} records? CANNOT be undone.`))return;S.passes.forEach(p=>{if(p._hasPhoto||p.pickerPhoto)_deletePhotoFromFB(p.id);});S.passes=[];await push('passes');gpToast('🗑 All records deleted','err');updBadge();renderQGSidebar();}
 var gpStuPage=1,gpStuFiltered=[];
 const GP_STU_PAGE=30;
 function renderStu(){
@@ -4078,6 +4112,7 @@ async function delPass(id){
   if(!confirm('Delete this gate pass record? This cannot be undone.'))return;
   const pass=S.passes.find(p=>p.id===id);
   if(pass&&TGCfg.enabled&&pass.tgMsgId) deleteTGMessage(TGCfg.token,TGCfg.chatId,pass.tgMsgId);
+  if(pass&&(pass._hasPhoto||pass.pickerPhoto)) _deletePhotoFromFB(id);
   S.passes=S.passes.filter(p=>p.id!==id);
   await push('passes');
   gpToast('🗑 Pass deleted','err');
@@ -4104,6 +4139,8 @@ async function execDel(){
   var exited=ids.filter(function(id){var p=S.passes.find(function(p){return p.id===id;});return !!(p&&p.gateOutTime);}).length;
   var msg='Delete '+ids.length+' record'+(ids.length>1?'s':'')+(exited?' ('+exited+' already exited)':'')+' — cannot be undone?';
   if(!confirm(msg))return;
+  const toDelete=S.passes.filter(function(p){return ids.indexOf(p.id)!==-1;});
+  toDelete.forEach(function(p){if(p._hasPhoto||p.pickerPhoto)_deletePhotoFromFB(p.id);});
   S.passes=S.passes.filter(function(p){return ids.indexOf(p.id)===-1;});
   await push('passes');
   gpToast(ids.length+' record'+(ids.length>1?'s':'')+' deleted','err');
@@ -4128,7 +4165,7 @@ function drPreview(){
   Object.entries(byDate).sort((a,b)=>b[0].localeCompare(a[0])).forEach(([date,recs])=>{html+=`<div style="font-size:11px;font-weight:700;color:var(--sub);text-transform:uppercase;margin:8px 0 4px">${fmtD(date)} — ${recs.length} record${recs.length>1?'s':''}</div>`;recs.forEach(p=>{html+=`<div style="font-size:12px;padding:4px 6px;border-radius:5px;margin-bottom:3px;background:var(--bg4);display:flex;justify-content:space-between"><span style="font-weight:600">${e(p.studentName)}</span><span style="font-family:var(--mono);font-size:10px;color:${p.gateOutTime?'var(--green)':'var(--amber)'}">${p.gateOutTime?'EXITED':'PENDING'}</span></div>`;});});
   html+=`</div>`;prev.innerHTML=html;btn.textContent=`🗑 Delete ${hits.length} Record${hits.length>1?'s':''} (${fmtD(from)} → ${fmtD(to)})`;btn.style.display='flex';
 }
-async function execDR(){const from=document.getElementById('dr-from').value,to=document.getElementById('dr-to').value;if(!from||!to)return;const hits=S.passes.filter(p=>p.date>=from&&p.date<=to);if(!hits.length){gpToast('No records in range','inf');return;}const exited=hits.filter(p=>p.gateOutTime).length;if(!confirm(`Permanently delete ${hits.length} record${hits.length>1?'s':''} from ${fmtD(from)} to ${fmtD(to)}?\n(${exited} exited + ${hits.length-exited} pending)\n\nThis CANNOT be undone.`))return;S.passes=S.passes.filter(p=>!(p.date>=from&&p.date<=to));await push('passes');gpToast(`🗑 ${hits.length} records deleted`,'err');closeDR();updBadge();}
+async function execDR(){const from=document.getElementById('dr-from').value,to=document.getElementById('dr-to').value;if(!from||!to)return;const hits=S.passes.filter(p=>p.date>=from&&p.date<=to);if(!hits.length){gpToast('No records in range','inf');return;}const exited=hits.filter(p=>p.gateOutTime).length;if(!confirm(`Permanently delete ${hits.length} record${hits.length>1?'s':''} from ${fmtD(from)} to ${fmtD(to)}?\n(${exited} exited + ${hits.length-exited} pending)\n\nThis CANNOT be undone.`))return;hits.forEach(p=>{if(p._hasPhoto||p.pickerPhoto)_deletePhotoFromFB(p.id);});S.passes=S.passes.filter(p=>!(p.date>=from&&p.date<=to));await push('passes');gpToast(`🗑 ${hits.length} records deleted`,'err');closeDR();updBadge();}
 
 // ═══ PASSWORD ═══
 function recCheckPW(){const v=document.getElementById('pw-inp').value;if(v===PASS){document.getElementById('pw-gate').style.display='none';document.getElementById('set-ct').style.display='block';document.getElementById('pw-err').textContent='';loadCfgF();gpLoadStuCfg();gpLoadWACfg();gpLoadQPThresh();gpLoadPrintCfg();renderBuses();renderStu();gpUpdateSettingsSubs();var fb=document.getElementById('gacc-fb');if(fb&&!fb.classList.contains('open'))fb.classList.add('open');}else{document.getElementById('pw-err').textContent='❌ Wrong password';document.getElementById('pw-inp').value='';}}
@@ -6547,8 +6584,11 @@ async function editTelegramOnExit(pass){
   if(!ids.length)return;
   const caption=`🚪 *Gate Pass — Exited*\n\n👤 *${pass.studentName}* (${pass.class||'—'})\n📋 Adm: ${pass.admissionNumber||'—'}\n🧑 Picked by: *${pass.pickedUpBy}* (${pass.relation||'—'})\n📝 Reason: ${pass.reason||'—'}\n🚌 Bus: ${pass.busNumber||'—'}\n🕐 In: ${pass.time} | ✅ Out: ${pass.gateOutTime}\n📅 ${pass.date}\n🆔 Pass: #${pass.id.substr(-6).toUpperCase()}`;
   const chatId=ids[0]; // edit only first chat (primary log)
+  // _hasPhoto or real photo = message was sent with photo (editMessageCaption)
+  // null photo and no _hasPhoto = text-only message (editMessageText)
+  const _hadPhoto=pass._hasPhoto||(pass.pickerPhoto&&pass.pickerPhoto!=='__has_photo');
   try{
-    if(pass.pickerPhoto){
+    if(_hadPhoto){
       await fetch(`https://api.telegram.org/bot${TGCfg.token}/editMessageCaption`,{
         method:'POST',headers:{'Content-Type':'application/json'},
         body:JSON.stringify({chat_id:chatId,message_id:pass.tgMsgId,caption,parse_mode:'Markdown'})
