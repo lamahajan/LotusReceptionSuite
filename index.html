@@ -3279,46 +3279,7 @@ function loadLocalData(){
     const d=localStorage.getItem('gp_local');
     if(d){const p=JSON.parse(d);if(p.students)S.students=p.students;if(p.passes)S.passes=p.passes;if(p.buses&&p.buses.length)S.buses=p.buses;updBadge();popBusSel();}
   }catch(err){}
-  mergeRefStudents();
-  // Push existing gatepass students into ref register on load
-  if(typeof syncGpStudentsToRef==='function')setTimeout(syncGpStudentsToRef,500);
-}
-// Merge Reference Register students into Gatepass — deduplicated by admNo
-function mergeRefStudents(){
-  try{
-    const raw=localStorage.getItem('ref_students');
-    if(!raw)return;
-    const refStudents=JSON.parse(raw);
-    if(!Array.isArray(refStudents)||!refStudents.length)return;
-    // Normalize: build map keyed by trimmed lowercase admissionNumber
-    const map={};
-    S.students.forEach(s=>{
-      const key=(s.admissionNumber||'').trim().toLowerCase();
-      if(key)map[key]=s;
-    });
-    let added=0,updated=0;
-    refStudents.forEach(rs=>{
-      const adm=(rs.admNo||rs.admissionNumber||'').trim();
-      if(!rs.name||!adm)return;
-      const key=adm.toLowerCase();
-      if(map[key]){
-        // Update missing fields only — don't overwrite gatepass data
-        const ex=map[key];
-        if(!ex.fatherName&&rs.fatherName)ex.fatherName=rs.fatherName;
-        if(!ex.motherName&&rs.motherName)ex.motherName=rs.motherName;
-        if(!ex.class&&(rs.cls||rs.class))ex.class=rs.cls||rs.class||'';
-        if(!ex.name&&rs.name)ex.name=rs.name;
-        if(!ex.phone&&(rs.phone||rs.mobile))ex.phone=(rs.phone||rs.mobile||'').replace(/[^0-9]/g,'');
-        if(!ex.address&&(rs.address||rs.addr))ex.address=rs.address||rs.addr||'';
-        updated++;
-      } else {
-        S.students.push({name:rs.name,admissionNumber:adm,class:rs.cls||rs.class||'',fatherName:rs.fatherName||'',motherName:rs.motherName||'',busNumber:'',phone:(rs.phone||rs.mobile||'').replace(/[^0-9]/g,''),address:rs.address||rs.addr||''});
-        map[key]=S.students[S.students.length-1];
-        added++;
-      }
-    });
-    if(added||updated)console.log('Gatepass: +'+added+' new, '+updated+' updated from Ref Register');
-  }catch(err){console.warn('mergeRefStudents:',err);}
+  // GP students come from GP Firebase only — no direct cross-sync with Ref register
 }
 // ── PHOTO CACHE — localStorage backup for offline/quick access ───────────────
 const _photoCache={
@@ -3489,7 +3450,6 @@ async function fetchAll(){
 }
 async function push(k){
   saveLocal();
-  if(k==='students'){syncGpStudentsToRef();} // Student DB: no auto-push to Firebase — only explicit edits push
   if(!cfg.url||!cfg.code)return;
   S.lastMod=Date.now();localMod=S.lastMod;setSS('ing');
   if(k==='students')return;
@@ -3510,35 +3470,7 @@ async function push(k){
     _pendingPushKeys.delete(k);setSS('ok');
   }catch{_pendingPushKeys.add(k);setSS('err');}
 }
-// Sync gatepass students directly into ref register STUDENTS array (same page)
-function syncGpStudentsToRef(){
-  if(typeof STUDENTS==='undefined')return;
-  var map={};
-  STUDENTS.forEach(function(s){map[(s.admNo||s.admissionNumber||'').toLowerCase()]=s;});
-  var added=0;
-  S.students.forEach(function(gs){
-    var adm=(gs.admissionNumber||'').trim();
-    if(!adm||!gs.name)return;
-    var key=adm.toLowerCase();
-    if(!map[key]){
-      STUDENTS.push({id:'gp_'+adm,name:gs.name,admNo:adm,cls:gs.class||'',fatherName:gs.fatherName||'',motherName:gs.motherName||'',phone:gs.phone||''});
-      map[key]=STUDENTS[STUDENTS.length-1];
-      added++;
-    } else {
-      // Update missing fields
-      var ex=map[key];
-      if(!ex.fatherName&&gs.fatherName)ex.fatherName=gs.fatherName;
-      if(!ex.motherName&&gs.motherName)ex.motherName=gs.motherName;
-      if(!ex.cls&&gs.class)ex.cls=gs.class;
-      if(!ex.phone&&gs.phone)ex.phone=gs.phone;
-    }
-  });
-  if(added){
-    try{localStorage.setItem('ref_students',JSON.stringify(STUDENTS));}catch(e){}
-    if(typeof renderStudentList==='function')renderStudentList();
-    if(typeof populateDataLists==='function')populateDataLists();
-  }
-}
+// syncGpStudentsToRef removed — GP ↔ Ref sync sirf Firebase ke zariye hoti hai
 function setSS(st){
   const b=document.getElementById('sbar'),d=document.getElementById('sdot'),t=document.getElementById('stxt'),ti=document.getElementById('stim');
   b.className=st;d.className='dot'+(st==='ing'?' pulse':'');
@@ -4266,37 +4198,44 @@ function gpDisconnStu(){
 async function gpStuFetchShared(){
   if(!gpStuCfg.url||!gpStuCfg.code)return;
   try{
-    // Date change pe force fresh fetch — local cache clear karo
+    // ── Date change detection: naye din pe force fetch ──
     const _stuToday=new Date().toISOString().slice(0,10);
     const _stuLastDate=localStorage.getItem('gp_stu_last_date')||'';
-    if(_stuLastDate!==_stuToday){
-      gpStuLocalMod=0; // force fetch
-      localStorage.setItem('gp_stu_last_date',_stuToday);
-    }
-    // ── Step 1: Cheap lastMod check (~50 bytes) — skip full download if unchanged ──
+    const _isNewDay=(_stuLastDate!==_stuToday);
+    if(_isNewDay){gpStuLocalMod=0;localStorage.setItem('gp_stu_last_date',_stuToday);}
+    // ── Step 1: Cheap lastMod check — agar kuch nahi badla toh skip ──
     const lmr=await fetch(gpStuCfg.url+'/'+gpStuCfg.code+'/lastMod.json');
-    if(lmr.ok){const remMod=await lmr.json();if(remMod&&remMod===gpStuLocalMod)return;}
-    // ── Step 2: Full fetch only when something changed ──
+    if(lmr.ok){
+      const remMod=await lmr.json();
+      if(!_isNewDay&&remMod&&remMod===gpStuLocalMod)return;
+    }
+    // ── Step 2: Full fetch ──
     var r=await fetch(gpStuCfg.url+'/'+gpStuCfg.code+'.json');
-    if(!r.ok)return;var d=await r.json();
+    if(!r.ok)return;
+    var d=await r.json();
     if(!d||!d.students)return;
     gpStuLocalMod=d.lastMod||0;
-    var remote=Array.isArray(d.students)?d.students:(d.students.__empty?[]:Object.values(d.students));
-    // Merge: remote students override local by admissionNumber
-    var map={};
-    S.students.forEach(function(s){map[s.admissionNumber]=s;});
-    remote.forEach(function(rs){
+    var rawRemote=Array.isArray(d.students)?d.students:(d.students.__empty?[]:Object.values(d.students));
+    // ── ALWAYS REPLACE — Firebase = single source of truth ──
+    // Har fetch pe local replace hoga (delete bhi 30s mein reflect hoga)
+    // S.students sirf successful fetch ke baad set hoga — fail pe preserve
+    var normalized=[];
+    rawRemote.forEach(function(rs){
       var adm=(rs.admNo||rs.admissionNumber||'').trim();
       if(!adm)return;
-      var existingPhone=(map[adm]&&map[adm].phone)||'';
-      var remotePhone=(rs.phone||rs.mobile||rs.contact||'').replace(/[^0-9]/g,'');
-      var existingAddress=(map[adm]&&map[adm].address)||'';
-      map[adm]={name:rs.name||'',admissionNumber:adm,class:rs.cls||rs.class||'',fatherName:rs.fatherName||'',motherName:rs.motherName||'',busNumber:rs.busNumber||rs.bus||'',phone:remotePhone||existingPhone,address:rs.address||rs.addr||existingAddress};
+      normalized.push({
+        name:rs.name||'',
+        admissionNumber:adm,
+        class:rs.cls||rs.class||'',
+        fatherName:rs.fatherName||'',
+        motherName:rs.motherName||'',
+        busNumber:rs.busNumber||rs.bus||'',
+        phone:(rs.phone||rs.mobile||rs.contact||'').replace(/[^0-9]/g,''),
+        address:rs.address||rs.addr||''
+      });
     });
-    S.students=Object.values(map);
+    S.students=normalized;
     saveLocal();renderStu();popBusSel();updBadge();
-    // Also sync into ref register
-    syncGpStudentsToRef();
   }catch(e){}
 }
 async function gpStuPushShared(){
@@ -5009,7 +4948,6 @@ async function gpApplyCSVMapping(){
     }
     S.students=Object.values(map);
     await push('students');
-    syncGpStudentsToRef&&syncGpStudentsToRef();
     renderStu&&renderStu();
     st.textContent=`✅ ${added} added · ${updated} updated · Total: ${S.students.length} — pushed to Firebase`;
     st.style.color='var(--green)';
@@ -5152,7 +5090,7 @@ function _refInit(){
 
 // ─── STORAGE ────────────────────────────────────────────
 function loadLocal(){try{const d=localStorage.getItem('ref_data');if(d){const p=JSON.parse(d);if(p.entries)R.entries=p.entries;if(p.nextSeq)R.nextSeq=p.nextSeq;if(p.overrideSeq)R.overrideSeq=p.overrideSeq;if(p.reclaimedSeqs)R.reclaimedSeqs=p.reclaimedSeqs;}const s=localStorage.getItem('ref_students');if(s)STUDENTS=JSON.parse(s);}catch(e){}}
-function saveLocal(){try{localStorage.setItem('ref_data',JSON.stringify({entries:R.entries,nextSeq:R.nextSeq,overrideSeq:R.overrideSeq||{},reclaimedSeqs:R.reclaimedSeqs||{}}));localStorage.setItem('ref_students',JSON.stringify(STUDENTS));if(typeof mergeRefStudents==='function')mergeRefStudents();}catch(e){}}
+function saveLocal(){try{localStorage.setItem('ref_data',JSON.stringify({entries:R.entries,nextSeq:R.nextSeq,overrideSeq:R.overrideSeq||{},reclaimedSeqs:R.reclaimedSeqs||{}}));localStorage.setItem('ref_students',JSON.stringify(STUDENTS));}catch(e){}}
 function loadCFG(){try{const s=localStorage.getItem('ref_cfg');if(s)Object.assign(CFG,JSON.parse(s));}catch(e){}}
 function saveCFG(){try{localStorage.setItem('ref_cfg',JSON.stringify(CFG));}catch(e){}}
 
@@ -6138,38 +6076,12 @@ async function fbStuFetch(){
     if(lmr.ok){const remMod=await lmr.json();if(remMod&&remMod===fbStuLocalMod)return;}
     // ── Step 2: Full fetch only when something changed ──
     const r=await fetch(`${fbStuCfg.url}/${fbStuCfg.code}.json`);if(!r.ok)throw 0;const d=await r.json();
-    if(d){const sm=d.lastMod||0;if(sm!==fbStuLocalMod){const toArr=v=>Array.isArray(v)?v:(v&&v.__empty)?[]:(v!=null?v:null);const stus=toArr(d.students);if(stus!==null){STUDENTS=stus;if(typeof syncRefStudentsToGp==='function')syncRefStudentsToGp();}fbStuLocalMod=sm;saveLocal();renderStudentList();populateDataLists();}}
+    if(d){const sm=d.lastMod||0;if(sm!==fbStuLocalMod){const toArr=v=>Array.isArray(v)?v:(v&&v.__empty)?[]:(v!=null?v:null);const stus=toArr(d.students);if(stus!==null){STUDENTS=stus;}fbStuLocalMod=sm;saveLocal();renderStudentList();populateDataLists();}}
   }catch(e){}
 }
-// Sync ref register students into gatepass S.students (same page)
-function syncRefStudentsToGp(){
-  if(typeof S==='undefined'||!Array.isArray(S.students))return;
-  const map={};
-  S.students.forEach(s=>{map[(s.admissionNumber||'').toLowerCase()]=s;});
-  let added=0;
-  STUDENTS.forEach(rs=>{
-    const adm=(rs.admNo||rs.admissionNumber||'').trim();
-    if(!adm||!rs.name)return;
-    const key=adm.toLowerCase();
-    if(!map[key]){
-      S.students.push({name:rs.name,admissionNumber:adm,class:rs.cls||rs.class||'',fatherName:rs.fatherName||'',motherName:rs.motherName||'',busNumber:''});
-      map[key]=S.students[S.students.length-1];
-      added++;
-    } else {
-      const ex=map[key];
-      if(!ex.fatherName&&rs.fatherName)ex.fatherName=rs.fatherName;
-      if(!ex.motherName&&rs.motherName)ex.motherName=rs.motherName;
-      if(!ex.class&&(rs.cls||rs.class))ex.class=rs.cls||rs.class||'';
-    }
-  });
-  if(added){
-    try{localStorage.setItem('gp_local',JSON.stringify({students:S.students,passes:S.passes,buses:S.buses}));}catch(e){}
-    if(typeof renderStu==='function')renderStu();
-  }
-}
+// syncRefStudentsToGp removed — Ref ↔ GP sync sirf Firebase ke zariye hoti hai
 async function fbStuPush(){
   const lastMod=Date.now();fbStuLocalMod=lastMod;saveLocal();
-  syncRefStudentsToGp(); // keep gatepass in sync
   if(!fbStuCfg.url||!fbStuCfg.code)return;
   const sVal=STUDENTS.length===0?{'__empty':true}:STUDENTS;
   try{await fetch(`${fbStuCfg.url}/${fbStuCfg.code}.json`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({students:sVal,lastMod})});}catch(e){}
