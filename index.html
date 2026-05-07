@@ -3339,6 +3339,10 @@ async function _deletePhotoFromFB(passId){
     localStorage.removeItem('gp_photo_'+passId);
   }catch(e){}
 }
+async function _deleteGateOutFromFB(passId){
+  if(!cfg.url||!cfg.code||!passId)return;
+  try{await fetch(`${cfg.url}/${cfg.code}/gateout/${passId}.json`,{method:'DELETE'});}catch(e){}
+}
 // Push a single photo to Firebase separately (keeps main passes array small)
 async function _pushPhotoToFB(passId, photoData){
   if(!cfg.url||!cfg.code||!passId||!photoData)return;
@@ -3457,6 +3461,18 @@ async function fetchAll(){
         }
       }
       if(d.buses&&!d.buses.__empty){const _raw=Array.isArray(d.buses)?d.buses:Object.values(d.buses);const _clean=_raw.filter(b=>b!=null&&b!=='');if(_clean.length)S.buses=_clean;}
+      // Read /gateout/ node — Gate app ke gate-out timestamps merge karo
+      if(d.gateout&&typeof d.gateout==='object'){
+        Object.entries(d.gateout).forEach(([passId,rec])=>{
+          if(!rec||!rec.gateOutTime)return;
+          const pass=S.passes.find(p=>p.id===passId);
+          if(pass&&!pass.gateOutTime){
+            pass.gateOutTime=rec.gateOutTime;
+            if(rec.busNumber)pass.busNumber=rec.busNumber;
+            if(rec._ts)pass._ts=rec._ts;
+          }
+        });
+      }
       if(d.tgApproveSynced&&typeof d.tgApproveEnabled!=='undefined'){
         const rv=!!d.tgApproveEnabled;
         if(TGCfg.approveEnabled!==rv){TGCfg.approveEnabled=rv;localStorage.setItem('gp_tg_cfg',JSON.stringify(TGCfg));const el=document.getElementById('tg-approve-enabled');if(el)el.checked=rv;startTGApprovalPolling();gpToast((rv?'✅':'❌')+' Approve/Deny '+(rv?'ON':'OFF')+' (synced from another device)');}
@@ -3988,7 +4004,7 @@ async function saveStu(){
 }
 async function delStu(a){if(!confirm('Delete this student?'))return;S.students=S.students.filter(s=>s.admissionNumber!==a);await push('students');gpStuPushShared();gpToast('🗑 Student deleted','err');renderStu();}
 async function delAllStudents(){if(!S.students.length){gpToast('No students','inf');return;}if(!confirm(`DELETE ALL ${S.students.length} students? Cannot be undone.`))return;S.students=[];await push('students');gpToast('🗑 All students deleted','err');renderStu();renderQGSidebar();}
-async function delAllPasses(){if(!S.passes.length){gpToast('No records','inf');return;}if(!confirm(`DELETE ALL ${S.passes.length} records? CANNOT be undone.`))return;S.passes.forEach(p=>{if(p._hasPhoto||p.pickerPhoto)_deletePhotoFromFB(p.id);});S.passes=[];await push('passes');gpToast('🗑 All records deleted','err');updBadge();renderQGSidebar();}
+async function delAllPasses(){if(!S.passes.length){gpToast('No records','inf');return;}if(!confirm(`DELETE ALL ${S.passes.length} records? CANNOT be undone.`))return;S.passes.forEach(p=>{if(p._hasPhoto||p.pickerPhoto)_deletePhotoFromFB(p.id);_deleteGateOutFromFB(p.id);});S.passes=[];await push('passes');gpToast('🗑 All records deleted','err');updBadge();renderQGSidebar();}
 var gpStuPage=1,gpStuFiltered=[];
 const GP_STU_PAGE=30;
 function renderStu(){
@@ -4113,6 +4129,7 @@ async function delPass(id){
   const pass=S.passes.find(p=>p.id===id);
   if(pass&&TGCfg.enabled&&pass.tgMsgId) deleteTGMessage(TGCfg.token,TGCfg.chatId,pass.tgMsgId);
   if(pass&&(pass._hasPhoto||pass.pickerPhoto)) _deletePhotoFromFB(id);
+  _deleteGateOutFromFB(id);
   S.passes=S.passes.filter(p=>p.id!==id);
   await push('passes');
   gpToast('🗑 Pass deleted','err');
@@ -4140,7 +4157,7 @@ async function execDel(){
   var msg='Delete '+ids.length+' record'+(ids.length>1?'s':'')+(exited?' ('+exited+' already exited)':'')+' — cannot be undone?';
   if(!confirm(msg))return;
   const toDelete=S.passes.filter(function(p){return ids.indexOf(p.id)!==-1;});
-  toDelete.forEach(function(p){if(p._hasPhoto||p.pickerPhoto)_deletePhotoFromFB(p.id);});
+  toDelete.forEach(function(p){if(p._hasPhoto||p.pickerPhoto)_deletePhotoFromFB(p.id);_deleteGateOutFromFB(p.id);});
   S.passes=S.passes.filter(function(p){return ids.indexOf(p.id)===-1;});
   await push('passes');
   gpToast(ids.length+' record'+(ids.length>1?'s':'')+' deleted','err');
@@ -4165,7 +4182,7 @@ function drPreview(){
   Object.entries(byDate).sort((a,b)=>b[0].localeCompare(a[0])).forEach(([date,recs])=>{html+=`<div style="font-size:11px;font-weight:700;color:var(--sub);text-transform:uppercase;margin:8px 0 4px">${fmtD(date)} — ${recs.length} record${recs.length>1?'s':''}</div>`;recs.forEach(p=>{html+=`<div style="font-size:12px;padding:4px 6px;border-radius:5px;margin-bottom:3px;background:var(--bg4);display:flex;justify-content:space-between"><span style="font-weight:600">${e(p.studentName)}</span><span style="font-family:var(--mono);font-size:10px;color:${p.gateOutTime?'var(--green)':'var(--amber)'}">${p.gateOutTime?'EXITED':'PENDING'}</span></div>`;});});
   html+=`</div>`;prev.innerHTML=html;btn.textContent=`🗑 Delete ${hits.length} Record${hits.length>1?'s':''} (${fmtD(from)} → ${fmtD(to)})`;btn.style.display='flex';
 }
-async function execDR(){const from=document.getElementById('dr-from').value,to=document.getElementById('dr-to').value;if(!from||!to)return;const hits=S.passes.filter(p=>p.date>=from&&p.date<=to);if(!hits.length){gpToast('No records in range','inf');return;}const exited=hits.filter(p=>p.gateOutTime).length;if(!confirm(`Permanently delete ${hits.length} record${hits.length>1?'s':''} from ${fmtD(from)} to ${fmtD(to)}?\n(${exited} exited + ${hits.length-exited} pending)\n\nThis CANNOT be undone.`))return;hits.forEach(p=>{if(p._hasPhoto||p.pickerPhoto)_deletePhotoFromFB(p.id);});S.passes=S.passes.filter(p=>!(p.date>=from&&p.date<=to));await push('passes');gpToast(`🗑 ${hits.length} records deleted`,'err');closeDR();updBadge();}
+async function execDR(){const from=document.getElementById('dr-from').value,to=document.getElementById('dr-to').value;if(!from||!to)return;const hits=S.passes.filter(p=>p.date>=from&&p.date<=to);if(!hits.length){gpToast('No records in range','inf');return;}const exited=hits.filter(p=>p.gateOutTime).length;if(!confirm(`Permanently delete ${hits.length} record${hits.length>1?'s':''} from ${fmtD(from)} to ${fmtD(to)}?\n(${exited} exited + ${hits.length-exited} pending)\n\nThis CANNOT be undone.`))return;hits.forEach(p=>{if(p._hasPhoto||p.pickerPhoto)_deletePhotoFromFB(p.id);_deleteGateOutFromFB(p.id);});S.passes=S.passes.filter(p=>!(p.date>=from&&p.date<=to));await push('passes');gpToast(`🗑 ${hits.length} records deleted`,'err');closeDR();updBadge();}
 
 // ═══ PASSWORD ═══
 function recCheckPW(){const v=document.getElementById('pw-inp').value;if(v===PASS){document.getElementById('pw-gate').style.display='none';document.getElementById('set-ct').style.display='block';document.getElementById('pw-err').textContent='';loadCfgF();gpLoadStuCfg();gpLoadWACfg();gpLoadQPThresh();gpLoadPrintCfg();renderBuses();renderStu();gpUpdateSettingsSubs();var fb=document.getElementById('gacc-fb');if(fb&&!fb.classList.contains('open'))fb.classList.add('open');}else{document.getElementById('pw-err').textContent='❌ Wrong password';document.getElementById('pw-inp').value='';}}
