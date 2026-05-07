@@ -1173,7 +1173,19 @@ body.dark .fq-mtitle{color:#f4ede0}
             <button class="btn bgh" onclick="gpDisconnStu()" style="font-size:12px;padding:8px 12px;color:var(--red)">✕</button>
           </div>
           <div id="gp-stu-fetch-status" style="font-size:11px;color:var(--sub);margin-top:6px;min-height:14px"></div>
-          <div style="font-size:11px;color:var(--muted);margin-top:4px">Students sync every 30s. Changes push instantly. Force Fetch se aaj ki cache ignore ho jaati hai.</div>
+          <!-- Sync Timer Setting -->
+          <div style="margin-top:10px;padding:10px 12px;background:var(--bg3);border:1.5px solid var(--border);border-radius:var(--rs)">
+            <div style="font-size:11px;font-weight:800;color:var(--sub);text-transform:uppercase;letter-spacing:.7px;margin-bottom:7px">⏱ Sync Interval</div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <input id="gp-stu-interval" type="number" min="5" max="300" step="5" value="30"
+                style="width:70px;padding:6px 8px;border-radius:7px;border:1.5px solid var(--border2);background:var(--bg2);color:var(--text);font-family:var(--mono);font-size:13px;font-weight:700;text-align:center;outline:none">
+              <span style="font-size:12px;color:var(--sub)">seconds</span>
+              <button onclick="gpSaveSyncInterval()" style="background:var(--blue);color:#fff;border:none;border-radius:7px;padding:6px 13px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--sans)">Save</button>
+              <span id="gp-interval-status" style="font-size:11px;color:var(--green);min-width:60px"></span>
+            </div>
+            <div style="font-size:10.5px;color:var(--muted);margin-top:5px">Min: 5s · Max: 300s (5 min) · Default: 30s. Kam karo = fast sync, zyada karo = kam Firebase reads.</div>
+          </div>
+          <div style="font-size:11px;color:var(--muted);margin-top:6px">Changes push instantly. Force Fetch se aaj ki cache ignore ho jaati hai.</div>
         </div>
       </div>
 
@@ -4147,13 +4159,39 @@ var gpStuLocalMod=0;
   },msToMidnight);
 })();
 
+function gpGetSyncInterval(){
+  var v=parseInt(localStorage.getItem('gp_stu_interval')||'30');
+  if(isNaN(v)||v<5)v=5;if(v>300)v=300;
+  return v*1000;
+}
+function gpSaveSyncInterval(){
+  var el=document.getElementById('gp-stu-interval');
+  var st=document.getElementById('gp-interval-status');
+  if(!el)return;
+  var v=parseInt(el.value);
+  if(isNaN(v)||v<5){el.value=5;v=5;}
+  if(v>300){el.value=300;v=300;}
+  localStorage.setItem('gp_stu_interval',String(v));
+  // Restart timer with new interval
+  if(gpStuIv)clearInterval(gpStuIv);
+  if(gpStuCfg.url&&gpStuCfg.code){
+    gpStuIv=setInterval(gpStuFetchShared,v*1000);
+    if(st){st.textContent='✅ Saved! ('+v+'s)';setTimeout(()=>{st.textContent='';},2500);}
+    gpToast('⏱ Sync interval set to '+v+' seconds');
+  }else{
+    if(st){st.textContent='✅ Saved!';setTimeout(()=>{st.textContent='';},2500);}
+    gpToast('⏱ Interval saved — connect Firebase to activate');
+  }
+}
 function gpLoadStuCfg(){
   var u=localStorage.getItem('gp_stu_url'),cd=localStorage.getItem('gp_stu_code');
   var urlEl=document.getElementById('gp-stu-url'),codeEl=document.getElementById('gp-stu-code'),stEl=document.getElementById('gp-stu-status');
   if(urlEl)urlEl.value=u||'';if(codeEl)codeEl.value=cd||'';
-  if(u&&cd){gpStuCfg={url:u,code:cd};if(stEl)stEl.textContent='Connected: '+cd;gpStuFetchShared();if(gpStuIv)clearInterval(gpStuIv);gpStuIv=setInterval(gpStuFetchShared,30000);}
+  if(u&&cd){gpStuCfg={url:u,code:cd};if(stEl)stEl.textContent='Connected: '+cd;gpStuFetchShared();if(gpStuIv)clearInterval(gpStuIv);gpStuIv=setInterval(gpStuFetchShared,gpGetSyncInterval());}
   else{if(stEl)stEl.textContent='Not connected';}
   var sub=document.getElementById('gacc-studb-sub');if(sub)sub.textContent=u?'Connected':'Not connected';
+  // Load saved interval in input
+  var ivEl=document.getElementById('gp-stu-interval');if(ivEl)ivEl.value=Math.round(gpGetSyncInterval()/1000);
 }
 async function gpSaveStuCfg(){
   var url=(document.getElementById('gp-stu-url').value||'').trim().replace(/\/$/,'');
@@ -4168,7 +4206,7 @@ async function gpSaveStuCfg(){
     gpStuCfg={url,code};
     if(stEl)stEl.textContent='✅ Connected! Syncing…';
     var sub=document.getElementById('gacc-studb-sub');if(sub)sub.textContent='Connected';
-    gpStuFetchShared();if(gpStuIv)clearInterval(gpStuIv);gpStuIv=setInterval(gpStuFetchShared,30000);
+    gpStuFetchShared();if(gpStuIv)clearInterval(gpStuIv);gpStuIv=setInterval(gpStuFetchShared,gpGetSyncInterval());
   }catch{if(stEl)stEl.textContent='❌ Connection failed';}
 }
 function gpForceFetchStu(){
