@@ -2474,10 +2474,24 @@ Reason: {reason}"></textarea>
         <div class="field"><label class="lbl">Student DB URL</label><input id="fb-stu-url" class="inp" placeholder="https://your-students-rtdb.firebaseio.com"></div>
         <div class="field"><label class="lbl">Student DB Code</label><input id="fb-stu-code" class="inp" placeholder="e.g. SCHOOL_STUDENTS_2025"></div>
         <div id="fb-stu-status" style="font-size:12px;min-height:16px;margin-bottom:10px"></div>
-        <div class="row" style="gap:8px;margin-bottom:18px">
+        <div class="row" style="gap:8px;margin-bottom:10px">
           <button class="btn bpink flex1" onclick="saveFBStuCfg()">💾 Save &amp; Connect</button>
           <button class="btn bgh" onclick="testFBStuCfg()" style="font-size:12px">🔌 Test</button>
+          <button class="btn bgh" onclick="refForceFetchStu()" style="font-size:12px;color:var(--teal)">🔄 Force Fetch</button>
           <button class="btn bacc" onclick="disconnFBStu()" style="font-size:12px">✕</button>
+        </div>
+        <div id="ref-stu-fetch-status" style="font-size:11px;color:var(--sub);min-height:14px;margin-bottom:8px"></div>
+        <!-- Sync Timer -->
+        <div style="padding:10px 12px;background:var(--bg3);border:1.5px solid var(--border);border-radius:var(--rs);margin-bottom:14px">
+          <div style="font-size:11px;font-weight:800;color:var(--sub);text-transform:uppercase;letter-spacing:.7px;margin-bottom:7px">⏱ Sync Interval</div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <input id="ref-stu-interval" type="number" min="5" max="300" step="5" value="15"
+              style="width:70px;padding:6px 8px;border-radius:7px;border:1.5px solid var(--border2);background:var(--bg2);color:var(--text);font-family:var(--mono);font-size:13px;font-weight:700;text-align:center;outline:none">
+            <span style="font-size:12px;color:var(--sub)">seconds</span>
+            <button onclick="refSaveStuInterval()" style="background:var(--teal);color:#fff;border:none;border-radius:7px;padding:6px 13px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--sans)">Save</button>
+            <span id="ref-stu-interval-status" style="font-size:11px;color:var(--green);min-width:60px"></span>
+          </div>
+          <div style="font-size:10.5px;color:var(--muted);margin-top:5px">Min: 5s · Max: 300s · Default: 15s</div>
         </div>
         <div style="background:var(--teal-l);border:1.5px solid var(--teal);border-radius:var(--rs);padding:12px 14px">
           <div style="font-weight:700;font-size:12px;color:var(--teal);margin-bottom:6px">🌐 Wix Public Board</div>
@@ -5114,7 +5128,8 @@ function _refInit(){
   const fu=localStorage.getItem('ref_fb_url'),fc=localStorage.getItem('ref_fb_code');
   if(fu&&fc){fbCfg={url:fu,code:fc};fbFetchAll();if(fbIv)clearInterval(fbIv);fbIv=setInterval(fbFetchAll,8000);}
   const su=localStorage.getItem('ref_fb_stu_url'),sc=localStorage.getItem('ref_fb_stu_code');
-  if(su&&sc){fbStuCfg={url:su,code:sc};fbStuFetch();if(fbStuIv)clearInterval(fbStuIv);fbStuIv=setInterval(fbStuFetch,15000);}
+  if(su&&sc){fbStuCfg={url:su,code:sc};fbStuFetch();if(fbStuIv)clearInterval(fbStuIv);fbStuIv=setInterval(fbStuFetch,refGetStuInterval());
+  var _ivEl=document.getElementById('ref-stu-interval');if(_ivEl)_ivEl.value=Math.round(refGetStuInterval()/1000);}
   loadLocal();curFY=getCurrentFY();applyLabels();renderFYSelect();renderDashboard();
   populateDataLists();document.getElementById('f-date').value=todayStr();renderStatusSelect();renderStudentList();
   const exS=document.getElementById('ex-scope');
@@ -6126,9 +6141,44 @@ async function fbStuPush(){
 }
 function loadFBStuCfg(){document.getElementById('fb-stu-url').value=localStorage.getItem('ref_fb_stu_url')||'';document.getElementById('fb-stu-code').value=localStorage.getItem('ref_fb_stu_code')||'';}
 async function testFBStuCfg(){const url=document.getElementById('fb-stu-url').value.trim().replace(/\/$/,'');const code=document.getElementById('fb-stu-code').value.trim();if(!url||!code){fbStuSt('Fill both fields','var(--red)');return;}fbStuSt('Testing…','var(--amber)');try{const r=await fetch(`${url}/${code}/ping.json`,{method:'PUT',body:JSON.stringify(1)});if(!r.ok)throw 0;fbStuSt('Connected!','var(--green)');}catch{fbStuSt('Failed','var(--red)');}}
-async function saveFBStuCfg(){const url=document.getElementById('fb-stu-url').value.trim().replace(/\/$/,'');const code=document.getElementById('fb-stu-code').value.trim();if(!url||!code){fbStuSt('Fill both fields','var(--red)');return;}fbStuSt('Saving…','var(--amber)');try{const r=await fetch(`${url}/${code}/ping.json`,{method:'PUT',body:JSON.stringify(1)});if(!r.ok)throw 0;localStorage.setItem('ref_fb_stu_url',url);localStorage.setItem('ref_fb_stu_code',code);fbStuCfg={url,code};fbStuSt('Connected!','var(--green)');fbStuFetch();if(fbStuIv)clearInterval(fbStuIv);fbStuIv=setInterval(fbStuFetch,15000);}catch{fbStuSt('Failed','var(--red)');}}
+async function saveFBStuCfg(){const url=document.getElementById('fb-stu-url').value.trim().replace(/\/$/,'');const code=document.getElementById('fb-stu-code').value.trim();if(!url||!code){fbStuSt('Fill both fields','var(--red)');return;}fbStuSt('Saving…','var(--amber)');try{const r=await fetch(`${url}/${code}/ping.json`,{method:'PUT',body:JSON.stringify(1)});if(!r.ok)throw 0;localStorage.setItem('ref_fb_stu_url',url);localStorage.setItem('ref_fb_stu_code',code);fbStuCfg={url,code};fbStuSt('Connected!','var(--green)');fbStuFetch();if(fbStuIv)clearInterval(fbStuIv);fbStuIv=setInterval(fbStuFetch,refGetStuInterval());}catch{fbStuSt('Failed','var(--red)');}}
 function disconnFBStu(){if(!confirm('Disconnect the student database?'))return;localStorage.removeItem('ref_fb_stu_url');localStorage.removeItem('ref_fb_stu_code');fbStuCfg={url:'',code:''};if(fbStuIv)clearInterval(fbStuIv);fbStuSt('Disconnected','var(--muted)');toast('Student database disconnected.','inf');}
 function fbStuSt(m,c){const el=document.getElementById('fb-stu-status');el.textContent=m;el.style.color=c;}
+
+function refGetStuInterval(){
+  var v=parseInt(localStorage.getItem('ref_stu_interval')||'15');
+  if(isNaN(v)||v<5)v=5;if(v>300)v=300;
+  return v*1000;
+}
+function refSaveStuInterval(){
+  var el=document.getElementById('ref-stu-interval');
+  var st=document.getElementById('ref-stu-interval-status');
+  if(!el)return;
+  var v=parseInt(el.value);
+  if(isNaN(v)||v<5){el.value=5;v=5;}
+  if(v>300){el.value=300;v=300;}
+  localStorage.setItem('ref_stu_interval',String(v));
+  if(fbStuIv)clearInterval(fbStuIv);
+  if(fbStuCfg.url&&fbStuCfg.code){
+    fbStuIv=setInterval(fbStuFetch,v*1000);
+    if(st){st.textContent='✅ Saved! ('+v+'s)';setTimeout(()=>{st.textContent='';},2500);}
+    toast('⏱ Sync interval set to '+v+' seconds');
+  }else{
+    if(st){st.textContent='✅ Saved!';setTimeout(()=>{st.textContent='';},2500);}
+  }
+}
+function refForceFetchStu(){
+  if(!fbStuCfg.url||!fbStuCfg.code){toast('Student DB configured nahi — pehle save karo','err');return;}
+  fbStuLocalMod=0; // lastMod reset — force full fetch
+  var st=document.getElementById('ref-stu-fetch-status');
+  if(st)st.textContent='⏳ Force fetching…';
+  fbStuFetch().then(()=>{
+    if(st)st.textContent='✅ Fetched at '+new Date().toLocaleTimeString();
+    toast('✅ Students force fetched');
+  }).catch(()=>{
+    if(st)st.textContent='❌ Fetch failed';
+  });
+}
 
 // ─── DASHBOARD CARD MAPPING ───────────────────────────────
 function saveDashMap(){
