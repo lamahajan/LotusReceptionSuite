@@ -3350,6 +3350,7 @@ async function _fetchPhotoFromFB(passId){
 }
 function _resolvePhoto(pass){
   if(!pass)return null;
+  if(pass.pickerPhoto&&pass.pickerPhoto!=='__has_photo'&&!pass._hasPhoto)return pass.pickerPhoto;
   if(pass.pickerPhoto&&pass.pickerPhoto!=='__has_photo')return pass.pickerPhoto;
   if(pass.id){const c=_photoCache.get(pass.id);if(c)return c;}
   return null;
@@ -3364,7 +3365,7 @@ function saveLocal(){
   }catch(err){
     // If storage full, try without photos
     try{
-      const s=S.passes.map(p=>({...p,pickerPhoto:p.pickerPhoto?'__has_photo':null}));
+      const s=S.passes.map(p=>({...p,pickerPhoto:null,_hasPhoto:!!(p.pickerPhoto||p._hasPhoto)}));
       localStorage.setItem('gp_local',JSON.stringify({students:S.students,passes:s,buses:S.buses}));
       localStorage.setItem('gp_local_mod',String(localMod));
     }catch(e2){}
@@ -3415,7 +3416,7 @@ async function fetchAll(){
         const _yesterday=new Date(Date.now()-86400000).toISOString().slice(0,10);
         const _missingPhotos=[];
         ps.forEach(p=>{
-          if(p.pickerPhoto==='__has_photo'){
+          if(p._hasPhoto&&!p.pickerPhoto){
             const cached=_photoCache.get(p.id);
             if(cached){p.pickerPhoto=cached;}
             else if(p.date===_today||p.date===_yesterday){_missingPhotos.push(p);}
@@ -3456,7 +3457,7 @@ async function push(k){
   if(k==='students')return;
   // Photos are compressed (~50KB) so safe to send to Firebase for multi-device sync
   // Strip photos from passes before Firebase push (photos stored separately under /photos/)
-  const _stripP=arr=>Array.isArray(arr)?arr.map(p=>p&&p.pickerPhoto&&p.pickerPhoto!=='__has_photo'?{...p,pickerPhoto:'__has_photo'}:p):arr;
+  const _stripP=arr=>Array.isArray(arr)?arr.map(p=>p&&p.pickerPhoto&&p.pickerPhoto!=='__has_photo'?{...p,pickerPhoto:null,_hasPhoto:true}:p):arr;
   const val=Array.isArray(S[k])&&S[k].length===0?{'__empty':true}:(k==='passes'?_stripP(S[k]):S[k]);
   try{
     if(k==='passes'){
@@ -3740,7 +3741,7 @@ async function issuePass(){
   S.passes.unshift(pass);
   await push('passes');
   // Push photo separately to Firebase so other devices can fetch it
-  if(pass.pickerPhoto&&pass.pickerPhoto!=='__has_photo')_pushPhotoToFB(pass.id,pass.pickerPhoto);
+  if(pass.pickerPhoto&&pass.pickerPhoto!=='__has_photo'){_pushPhotoToFB(pass.id,pass.pickerPhoto);}
   gpToast(`✅ Pass issued for ${pass.studentName}`);
   if(_gpPrintCfg.enabled!==false)gpPrintA6Slip(pass);
   // Telegram school log — always fires (photo or text-only)
