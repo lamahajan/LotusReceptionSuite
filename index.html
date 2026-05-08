@@ -4935,7 +4935,7 @@ async function gpCSVUploadAndPush(input){
     document.getElementById('csv-map-class').value=autoDetect(['class','grade','section']);
     document.getElementById('csv-map-father').value=autoDetect(['father','dad']);
     document.getElementById('csv-map-mother').value=autoDetect(['mother','mom','mum']);
-    document.getElementById('csv-map-bus').value=autoDetect(['bus','route','van']);
+    document.getElementById('csv-map-bus').value=autoDetect(['bus','route','van','vehicle','veh']);
     document.getElementById('csv-map-phone').value=autoDetect(['phone','mobile','contact','whatsapp','cell']);
     document.getElementById('csv-map-address').value=autoDetect(['address','addr','location','village','city']);
     // Fill column dropdowns
@@ -4978,6 +4978,12 @@ async function gpApplyCSVMapping(){
     }
     S.students=Object.values(map);
     await push('students');
+    // gpStuLocalMod update karo — warna 30s mein Firebase purana data overwrite kar dega
+    if(gpStuCfg.url&&gpStuCfg.code){
+      const lm=Date.now();
+      await fetch(gpStuCfg.url+'/'+gpStuCfg.code+'.json',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({lastMod:lm})});
+      gpStuLocalMod=lm;
+    }
     renderStu&&renderStu();
     st.textContent=`✅ ${added} added · ${updated} updated · Total: ${S.students.length} — pushed to Firebase`;
     st.style.color='var(--green)';
