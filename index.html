@@ -6115,16 +6115,47 @@ async function fbStuFetch(){
     if(lmr.ok){const remMod=await lmr.json();if(remMod&&remMod===fbStuLocalMod){_fbStuResetTimer(15);return;}}
     // ── Step 2: Full fetch only when something changed ──
     const r=await fetch(`${fbStuCfg.url}/${fbStuCfg.code}.json`);if(!r.ok)throw 0;const d=await r.json();
-    if(d){const sm=d.lastMod||0;if(sm!==fbStuLocalMod){const toArr=v=>Array.isArray(v)?v:(v&&v.__empty)?[]:(v!=null?v:null);const stus=toArr(d.students);if(stus!==null){STUDENTS=stus;}fbStuLocalMod=sm;saveLocal();renderStudentList();populateDataLists();}
-    _fbStuResetTimer(15);
-    const fsEl=document.getElementById('fb-stu-fetch-status');if(fsEl&&fsEl.textContent.startsWith('⏳'))fsEl.textContent='✅ Synced — '+new Date().toLocaleTimeString();}
+    if(d){
+      const sm=d.lastMod||0;
+      if(sm!==fbStuLocalMod){
+        const toArr=v=>Array.isArray(v)?v:(v&&v.__empty)?[]:(v!=null?Object.values(v):null);
+        const rawStus=toArr(d.students);
+        if(rawStus!==null){
+          // ── Normalize: Gatepass uses admissionNumber+class; Reference uses admNo+cls ──
+          STUDENTS=rawStus.map(s=>({
+            id:       s.id||uid(),
+            name:     s.name||'',
+            admNo:    s.admNo||s.admissionNumber||'',
+            cls:      s.cls||s.class||'',
+            fatherName: s.fatherName||'',
+            motherName: s.motherName||'',
+            busNumber:  s.busNumber||s.bus||'',
+            phone:      s.phone||s.mobile||s.contact||'',
+            address:    s.address||s.addr||''
+          }));
+        }
+        fbStuLocalMod=sm;saveLocal();renderStudentList();populateDataLists();
+      }
+      _fbStuResetTimer(15);
+      const fsEl=document.getElementById('fb-stu-fetch-status');if(fsEl&&fsEl.textContent.startsWith('⏳'))fsEl.textContent='✅ Synced — '+new Date().toLocaleTimeString();
+    }
   }catch(e){}
 }
 // syncRefStudentsToGp removed — Ref ↔ GP sync sirf Firebase ke zariye hoti hai
 async function fbStuPush(){
   const lastMod=Date.now();fbStuLocalMod=lastMod;saveLocal();
   if(!fbStuCfg.url||!fbStuCfg.code)return;
-  const sVal=STUDENTS.length===0?{'__empty':true}:STUDENTS;
+  // Push with BOTH field name formats so Gatepass can also read it
+  const normalized=STUDENTS.map(s=>({
+    id:s.id||uid(),name:s.name||'',
+    admNo:s.admNo||s.admissionNumber||'',
+    admissionNumber:s.admNo||s.admissionNumber||'',
+    cls:s.cls||s.class||'',
+    class:s.cls||s.class||'',
+    fatherName:s.fatherName||'',motherName:s.motherName||'',
+    busNumber:s.busNumber||s.bus||'',phone:s.phone||'',address:s.address||''
+  }));
+  const sVal=normalized.length===0?{'__empty':true}:normalized;
   try{await fetch(`${fbStuCfg.url}/${fbStuCfg.code}.json`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({students:sVal,lastMod})});}catch(e){}
 }
 function loadFBStuCfg(){document.getElementById('fb-stu-url').value=localStorage.getItem('ref_fb_stu_url')||'';document.getElementById('fb-stu-code').value=localStorage.getItem('ref_fb_stu_code')||'';}
