@@ -1173,6 +1173,7 @@ body.dark .fq-mtitle{color:#f4ede0}
             <button class="btn bgh" onclick="gpDisconnStu()" style="font-size:12px;padding:8px 12px;color:var(--red)">✕</button>
           </div>
           <div id="gp-stu-fetch-status" style="font-size:11px;color:var(--sub);margin-top:6px;min-height:14px"></div>
+          <div id="gp-stu-sync-timer" style="font-size:11px;color:var(--muted);margin-top:2px;min-height:14px;font-family:'JetBrains Mono',monospace"></div>
           <div style="font-size:11px;color:var(--muted);margin-top:4px">Students sync every 30s. Changes push instantly. Force Fetch se aaj ki cache ignore ho jaati hai.</div>
         </div>
       </div>
@@ -2466,11 +2467,14 @@ Reason: {reason}"></textarea>
         <div class="field"><label class="lbl">Student DB URL</label><input id="fb-stu-url" class="inp" placeholder="https://your-students-rtdb.firebaseio.com"></div>
         <div class="field"><label class="lbl">Student DB Code</label><input id="fb-stu-code" class="inp" placeholder="e.g. SCHOOL_STUDENTS_2025"></div>
         <div id="fb-stu-status" style="font-size:12px;min-height:16px;margin-bottom:10px"></div>
-        <div class="row" style="gap:8px;margin-bottom:18px">
+        <div class="row" style="gap:8px;margin-bottom:8px">
           <button class="btn bpink flex1" onclick="saveFBStuCfg()">💾 Save &amp; Connect</button>
           <button class="btn bgh" onclick="testFBStuCfg()" style="font-size:12px">🔌 Test</button>
+          <button class="btn bgh" onclick="fbForceFetchStu()" style="font-size:12px;color:var(--blue)" title="Cache ignore karke abhi fetch karo">🔄 Force Fetch</button>
           <button class="btn bacc" onclick="disconnFBStu()" style="font-size:12px">✕</button>
         </div>
+        <div id="fb-stu-fetch-status" style="font-size:11px;color:var(--sub);min-height:14px;margin-bottom:2px"></div>
+        <div id="fb-stu-sync-timer" style="font-size:11px;color:var(--muted);min-height:14px;margin-bottom:14px;font-family:'JetBrains Mono',monospace"></div>
         <div style="background:var(--teal-l);border:1.5px solid var(--teal);border-radius:var(--rs);padding:12px 14px">
           <div style="font-weight:700;font-size:12px;color:var(--teal);margin-bottom:6px">🌐 Wix Public Board</div>
           <div style="font-size:11.5px;color:var(--sub);line-height:1.7">When Firebase is connected, prepared TCs are auto-published to <code style="background:rgba(42,154,172,.15);color:var(--teal)">/public_board</code> in your Firebase DB. Paste your Firebase URL below in the Wix widget to display them on your school website.</div>
@@ -4128,6 +4132,24 @@ function recCheckPW(){const v=document.getElementById('pw-inp').value;if(v===PAS
 var gpStuCfg={url:'',code:''};
 var gpStuIv=null;
 var gpStuLocalMod=0;
+// ─── GP STU SYNC TIMER ───
+var _gpStuTimerIv=null,_gpStuTimerCount=0;
+function _gpStuStartTimer(sec){
+  if(_gpStuTimerIv)clearInterval(_gpStuTimerIv);
+  _gpStuTimerCount=sec;
+  var _upd=function(){
+    _gpStuTimerCount--;if(_gpStuTimerCount<0)_gpStuTimerCount=sec;
+    var el=document.getElementById('gp-stu-sync-timer');
+    if(el)el.textContent=_gpStuTimerCount>0?'⏱ Next sync in: '+_gpStuTimerCount+'s':'⏱ Syncing…';
+  };
+  _upd();
+  _gpStuTimerIv=setInterval(_upd,1000);
+}
+function _gpStuResetTimer(sec){_gpStuTimerCount=sec;}
+function _gpStuStopTimer(){
+  if(_gpStuTimerIv)clearInterval(_gpStuTimerIv);_gpStuTimerIv=null;
+  var el=document.getElementById('gp-stu-sync-timer');if(el)el.textContent='';
+}
 
 // ── Daily Auto-Refresh: subah app open hone pe purani student list clear ho aur fresh fetch ho ──
 (function gpDailyReset(){
@@ -4155,7 +4177,7 @@ function gpLoadStuCfg(){
   var u=localStorage.getItem('gp_stu_url'),cd=localStorage.getItem('gp_stu_code');
   var urlEl=document.getElementById('gp-stu-url'),codeEl=document.getElementById('gp-stu-code'),stEl=document.getElementById('gp-stu-status');
   if(urlEl)urlEl.value=u||'';if(codeEl)codeEl.value=cd||'';
-  if(u&&cd){gpStuCfg={url:u,code:cd};if(stEl)stEl.textContent='Connected: '+cd;gpStuFetchShared();if(gpStuIv)clearInterval(gpStuIv);gpStuIv=setInterval(gpStuFetchShared,30000);}
+  if(u&&cd){gpStuCfg={url:u,code:cd};if(stEl)stEl.textContent='Connected: '+cd;gpStuFetchShared();if(gpStuIv)clearInterval(gpStuIv);gpStuIv=setInterval(gpStuFetchShared,30000);_gpStuStartTimer(30);}
   else{if(stEl)stEl.textContent='Not connected';}
   var sub=document.getElementById('gacc-studb-sub');if(sub)sub.textContent=u?'Connected':'Not connected';
 }
@@ -4172,7 +4194,7 @@ async function gpSaveStuCfg(){
     gpStuCfg={url,code};
     if(stEl)stEl.textContent='✅ Connected! Syncing…';
     var sub=document.getElementById('gacc-studb-sub');if(sub)sub.textContent='Connected';
-    gpStuFetchShared();if(gpStuIv)clearInterval(gpStuIv);gpStuIv=setInterval(gpStuFetchShared,30000);
+    gpStuFetchShared();if(gpStuIv)clearInterval(gpStuIv);gpStuIv=setInterval(gpStuFetchShared,30000);_gpStuStartTimer(30);
   }catch{if(stEl)stEl.textContent='❌ Connection failed';}
 }
 function gpForceFetchStu(){
@@ -4182,6 +4204,7 @@ function gpForceFetchStu(){
   localStorage.removeItem('gp_stu_last_fetch_date');
   var stEl=document.getElementById('gp-stu-status');if(stEl)stEl.textContent='Force fetching…';
   var fsEl=document.getElementById('gp-stu-fetch-status');if(fsEl)fsEl.textContent='⏳ Fetching from Firebase…';
+  _gpStuResetTimer(30);
   gpStuFetchShared().then(function(){
     var fsEl2=document.getElementById('gp-stu-fetch-status');
     if(fsEl2)fsEl2.textContent='✅ Force fetch complete — '+new Date().toLocaleTimeString();
@@ -4194,7 +4217,7 @@ function gpForceFetchStu(){
 function gpDisconnStu(){
   if(!confirm('Disconnect student DB sync?'))return;
   localStorage.removeItem('gp_stu_url');localStorage.removeItem('gp_stu_code');
-  gpStuCfg={url:'',code:''};if(gpStuIv)clearInterval(gpStuIv);
+  gpStuCfg={url:'',code:''};if(gpStuIv)clearInterval(gpStuIv);_gpStuStopTimer();
   var stEl=document.getElementById('gp-stu-status');if(stEl)stEl.textContent='Disconnected';
   var sub=document.getElementById('gacc-studb-sub');if(sub)sub.textContent='Not connected';
   gpToast('Student sync disconnected','inf');
@@ -4240,6 +4263,9 @@ async function gpStuFetchShared(){
     });
     S.students=normalized;
     saveLocal();renderStu();popBusSel();updBadge();
+    _gpStuResetTimer(30);
+    var fsEl2=document.getElementById('gp-stu-fetch-status');
+    if(fsEl2&&!fsEl2.textContent.includes('Force'))fsEl2.textContent='✅ Synced — '+new Date().toLocaleTimeString();
   }catch(e){}
 }
 async function gpStuPushShared(){
@@ -5087,7 +5113,7 @@ function _refInit(){
   const fu=localStorage.getItem('ref_fb_url'),fc=localStorage.getItem('ref_fb_code');
   if(fu&&fc){fbCfg={url:fu,code:fc};fbFetchAll();if(fbIv)clearInterval(fbIv);fbIv=setInterval(fbFetchAll,8000);}
   const su=localStorage.getItem('ref_fb_stu_url'),sc=localStorage.getItem('ref_fb_stu_code');
-  if(su&&sc){fbStuCfg={url:su,code:sc};fbStuFetch();if(fbStuIv)clearInterval(fbStuIv);fbStuIv=setInterval(fbStuFetch,15000);}
+  if(su&&sc){fbStuCfg={url:su,code:sc};fbStuFetch();if(fbStuIv)clearInterval(fbStuIv);fbStuIv=setInterval(fbStuFetch,15000);_fbStuStartTimer(15);}
   loadLocal();curFY=getCurrentFY();applyLabels();renderFYSelect();renderDashboard();
   populateDataLists();document.getElementById('f-date').value=todayStr();renderStatusSelect();renderStudentList();
   const exS=document.getElementById('ex-scope');
@@ -6086,10 +6112,12 @@ async function fbStuFetch(){
   try{
     // ── Step 1: Cheap lastMod check (~50 bytes) — skip full download if unchanged ──
     const lmr=await fetch(`${fbStuCfg.url}/${fbStuCfg.code}/lastMod.json`);
-    if(lmr.ok){const remMod=await lmr.json();if(remMod&&remMod===fbStuLocalMod)return;}
+    if(lmr.ok){const remMod=await lmr.json();if(remMod&&remMod===fbStuLocalMod){_fbStuResetTimer(15);return;}}
     // ── Step 2: Full fetch only when something changed ──
     const r=await fetch(`${fbStuCfg.url}/${fbStuCfg.code}.json`);if(!r.ok)throw 0;const d=await r.json();
-    if(d){const sm=d.lastMod||0;if(sm!==fbStuLocalMod){const toArr=v=>Array.isArray(v)?v:(v&&v.__empty)?[]:(v!=null?v:null);const stus=toArr(d.students);if(stus!==null){STUDENTS=stus;}fbStuLocalMod=sm;saveLocal();renderStudentList();populateDataLists();}}
+    if(d){const sm=d.lastMod||0;if(sm!==fbStuLocalMod){const toArr=v=>Array.isArray(v)?v:(v&&v.__empty)?[]:(v!=null?v:null);const stus=toArr(d.students);if(stus!==null){STUDENTS=stus;}fbStuLocalMod=sm;saveLocal();renderStudentList();populateDataLists();}
+    _fbStuResetTimer(15);
+    const fsEl=document.getElementById('fb-stu-fetch-status');if(fsEl&&fsEl.textContent.startsWith('⏳'))fsEl.textContent='✅ Synced — '+new Date().toLocaleTimeString();}
   }catch(e){}
 }
 // syncRefStudentsToGp removed — Ref ↔ GP sync sirf Firebase ke zariye hoti hai
@@ -6101,8 +6129,38 @@ async function fbStuPush(){
 }
 function loadFBStuCfg(){document.getElementById('fb-stu-url').value=localStorage.getItem('ref_fb_stu_url')||'';document.getElementById('fb-stu-code').value=localStorage.getItem('ref_fb_stu_code')||'';}
 async function testFBStuCfg(){const url=document.getElementById('fb-stu-url').value.trim().replace(/\/$/,'');const code=document.getElementById('fb-stu-code').value.trim();if(!url||!code){fbStuSt('Fill both fields','var(--red)');return;}fbStuSt('Testing…','var(--amber)');try{const r=await fetch(`${url}/${code}/ping.json`,{method:'PUT',body:JSON.stringify(1)});if(!r.ok)throw 0;fbStuSt('Connected!','var(--green)');}catch{fbStuSt('Failed','var(--red)');}}
-async function saveFBStuCfg(){const url=document.getElementById('fb-stu-url').value.trim().replace(/\/$/,'');const code=document.getElementById('fb-stu-code').value.trim();if(!url||!code){fbStuSt('Fill both fields','var(--red)');return;}fbStuSt('Saving…','var(--amber)');try{const r=await fetch(`${url}/${code}/ping.json`,{method:'PUT',body:JSON.stringify(1)});if(!r.ok)throw 0;localStorage.setItem('ref_fb_stu_url',url);localStorage.setItem('ref_fb_stu_code',code);fbStuCfg={url,code};fbStuSt('Connected!','var(--green)');fbStuFetch();if(fbStuIv)clearInterval(fbStuIv);fbStuIv=setInterval(fbStuFetch,15000);}catch{fbStuSt('Failed','var(--red)');}}
-function disconnFBStu(){if(!confirm('Disconnect the student database?'))return;localStorage.removeItem('ref_fb_stu_url');localStorage.removeItem('ref_fb_stu_code');fbStuCfg={url:'',code:''};if(fbStuIv)clearInterval(fbStuIv);fbStuSt('Disconnected','var(--muted)');toast('Student database disconnected.','inf');}
+async function saveFBStuCfg(){const url=document.getElementById('fb-stu-url').value.trim().replace(/\/$/,'');const code=document.getElementById('fb-stu-code').value.trim();if(!url||!code){fbStuSt('Fill both fields','var(--red)');return;}fbStuSt('Saving…','var(--amber)');try{const r=await fetch(`${url}/${code}/ping.json`,{method:'PUT',body:JSON.stringify(1)});if(!r.ok)throw 0;localStorage.setItem('ref_fb_stu_url',url);localStorage.setItem('ref_fb_stu_code',code);fbStuCfg={url,code};fbStuSt('Connected!','var(--green)');fbStuFetch();if(fbStuIv)clearInterval(fbStuIv);fbStuIv=setInterval(fbStuFetch,15000);_fbStuStartTimer(15);}catch{fbStuSt('Failed','var(--red)');}}
+function disconnFBStu(){if(!confirm('Disconnect the student database?'))return;localStorage.removeItem('ref_fb_stu_url');localStorage.removeItem('ref_fb_stu_code');fbStuCfg={url:'',code:''};if(fbStuIv)clearInterval(fbStuIv);_fbStuStopTimer();fbStuSt('Disconnected','var(--muted)');toast('Student database disconnected.','inf');}
+// ─── STU SYNC TIMER ───
+let _fbStuTimerIv=null,_fbStuTimerCount=0;
+function _fbStuStartTimer(sec){
+  if(_fbStuTimerIv)clearInterval(_fbStuTimerIv);
+  _fbStuTimerCount=sec;
+  const _upd=function(){
+    _fbStuTimerCount--;if(_fbStuTimerCount<0)_fbStuTimerCount=sec;
+    const el=document.getElementById('fb-stu-sync-timer');
+    if(el)el.textContent=_fbStuTimerCount>0?'⏱ Next sync in: '+_fbStuTimerCount+'s':'⏱ Syncing…';
+  };
+  _upd();
+  _fbStuTimerIv=setInterval(_upd,1000);
+}
+function _fbStuResetTimer(sec){_fbStuTimerCount=sec;}
+function _fbStuStopTimer(){
+  if(_fbStuTimerIv)clearInterval(_fbStuTimerIv);_fbStuTimerIv=null;
+  const el=document.getElementById('fb-stu-sync-timer');if(el)el.textContent='';
+}
+async function fbForceFetchStu(){
+  if(!fbStuCfg.url||!fbStuCfg.code){toast('Student DB configured nahi — pehle save karo','err');return;}
+  fbStuLocalMod=0;
+  const stEl=document.getElementById('fb-stu-status');if(stEl)stEl.textContent='Force fetching…';
+  const fsEl=document.getElementById('fb-stu-fetch-status');if(fsEl)fsEl.textContent='⏳ Fetching from Firebase…';
+  _fbStuResetTimer(15);
+  try{
+    await fbStuFetch();
+    if(fsEl)fsEl.textContent='✅ Force fetch done — '+new Date().toLocaleTimeString();
+    toast('✅ Students force fetched from Firebase');
+  }catch(e){if(fsEl)fsEl.textContent='❌ Fetch failed — check connection';}
+}
 function fbStuSt(m,c){const el=document.getElementById('fb-stu-status');el.textContent=m;el.style.color=c;}
 
 // ─── DASHBOARD CARD MAPPING ───────────────────────────────
