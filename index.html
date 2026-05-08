@@ -4601,8 +4601,8 @@ function gpPrintA6Slip(p){
     +'/* @page handled in body style */'
     +'*{box-sizing:border-box;margin:0;padding:0}'
     +(_gpPrintCfg.bw?'body,*{color:#000!important;background:#fff!important;border-color:#555!important}':'')+'*{-webkit-print-color-adjust:exact;print-color-adjust:exact}'
-    +(()=>{const lp=_gpPrintCfg.logoPos||'left';let bodyStyle='@page{size:'+pageDecl+';margin:0}body{width:'+cW+';min-height:'+cH+';font-family:"Segoe UI",Arial,sans-serif;color:#1a1035;background:#fff;';if(lp==='center')bodyStyle+='margin:0 auto;}';else if(lp==='right')bodyStyle+='margin-left:auto;margin-right:0;}';else bodyStyle+='margin:0;}';return bodyStyle;})()
-    +'.wrap{width:'+cW+';min-height:'+cH+';padding:'+pad+';padding-bottom:4mm;display:flex;flex-direction:column;gap:1.5mm}'
+    +(()=>{const lp=_gpPrintCfg.logoPos||'left';let bodyStyle='@page{size:'+pageDecl+';margin:0}body{width:'+cW+';height:'+cH+';overflow:hidden;font-family:"Segoe UI",Arial,sans-serif;color:#1a1035;background:#fff;';if(lp==='center')bodyStyle+='margin:0 auto;}';else if(lp==='right')bodyStyle+='margin-left:auto;margin-right:0;}';else bodyStyle+='margin:0;}';return bodyStyle;})()
+    +'.wrap{width:'+cW+';height:'+cH+';overflow:hidden;padding:'+pad+';padding-bottom:4mm;display:flex;flex-direction:column;gap:1.5mm}'
     +'.top{display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:3mm}'
     +'.divider{border:none;border-top:2px solid #7c3aed;margin:0;width:100%}'
     +'.school{font-size:'+fSub+'pt;font-weight:900;color:#7c3aed;letter-spacing:.8px;text-transform:uppercase}'
