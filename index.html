@@ -2403,6 +2403,10 @@ Reason: {reason}"></textarea>
             <div class="field"><label class="lbl">Class</label><input id="ns-class" class="inp" placeholder="e.g. 10-A"></div>
             <div class="field"><label class="lbl">Phone</label><input id="ns-phone" class="inp" placeholder="10-digit" style="font-family:var(--mono)"></div>
           </div>
+          <div class="g2">
+            <div class="field"><label class="lbl">Bus No</label><input id="ns-bus" class="inp" placeholder="e.g. Bus 5"></div>
+            <div class="field"><label class="lbl">Address</label><input id="ns-address" class="inp" placeholder="Village / Area"></div>
+          </div>
           <button class="btn bpink" style="font-size:12px" onclick="addSingleStudent()">➕ Add</button>
         </div>
         <div style="display:flex;gap:8px;margin-bottom:10px">
@@ -2412,7 +2416,7 @@ Reason: {reason}"></textarea>
         <div style="border:1.5px solid var(--border);border-radius:var(--r);overflow:hidden">
           <div style="overflow-x:auto">
             <table class="tbl">
-              <thead><tr><th>Name</th><th>Adm No</th><th>Class</th><th>Father</th><th>Mother</th><th>Phone</th><th>Del</th></tr></thead>
+              <thead><tr><th>Name</th><th>Adm No</th><th>Class</th><th>Father</th><th>Mother</th><th>Phone</th><th>Bus</th><th>Address</th><th>Del</th></tr></thead>
               <tbody id="stu-tbody"></tbody>
             </table>
           </div>
@@ -5778,12 +5782,12 @@ function loadStuFile(file){
         const text=new TextDecoder().decode(ev.target.result);const lines=text.split(/\r?\n/).filter(l=>l.trim());if(!lines.length){stEl.textContent='Empty file';return;}
         const headers=lines[0].split(',').map(h=>h.replace(/"/g,'').trim().toLowerCase());
         const gi=(k,ex=[])=>headers.findIndex(h=>h.includes(k)&&!ex.some(x=>h.includes(x)));
-        const nI=gi('name',['father','mother']),aI=gi('adm'),cI=gi('class'),pI=Math.max(gi('phone'),gi('mobile')),fI=gi('father'),mI=gi('mother'),bI=gi('bus');
-        for(let i=1;i<lines.length;i++){const cols=lines[i].split(',').map(c=>c.replace(/"/g,'').trim());const admRaw=aI>=0?cols[aI]:'';const name=nI>=0?cols[nI]:'';if(!admRaw&&!name)continue;rows.push({name,admNo:admRaw,cls:cI>=0?cols[cI]:'',phone:cleanPhone(pI>=0?cols[pI]:''),fatherName:fI>=0?cols[fI]:'',motherName:mI>=0?cols[mI]:'',busNumber:bI>=0?cols[bI]:''});}
+        const nI=gi('name',['father','mother']),aI=gi('adm'),cI=gi('class'),pI=Math.max(gi('phone'),gi('mobile')),fI=gi('father'),mI=gi('mother'),bI=Math.max(gi('bus'),gi('vehicle'),gi('veh')),addrI=Math.max(gi('address'),gi('addr'),gi('location'),gi('village'),gi('permanent'));
+        for(let i=1;i<lines.length;i++){const cols=lines[i].split(',').map(c=>c.replace(/"/g,'').trim());const admRaw=aI>=0?cols[aI]:'';const name=nI>=0?cols[nI]:'';if(!admRaw&&!name)continue;rows.push({name,admNo:admRaw,cls:cI>=0?cols[cI]:'',phone:cleanPhone(pI>=0?cols[pI]:''),fatherName:fI>=0?cols[fI]:'',motherName:mI>=0?cols[mI]:'',busNumber:bI>=0?cols[bI]:'',address:addrI>=0?cols[addrI]:''});}
       } else {
         const data=new Uint8Array(ev.target.result);const wb=XLSX.read(data,{type:'array'});const ws=wb.Sheets[wb.SheetNames[0]];const raw=XLSX.utils.sheet_to_json(ws,{defval:''});
         raw.forEach(r=>{const keys=Object.keys(r).map(k=>k.toLowerCase());const get=(k,ex=[])=>{const i=keys.findIndex(key=>key.includes(k)&&!ex.some(x=>key.includes(x)));return i>=0?String(Object.values(r)[i]).trim():'';}
-        const name=get('name',['father','mother']);const admNo=get('adm');if(!admNo&&!name)return;rows.push({name,admNo,cls:get('class'),phone:cleanPhone(get('phone')||get('mobile')),fatherName:get('father'),motherName:get('mother'),busNumber:get('bus')});});
+        const name=get('name',['father','mother']);const admNo=get('adm');if(!admNo&&!name)return;rows.push({name,admNo,cls:get('class'),phone:cleanPhone(get('phone')||get('mobile')),fatherName:get('father'),motherName:get('mother'),busNumber:get('bus')||get('vehicle'),address:get('address')||get('addr')||get('permanent')});});
       }
       let added=0,updated=0;
       // Deduplicate strictly by admNo only — admNo is the unique key
@@ -5800,14 +5804,14 @@ function loadStuFile(file){
   reader.readAsArrayBuffer(file);
 }
 function downloadStuTemplate(){
-  const blob=new Blob(['Name,AdmNo,Class,Phone,FatherName,MotherName\nRajan Sharma,2024001,10-A,9876543210,Mohan Sharma,Sunita Sharma\n'],{type:'text/csv'});
+  const blob=new Blob(['Name,AdmNo,Class,Phone,FatherName,MotherName,BusNumber,Address\nRajan Sharma,2024001,10-A,9876543210,Mohan Sharma,Sunita Sharma,Bus 1,Village Name\n'],{type:'text/csv'});
   const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='StudentTemplate.csv';document.body.appendChild(a);a.click();setTimeout(()=>{document.body.removeChild(a);URL.revokeObjectURL(url);},500);
 }
 function addSingleStudent(){
   const name=document.getElementById('ns-name').value.trim();const admNo=document.getElementById('ns-adm').value.trim();
   if(!name){toast('Name required','err');return;}
   if(admNo&&STUDENTS.find(s=>s.admNo===admNo)){toast('Admission No already exists','err');return;}
-  STUDENTS.push({id:uid(),name,admNo,cls:document.getElementById('ns-class').value.trim(),phone:cleanPhone(document.getElementById('ns-phone').value),fatherName:document.getElementById('ns-father').value.trim(),motherName:document.getElementById('ns-mother').value.trim()});
+  STUDENTS.push({id:uid(),name,admNo,cls:document.getElementById('ns-class').value.trim(),phone:cleanPhone(document.getElementById('ns-phone').value),fatherName:document.getElementById('ns-father').value.trim(),motherName:document.getElementById('ns-mother').value.trim(),busNumber:(document.getElementById('ns-bus')||{value:''}).value.trim(),address:(document.getElementById('ns-address')||{value:''}).value.trim()});
   ['ns-name','ns-adm','ns-class','ns-phone','ns-father','ns-mother'].forEach(id=>document.getElementById(id).value='');
   fbStuPush();renderStudentList();populateDataLists();toast('Student added to database.');
 }
@@ -5827,6 +5831,8 @@ function renderStudentPage(){
     <td style="font-size:11px">${esc(s.fatherName||'—')}</td>
     <td style="font-size:11px">${esc(s.motherName||'—')}</td>
     <td style="font-family:var(--mono);font-size:11px;color:var(--green)">${s.phone?s.phone.slice(-10):'—'}</td>
+    <td style="font-size:11px;color:var(--blue)">${esc(s.busNumber||s.bus||'—')}</td>
+    <td style="font-size:11px;color:var(--sub);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(s.address||s.addr||'')}">${esc(s.address||s.addr||'—')}</td>
     <td><button class="btn bacc" style="font-size:10px;padding:4px 8px" onclick="deleteStu('${s.id}')">✕</button></td>
   </tr>`).join('');
   const total=stuFiltered.length,pages=Math.max(1,Math.ceil(total/STU_PAGE));
