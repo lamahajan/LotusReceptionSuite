@@ -4573,6 +4573,13 @@ function gpApplyLogoPosButtons(pos){
 // ── Single slip print (A6/A7/A5 style or any single-up) ──
 function gpPrintA6Slip(p){
   const sz=_gpPrintCfg.size||'a6';
+  // Pass print ke waqt student se latest busNumber aur address lo
+  const _pStu=S.students.find(function(s){return s.admissionNumber===p.admissionNumber;});
+  if(_pStu){
+    // Hamesha student ka latest busNumber aur address use karo
+    if(_pStu.busNumber)p=Object.assign({},p,{busNumber:_pStu.busNumber});
+    if(_pStu.address)p=Object.assign({},p,{address:_pStu.address});
+  }
   const cfg=GP_SIZE_MAP[sz]||GP_SIZE_MAP['a6'];
   if(cfg.thermal){gpPrintThermalSlip(p,cfg);return;}
   const or=_gpPrintCfg.orient||'portrait';
