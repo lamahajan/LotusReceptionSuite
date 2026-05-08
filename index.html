@@ -3401,8 +3401,6 @@ async function fetchAll(){
           const oldMap={};S.passes.forEach(p=>{if(p.id)oldMap[p.id]=p.gateOutTime||null;});
           ps.forEach(p=>{
             const wasKnown=p.id in oldMap;
-            // tgMsgId Firebase pe missing ho sakta hai — local se fallback lo
-            if(!p.tgMsgId){const lp=S.passes.find(x=>x.id===p.id);if(lp&&lp.tgMsgId)p.tgMsgId=lp.tgMsgId;}
             if(wasKnown&&p.tgMsgId&&p.gateOutTime&&!oldMap[p.id]){
               const localPass=S.passes.find(x=>x.id===p.id);
               if(localPass&&localPass._hasPhoto)p._hasPhoto=true;
@@ -4877,6 +4875,13 @@ function gpImportJSON(input){
       if(Array.isArray(data.buses))S.buses=data.buses;
       saveLocal();renderAll();popBusSel();renderStu&&renderStu();updBadge();
       await push('passes');
+      // Students bhi Firebase pe push karo — warna next sync pe purane students overwrite kar denge
+      if(gpStuCfg.url&&gpStuCfg.code){
+        const sVal=S.students.length===0?{'__empty':true}:S.students;
+        const lm=Date.now();
+        await fetch(`${gpStuCfg.url}/${gpStuCfg.code}.json`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({students:sVal,lastMod:lm})});
+        gpStuLocalMod=lm;
+      }
       st.textContent='✅ Restored: '+S.passes.length+' passes, '+S.students.length+' students';st.style.color='var(--green)';
       gpToast('✅ Backup restored');
     }catch(err){st.textContent='❌ Invalid JSON file';st.style.color='var(--red)';}
@@ -4936,16 +4941,14 @@ async function gpApplyCSVMapping(){
       const adm=(!isNaN(aI)&&aI>=0?(c[aI]||''):'').trim();
       if(!name&&!adm)continue;
       const phone=(!isNaN(phI)&&phI>=0?(c[phI]||''):'').replace(/[^0-9]/g,'');
-      const stu={
-        name,
-        admissionNumber:adm,
-        class:(!isNaN(cI)&&cI>=0?c[cI]:'').trim(),
-        fatherName:(!isNaN(fI)&&fI>=0?c[fI]:'').trim(),
-        motherName:(!isNaN(mI)&&mI>=0?c[mI]:'').trim(),
-        busNumber:(!isNaN(bI)&&bI>=0?c[bI]:'').trim(),
-        phone,
-        address:(!isNaN(addrI)&&addrI>=0?c[addrI]:'').trim()
-      };
+      // Sirf woh fields include karo jo CSV mein mapped hain — skip wale fields preserve honge
+      const stu={name,admissionNumber:adm};
+      if(!isNaN(cI)&&cI>=0)stu.class=(c[cI]||'').trim();
+      if(!isNaN(fI)&&fI>=0)stu.fatherName=(c[fI]||'').trim();
+      if(!isNaN(mI)&&mI>=0)stu.motherName=(c[mI]||'').trim();
+      if(!isNaN(bI)&&bI>=0)stu.busNumber=(c[bI]||'').trim();
+      if(!isNaN(phI)&&phI>=0)stu.phone=phone;
+      if(!isNaN(addrI)&&addrI>=0)stu.address=(c[addrI]||'').trim();
       if(adm&&map[adm]){Object.assign(map[adm],stu);updated++;}else{map[adm||('_'+i)]=stu;added++;}
     }
     S.students=Object.values(map);
