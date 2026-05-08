@@ -4655,25 +4655,7 @@ function gpPrintA6Slip(p){
     +(p.gateOutTime?'<div class="fi"><div class="fv">'+xEsc(p.gateOutTime)+'</div><div class="fl">Gate Out</div></div>':'')
     +(()=>{const showSig=_gpSignatureData&&(!TGCfg.approveEnabled||_gpPrintCfg.signatureMode==='approved'||p.tgApproved===true);const sigH=(_gpPrintCfg.sigH||9)+'mm';const sigW=(_gpPrintCfg.sigW||22)+'mm';return '<div class="fi" style="text-align:right">'+(showSig?'<img src="'+_gpSignatureData+'" style="height:'+sigH+';max-width:'+sigW+';display:block;margin:0 0 0 auto">':'<div style="width:18mm;border-bottom:1px solid #9080c0;height:7mm"></div>')+'<div class="fl">'+(showSig?'Principal':'Signature')+'</div></div>';})() 
     +'</div></div>'
-    +'<script>window.onload=function(){'
-    +'var wrap=document.querySelector(".wrap");'
-    +'var cardH=parseFloat("'+cH+'");'
-    +'var cardW=parseFloat("'+cW+'");'
-    +'function fitCard(){'
-    +'  var scaleH=cardH/wrap.scrollHeight;'
-    +'  var scaleW=cardW/wrap.scrollWidth;'
-    +'  var scale=Math.min(scaleH,scaleW,1);'
-    +'  if(scale<0.99){'
-    +'    wrap.style.transform="scale("+scale+")";'
-    +'    wrap.style.transformOrigin="top left";'
-    +'    wrap.style.width="'+cW+'";'
-    +'    wrap.style.height="'+cH+'";'
-    +'    document.body.style.overflow="hidden";'
-    +'  }'
-    +'}'
-    +'fitCard();'
-    +'setTimeout(function(){fitCard();window.print();setTimeout(function(){window.close();},1200);},120);'
-    +'}<\/script>'
++'<script>window.onload=function(){window.print();setTimeout(function(){window.close();},1200);}<\/script>'
     +'</body></html>';
 
   _gpOpenPrintWindow(html);
