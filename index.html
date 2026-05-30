@@ -3943,13 +3943,10 @@ async function fetchAll(){
           const oldMap2={};S.passes.forEach(p=>{if(p.id)oldMap2[p.id]=p.gateOutTime||null;});
           ps.forEach(p=>{
             const wasKnown=p.id in oldMap2;
-            console.log('[GateOut]',p.admissionNumber,'wasKnown:',wasKnown,'gateOutTime:',p.gateOutTime,'oldVal:',oldMap2[p.id]);
             if(wasKnown&&p.gateOutTime&&!oldMap2[p.id]){
               metaWASendGateOut(p);
             }
           });
-        } else {
-          console.log('[GateOut] skipped — enabled:',MetaWACfg.enabled,'phoneId:',!!MetaWACfg.phoneNumberId,'token:',!!MetaWACfg.accessToken,'outTmpl:',!!MetaWACfg.outTemplateName);
         }
         // ── Step C: Photo restore ──
         const _today=new Date().toISOString().slice(0,10);
