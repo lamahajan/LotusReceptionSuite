@@ -242,16 +242,6 @@ body.dark .app-card:hover{border-color:#3c3628;}
 .ac-foot{display:flex;align-items:center;justify-content:space-between;padding-top:12px;border-top:1px solid var(--bdr)}
 .ac-stat{font-family:var(--mono);font-size:11px;color:var(--sub)}
 .ac-open{font-size:11px;font-weight:700;padding:4px 12px;border-radius:20px;display:flex;align-items:center;gap:4px;border:1.5px solid}
-
-/* ── Meta WA Toggle Switch ── */
-.meta-toggle-row{display:flex;align-items:center;justify-content:space-between;padding:2px 0}
-.meta-toggle-row span{font-size:13px;font-weight:600;color:var(--txt)}
-.tog-sw{position:relative;display:inline-block;width:42px;height:24px;flex-shrink:0}
-.tog-sw input{opacity:0;width:0;height:0;position:absolute}
-.tog-sl{position:absolute;inset:0;background:var(--bdr2);border-radius:24px;transition:.25s;cursor:pointer}
-.tog-sl:before{content:'';position:absolute;width:18px;height:18px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.25s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
-.tog-sw input:checked+.tog-sl{background:var(--green)}
-.tog-sw input:checked+.tog-sl:before{transform:translateX(18px)}
 </style>
 
 <style>
@@ -1397,7 +1387,6 @@ Reason: {reason}"></textarea>
           <!-- ══ META CLOUD API SECTION ══ -->
           <div id="wa-meta-section" style="display:none">
             <div style="font-size:10px;font-weight:800;color:var(--sub);text-transform:uppercase;letter-spacing:.9px;margin-bottom:10px;padding-bottom:6px;border-bottom:1.5px solid var(--border)">Meta WhatsApp Cloud API</div>
-
             <div class="field">
               <label class="lbl">Phone Number ID</label>
               <input id="meta-wa-phone-id" class="inp" placeholder="e.g. 1087560414445341" style="font-family:var(--mono);font-size:12px">
@@ -1427,20 +1416,10 @@ Reason: {reason}"></textarea>
               <label class="lbl">Admin WhatsApp Number <span style="font-weight:400;font-size:10px;color:var(--muted)">(optional — also send alert here)</span></label>
               <input id="meta-wa-admin-phone" class="inp" placeholder="e.g. 919876543210" style="font-family:var(--mono)">
             </div>
-            <div class="meta-toggle-row" style="margin-bottom:10px">
-              <span style="font-size:13px;font-weight:600">Send WhatsApp to parent</span>
-              <label class="tog-sw">
-                <input type="checkbox" id="meta-wa-parent-enabled" checked>
-                <span class="tog-sl"></span>
-              </label>
-            </div>
-            <div class="meta-toggle-row" style="margin-bottom:12px">
-              <span style="font-size:13px;font-weight:600">Send admin alert via Meta API</span>
-              <label class="tog-sw">
-                <input type="checkbox" id="meta-wa-admin-enabled">
-                <span class="tog-sl"></span>
-              </label>
-            </div>
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;font-weight:600;margin-bottom:12px">
+              <input type="checkbox" id="meta-wa-admin-enabled" style="accent-color:var(--green);width:16px;height:16px">
+              Send admin alert via Meta API too
+            </label>
             <div id="meta-wa-status" style="font-size:12px;min-height:16px;margin-bottom:8px;color:var(--sub)"></div>
 
           </div>
@@ -2362,7 +2341,6 @@ Reason: {reason}"></textarea>
         <!-- ══ META CLOUD API SECTION ══ -->
         <div id="ref-wa-meta-section" style="display:none">
           <div style="font-size:10px;font-weight:800;color:var(--sub);text-transform:uppercase;letter-spacing:.9px;margin-bottom:10px;padding-bottom:6px;border-bottom:1.5px solid var(--border)">Meta WhatsApp Cloud API</div>
-
           <div class="field">
             <label class="lbl">Phone Number ID</label>
             <input id="ref-meta-wa-phone-id" class="inp" placeholder="e.g. 1087560414445341" style="font-family:var(--mono);font-size:12px">
@@ -2393,20 +2371,10 @@ Reason: {reason}"></textarea>
             <label class="lbl">Admin WhatsApp Number <span style="font-weight:400;font-size:10px;color:var(--muted)">(optional — also send alert here)</span></label>
             <input id="ref-meta-wa-admin-phone" class="inp" placeholder="e.g. 919876543210" style="font-family:var(--mono)">
           </div>
-          <div class="meta-toggle-row" style="margin-bottom:10px">
-            <span style="font-size:13px;font-weight:600">Send WhatsApp to parent</span>
-            <label class="tog-sw">
-              <input type="checkbox" id="ref-meta-wa-parent-enabled" checked>
-              <span class="tog-sl"></span>
-            </label>
-          </div>
-          <div class="meta-toggle-row" style="margin-bottom:12px">
-            <span style="font-size:13px;font-weight:600">Send admin alert via Meta API</span>
-            <label class="tog-sw">
-              <input type="checkbox" id="ref-meta-wa-admin-enabled">
-              <span class="tog-sl"></span>
-            </label>
-          </div>
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;font-weight:600;margin-bottom:12px">
+            <input type="checkbox" id="ref-meta-wa-admin-enabled" style="accent-color:var(--green);width:16px;height:16px">
+            Send admin alert via Meta API too
+          </label>
           <div id="ref-meta-wa-status" style="font-size:12px;min-height:16px;margin-bottom:8px;color:var(--sub)"></div>
         </div>
 
@@ -3242,10 +3210,6 @@ Thank you 🙏</textarea>
       <div class="dl-wa-prog-detail" id="dl-wa-prog-detail"></div>
       <div class="dl-wa-prog-done" id="dl-wa-prog-done" style="margin-top:16px">
         <div style="font-size:13px;font-weight:700;color:#16a34a" id="dl-wa-prog-result"></div>
-        <div id="dl-wa-failed-wrap" style="display:none;margin-top:14px;border-radius:10px;border:1.5px solid #fca5a5;background:#fff8f8;overflow:hidden;max-height:200px;overflow-y:auto;text-align:left;">
-          <div style="padding:8px 10px;background:#fee2e2;font-size:11px;font-weight:800;color:#991b1b;letter-spacing:.5px;text-transform:uppercase;">❌ Failed List</div>
-          <div id="dl-wa-failed-list"></div>
-        </div>
         <button onclick="dlCloseProgress()" style="margin-top:12px;background:#16a34a;color:#fff;border:none;border-radius:10px;padding:10px 24px;font-size:13px;font-weight:700;cursor:pointer">Done ✓</button>
       </div>
     </div>
@@ -3335,6 +3299,30 @@ Thank you 🙏</textarea>
 
           <div style="font-size:11px;color:#a89f92;line-height:1.6;background:#fdf8ee;border:1px solid #e8dcc8;border-radius:8px;padding:9px 11px">
             <strong style="color:#8a6428">📌 What is Pin?</strong> Select your Excel file once — the browser remembers permission. Every time you open the Due List, the latest data loads automatically. <em>Works in Chrome/Edge.</em>
+          </div>
+        </div>
+
+        <div style="height:1px;background:#e8dcc8;margin:4px 0 14px"></div>
+
+        <!-- FIREBASE SYNC SECTION -->
+        <div style="margin-bottom:14px">
+          <div style="font-size:11px;font-weight:800;color:#8a6428;text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px">🔥 Firebase Sync (Multi-Device)</div>
+          <div style="background:#fff7ed;border:1.5px solid #fdba74;border-radius:10px;padding:12px 14px">
+            <input id="dl-fb-url" type="text" placeholder="https://your-db.firebaseio.com"
+              style="width:100%;background:#fff;border:1.5px solid #fdba74;border-radius:8px;padding:8px 10px;font-size:12px;outline:none;margin-bottom:6px;box-sizing:border-box;font-family:inherit"
+              onfocus="this.style.borderColor='#f97316'" onblur="this.style.borderColor='#fdba74'"/>
+            <input id="dl-fb-code" type="text" placeholder="Auth Code (optional)"
+              style="width:100%;background:#fff;border:1.5px solid #fdba74;border-radius:8px;padding:8px 10px;font-size:12px;outline:none;margin-bottom:8px;box-sizing:border-box;font-family:inherit"
+              onfocus="this.style.borderColor='#f97316'" onblur="this.style.borderColor='#fdba74'"/>
+            <div style="display:flex;gap:7px">
+              <button onclick="dlFbSaveAndConnect()" style="flex:1;background:#f97316;color:#fff;border:none;border-radius:8px;padding:9px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">🔗 Save & Sync</button>
+              <button onclick="dlFbPushNow()" style="background:#fff;color:#f97316;border:1.5px solid #f97316;border-radius:8px;padding:9px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit" title="Push current local data to Firebase">⬆ Push</button>
+              <button onclick="dlFbFetchNow()" style="background:#fff;color:#f97316;border:1.5px solid #f97316;border-radius:8px;padding:9px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit" title="Pull latest data from Firebase">⬇ Pull</button>
+            </div>
+            <div id="dl-fb-status" style="font-size:11px;color:#9a3412;margin-top:7px;min-height:16px;font-weight:600"></div>
+          </div>
+          <div style="font-size:10.5px;color:#a89f92;margin-top:6px;line-height:1.5;padding:0 2px">
+            Upload your Excel on any device — data syncs to all devices in real-time via Firebase. Same DB URL used on all devices.
           </div>
         </div>
 
@@ -4059,8 +4047,7 @@ function recGoTab(n,btn){
   var mw=document.querySelector('#screen-rec .main-wrap');
   if(mw){
     mw.scrollTop=0;
-    // Cut Pass tab pe scroll band — sirf QuickPass sidebar pe focus
-    mw.style.overflowY=(n==='cut')?'hidden':'auto';
+    mw.style.overflowY='auto';
   }
   // Quick Pass sidebar only on Cut Pass tab
   const sidebar=document.getElementById('qg-sidebar');
@@ -4285,7 +4272,7 @@ async function issuePass(){
   const pPhone=cleanPhone(parentPhone);
   // If Meta API is enabled — send automatically via cloud API
   if(MetaWACfg.enabled&&MetaWACfg.phoneNumberId&&MetaWACfg.accessToken){
-    if(MetaWACfg.parentEnabled!==false)metaWASendGatepass(pass); // async — fires in background, non-blocking
+    metaWASendGatepass(pass); // async — fires in background, non-blocking
   } else {
     // Fallback: original whatsapp:// deep-link behaviour
     if(gpWACfg.parentEnabled!==false&&pPhone&&pPhone.length>=10){
@@ -4321,7 +4308,7 @@ function getActiveDays(n){
 function getFrequentStudents(threshold,windowDays){
   const activeDays=getActiveDays(windowDays);
   if(activeDays.length<2)return[]; // need at least some data
-  const actualWindow=windowDays; // use the settings value so bar reflects configured window
+  const actualWindow=activeDays.length; // could be less than windowDays if not enough history
   // Count how many active days each student had a pass
   const freq={};
   S.passes.forEach(p=>{
@@ -4330,11 +4317,8 @@ function getFrequentStudents(threshold,windowDays){
     freq[p.admissionNumber].days.add(p.date);
   });
   const result=[];
-  const today=todayStr();
   Object.values(freq).forEach(f=>{
     if(f.days.size>=threshold){
-      // Skip students who already have a pass issued today
-      if(S.passes.some(p=>p.admissionNumber===f.adm&&p.date===today))return;
       const stu=S.students.find(s=>s.admissionNumber===f.adm);
       const samplePass=[...S.passes].filter(p=>p.admissionNumber===f.adm).sort((a,b)=>b.date.localeCompare(a.date))[0];
       const name=stu?stu.name:(samplePass?.studentName||f.adm);
@@ -4459,7 +4443,7 @@ async function issueQuickPass(){
   const qpStuObj=S.students.find(s=>s.admissionNumber===pass.admissionNumber);
   const qpPhone=(qpStuObj?qpStuObj.phone||'':'').replace(/[^0-9]/g,'');
   if(MetaWACfg.enabled&&MetaWACfg.phoneNumberId&&MetaWACfg.accessToken){
-    if(MetaWACfg.parentEnabled!==false)metaWASendGatepass(pass); // Meta API — automatic, non-blocking
+    metaWASendGatepass(pass); // Meta API — automatic, non-blocking
   } else {
     if(gpWACfg.parentEnabled!==false&&qpPhone&&qpPhone.length>=10){
       window.location.href='whatsapp://send?phone='+qpPhone+'&text='+encodeURIComponent(gpBuildWAMsg(pass,gpWACfg.tmplPass));
@@ -4895,9 +4879,7 @@ function gpSaveWA(){
     phoneNumberId:gpWACfg.metaPhoneId,accessToken:gpWACfg.metaToken,
     enabled:mode==='meta',adminEnabled:gpWACfg.metaAdminEnabled,
     templateName:gpWACfg.metaTemplate,langCode:gpWACfg.metaLang,
-    adminPhone:gpWACfg.metaAdminPhone,
-    parentEnabled:gpWACfg.metaParentEnabled!==false,
-    sendAdminEnabled:gpWACfg.metaSendAdminEnabled!==false
+    adminPhone:gpWACfg.metaAdminPhone
   };
   gpToast('✅ WhatsApp settings saved');
   var sub=document.getElementById('gacc-wa-sub');
@@ -4926,7 +4908,7 @@ function gpOpenWAModal(phone,msg,autoStart){
   var modalMsg=document.getElementById('gp-wa-msg-preview');
   var progBox=document.getElementById('gp-wa-prog-box');
   var cdBox=document.getElementById('gp-wa-countdown-box');
-  if(modalPhone)modalPhone.textContent='+'+phone+' ('+phone.slice(-10)+')';
+  if(modalPhone)modalPhone.textContent='+'+phone;
   if(modalMsg)modalMsg.value=msg;
   if(progBox)progBox.style.display='none';
   if(cdBox)cdBox.style.display='none';
@@ -5013,7 +4995,7 @@ function gpShowWABubble(pass,phone){
   var old=document.getElementById('__gp-wa-b');if(old)old.remove();
   var div=document.createElement('div');div.id='__gp-wa-b';
   div.style.cssText='position:fixed;bottom:70px;right:20px;background:#25D366;color:#fff;border-radius:12px;padding:12px 16px;font-size:13px;font-weight:700;cursor:pointer;z-index:400;box-shadow:0 4px 16px rgba(0,0,0,.35);max-width:240px;line-height:1.4';
-  div.innerHTML='📱 Send WhatsApp to parent<br><span style="font-family:monospace;font-size:11px">+'+phone.slice(-10)+'</span>';
+  div.innerHTML='📱 Send WhatsApp to parent<br><span style="font-family:monospace;font-size:11px">+'+phone+'</span>';
   div.onclick=function(){gpOpenWAModal(phone,gpBuildWAMsg(pass,gpWACfg.tmplPass));div.remove();};
   document.body.appendChild(div);
   setTimeout(function(){if(div.parentNode)div.remove();},8000);
@@ -5056,7 +5038,7 @@ function gpSwitchSendMode(mode){
 }
 
 // ═══ META WHATSAPP CLOUD API ═══
-var MetaWACfg={phoneNumberId:'',accessToken:'',enabled:false,adminEnabled:false,templateName:'',langCode:'en_US',adminPhone:'',parentEnabled:true,sendAdminEnabled:true};
+var MetaWACfg={phoneNumberId:'',accessToken:'',enabled:false,adminEnabled:false,templateName:'',langCode:'en_US',adminPhone:''};
 
 function loadMetaWACfg(){
   // MetaWACfg is now embedded inside gpWACfg — no separate localStorage key
@@ -5069,9 +5051,7 @@ function loadMetaWACfg(){
     adminEnabled:!!gpWACfg.metaAdminEnabled,
     templateName:gpWACfg.metaTemplate||'',
     langCode:gpWACfg.metaLang||'en_US',
-    adminPhone:gpWACfg.metaAdminPhone||'',
-    parentEnabled:gpWACfg.metaParentEnabled!==false,
-    sendAdminEnabled:gpWACfg.metaSendAdminEnabled!==false
+    adminPhone:gpWACfg.metaAdminPhone||''
   };
   var pid=document.getElementById('meta-wa-phone-id');
   var tok=document.getElementById('meta-wa-token');
@@ -5085,8 +5065,6 @@ function loadMetaWACfg(){
   if(lang)lang.value=MetaWACfg.langCode||'en_US';
   if(ae)ae.checked=MetaWACfg.adminEnabled;
   if(ap)ap.value=MetaWACfg.adminPhone||'';
-  var mpe=document.getElementById('meta-wa-parent-enabled');
-  if(mpe)mpe.checked=gpWACfg.metaParentEnabled!==false;
   // Update sidebar sub label
   var sub=document.getElementById('gacc-wa-sub');
   if(sub){
@@ -5150,7 +5128,7 @@ async function metaWASendGatepass(pass){
     try{
       await metaWASend(parentPhone,gpBuildWAMsg(pass,gpWACfg.tmplPass),pass);
       results.push('Parent ✅');
-      gpToast('📨 Meta API: Parent WA sent → +'+parentPhone.slice(-10));
+      gpToast('📨 Meta API: Parent WA sent → +'+parentPhone);
     }catch(err){
       results.push('Parent ❌');
       gpToast('⚠️ Meta WA parent failed: '+err.message,'err');
@@ -5880,7 +5858,7 @@ function getAllFYs(){const s=new Set(R.entries.map(e=>e.fy).filter(Boolean));s.a
 function _refInit(){
   initTheme();loadCFG();loadFSCfg();loadODCfg();loadGPODCfg();loadTGCfg();loadPTGCfg();loadRefTGCfg();loadWixCfg();_gpRestoreCfgFromStorage();startTGApprovalPolling();
   // Init RefMetaWACfg from saved CFG
-  RefMetaWACfg={phoneNumberId:CFG.metaPhoneId||'',accessToken:CFG.metaToken||'',enabled:(CFG.waSendMode||'web')==='meta',adminEnabled:!!CFG.metaAdminEnabled,templateName:CFG.metaTemplate||'',langCode:CFG.metaLang||'en_US',adminPhone:CFG.metaAdminPhone||'',parentEnabled:CFG.metaParentEnabled!==false,sendAdminEnabled:CFG.metaSendAdminEnabled!==false};
+  RefMetaWACfg={phoneNumberId:CFG.metaPhoneId||'',accessToken:CFG.metaToken||'',enabled:(CFG.waSendMode||'web')==='meta',adminEnabled:!!CFG.metaAdminEnabled,templateName:CFG.metaTemplate||'',langCode:CFG.metaLang||'en_US',adminPhone:CFG.metaAdminPhone||''};
   if(CFG.adminAlertEnabled===undefined)CFG.adminAlertEnabled=true;
   const fu=localStorage.getItem('ref_fb_url'),fc=localStorage.getItem('ref_fb_code');
   if(fu&&fc){fbCfg={url:fu,code:fc};fbFetchAll();if(fbIv)clearInterval(fbIv);fbIv=setInterval(fbFetchAll,8000);}
@@ -6481,7 +6459,7 @@ function openWAForEntry(id){const en=R.entries.find(e=>e.id===id);if(!en||!en.ph
 let _waCountdownTimer=null;
 function openWAModal(phone,msg,autoStart){
   waPendingPhone=phone;
-  document.getElementById('wa-to-num').textContent='+'+phone+' ('+phone.slice(-10)+')';
+  document.getElementById('wa-to-num').textContent='+'+phone;
   document.getElementById('wa-msg-preview').value=msg;
   document.getElementById('wa-prog-box').style.display='none';
   const cdBox=document.getElementById('wa-countdown-box');
@@ -6546,7 +6524,7 @@ function showWABubble(en){
   const old=document.getElementById('__wa-b');if(old)old.remove();
   const div=document.createElement('div');div.id='__wa-b';
   div.style.cssText='position:fixed;bottom:60px;right:20px;background:#25D366;color:#fff;border-radius:12px;padding:12px 16px;font-size:13px;font-weight:700;cursor:pointer;z-index:400;box-shadow:0 4px 16px rgba(0,0,0,.35);max-width:240px';
-  div.innerHTML='📱 Send WhatsApp to<br><span style="font-family:monospace;font-size:12px">+'+en.phone.slice(-10)+'</span>';
+  div.innerHTML='📱 Send WhatsApp to<br><span style="font-family:monospace;font-size:12px">+'+en.phone+'</span>';
   div.onclick=()=>{
     window.location.href='whatsapp://send?phone='+en.phone.replace(/[^0-9]/g,'')+'&text='+encodeURIComponent(buildWAMsg(en));
     div.remove();
@@ -6875,13 +6853,11 @@ function saveWASettings(){
   CFG.statuses.forEach(s=>{const el=document.getElementById('ref-meta-tmpl-'+s.val);if(el)CFG.metaTemplates[s.val]=el.value.trim();});
   saveCFG();
   // Sync runtime object
-  var _rmpe=document.getElementById('ref-meta-wa-parent-enabled');
-  CFG.metaParentEnabled=_rmpe?_rmpe.checked:true;
-  RefMetaWACfg={phoneNumberId:CFG.metaPhoneId,accessToken:CFG.metaToken,enabled:CFG.waSendMode==='meta',adminEnabled:CFG.metaAdminEnabled,templateName:CFG.metaTemplate,langCode:CFG.metaLang,adminPhone:CFG.metaAdminPhone,parentEnabled:CFG.metaParentEnabled!==false,sendAdminEnabled:CFG.metaSendAdminEnabled!==false};
+  RefMetaWACfg={phoneNumberId:CFG.metaPhoneId,accessToken:CFG.metaToken,enabled:CFG.waSendMode==='meta',adminEnabled:CFG.metaAdminEnabled,templateName:CFG.metaTemplate,langCode:CFG.metaLang,adminPhone:CFG.metaAdminPhone};
   toast('WhatsApp settings saved successfully.');
 }
 // ═══ REFERENCE REGISTER — META WHATSAPP CLOUD API ═══
-var RefMetaWACfg={phoneNumberId:'',accessToken:'',enabled:false,adminEnabled:false,templateName:'',langCode:'en_US',adminPhone:'',parentEnabled:true,sendAdminEnabled:true};
+var RefMetaWACfg={phoneNumberId:'',accessToken:'',enabled:false,adminEnabled:false,templateName:'',langCode:'en_US',adminPhone:''};
 
 function loadRefMetaWACfg(){
   const mode=CFG.waSendMode||'web';
@@ -6892,9 +6868,7 @@ function loadRefMetaWACfg(){
     adminEnabled:!!CFG.metaAdminEnabled,
     templateName:CFG.metaTemplate||'',
     langCode:CFG.metaLang||'en_US',
-    adminPhone:CFG.metaAdminPhone||'',
-    parentEnabled:CFG.metaParentEnabled!==false,
-    sendAdminEnabled:CFG.metaSendAdminEnabled!==false
+    adminPhone:CFG.metaAdminPhone||''
   };
   const pid=document.getElementById('ref-meta-wa-phone-id');
   const tok=document.getElementById('ref-meta-wa-token');
@@ -6908,8 +6882,6 @@ function loadRefMetaWACfg(){
   if(lang)lang.value=RefMetaWACfg.langCode||'en_US';
   if(ae)ae.checked=RefMetaWACfg.adminEnabled;
   if(ap)ap.value=RefMetaWACfg.adminPhone||'';
-  var rmpe=document.getElementById('ref-meta-wa-parent-enabled');
-  if(rmpe)rmpe.checked=RefMetaWACfg.parentEnabled!==false;
   refSwitchSendMode(mode);
 }
 
@@ -6982,9 +6954,9 @@ async function refMetaWASendEntry(en){
   const parentPhone=en.phone?en.phone.replace(/[^0-9]/g,''):'';
   if(parentPhone&&parentPhone.length>=10){
     try{
-      if(RefMetaWACfg.parentEnabled!==false)await refMetaWASend(parentPhone,buildWAMsg(en),en);
+      await refMetaWASend(parentPhone,buildWAMsg(en),en);
       results.push('Parent ✅');
-      toast('📨 Meta API: WA sent → +'+parentPhone.slice(-10));
+      toast('📨 Meta API: WA sent → +'+parentPhone);
     }catch(err){
       results.push('Parent ❌');
       toast('⚠️ Ref Meta WA failed: '+err.message,'err');
@@ -7023,7 +6995,7 @@ async function testRefMetaWACfg(){
   const testEn={refno:'TEST/2025-26/0001',category:'Test Document',status:CFG.preparedStatus||'prepared',to:'Test Student',date:todayStr(),statusChangedAt:nowTS(),createdAt:nowTS(),phone:cleanPhone};
   try{
     await refMetaWASend(cleanPhone,'🧪 Test message from Reference Register Meta API — '+new Date().toLocaleTimeString('en-IN'),testEn);
-    if(st){st.textContent='✅ Test message sent to +'+cleanPhone.slice(-10);st.style.color='var(--green-d)';}
+    if(st){st.textContent='✅ Test message sent to +'+cleanPhone;st.style.color='var(--green-d)';}
     toast('✅ Meta API test WA sent!');
   }catch(err){
     if(st){st.textContent='❌ '+err.message;st.style.color='var(--red)';}
@@ -9219,7 +9191,7 @@ const SETTINGS_EXPORT_KEYS=[
   // Fee QR
   'feeqr_fb','feeqr_settings','feeqr_wa_enabled',
   // Due List
-  'dl_col_map_v1','dl_sheet_v1','dl_class_mode_v1','dl_wa_settings','dl_auto_reload','dl_pinned_sheet','dl_settings_pw',
+  'dl_col_map_v1','dl_sheet_v1','dl_class_mode_v1','dl_wa_settings','dl_auto_reload','dl_pinned_sheet','dl_settings_pw','dl_fb_url','dl_fb_code',
   // Theme
   'lis_theme'
 ];
@@ -10594,40 +10566,20 @@ window.dlSendWhatsApp=function(){
   if(done) done.classList.remove('active');
   var sub=document.getElementById('dl-wa-prog-sub');
   if(sub) sub.textContent='Sending to '+students.length+' students...';
-  var fl=document.getElementById('dl-wa-failed-list');
-  if(fl) fl.innerHTML='';
-  var fw=document.getElementById('dl-wa-failed-wrap');
-  if(fw) fw.style.display='none';
 
   dlSendBatch(students,phoneId,token,tmplName,0,0,0);
 };
-
-function dlAddFailedRow(name,adm,reason){
-  var fw=document.getElementById('dl-wa-failed-wrap');
-  var fl=document.getElementById('dl-wa-failed-list');
-  if(!fl) return;
-  if(fw) fw.style.display='block';
-  var row=document.createElement('div');
-  row.style.cssText='display:flex;align-items:flex-start;gap:8px;padding:7px 10px;border-bottom:1px solid rgba(208,64,64,.12);font-size:12px;';
-  row.innerHTML='<span style="font-size:14px;flex-shrink:0">\u274C</span>'
-    +'<div style="flex:1;min-width:0;">'
-    +'<div style="font-weight:700;color:var(--txt);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+(name||adm||'Unknown')+(adm&&name?' ('+adm+')':'')+'</div>'
-    +'<div style="color:#d04040;margin-top:2px;font-size:11px;">'+reason+'</div>'
-    +'</div>';
-  fl.appendChild(row);
-}
 
 function dlSendBatch(students,phoneId,token,tmplName,idx,sent,failed){
   if(idx>=students.length){
     var bar=document.getElementById('dl-wa-prog-bar');
     if(bar) bar.style.width='100%';
     var sub=document.getElementById('dl-wa-prog-sub');
-    if(sub) sub.textContent='\u2705 Complete!';
+    if(sub) sub.textContent='Complete!';
     var done=document.getElementById('dl-wa-prog-done');
     if(done) done.classList.add('active');
     var res=document.getElementById('dl-wa-prog-result');
-    if(res) res.innerHTML='<span style="color:#2d9e6b;font-weight:700;">\u2714 Sent: '+sent+'</span>'
-      +(failed?'&nbsp;&nbsp;&nbsp;<span style="color:#d04040;font-weight:700;">\u2716 Failed: '+failed+'</span>':'');
+    if(res) res.innerHTML='Sent: '+sent+'&nbsp;&nbsp;&nbsp;Failed: '+failed;
     return;
   }
   var s=students[idx];
@@ -10642,7 +10594,6 @@ function dlSendBatch(students,phoneId,token,tmplName,idx,sent,failed){
   var mob=String(s.mob||'').replace(/\D/g,'');
   if(mob.length===10) mob='91'+mob;
   if(!mob||mob.length<12){
-    dlAddFailedRow(s.name,s.adm,'Invalid / missing mobile number'+(s.mob?' ('+s.mob+')':''));
     setTimeout(function(){ dlSendBatch(students,phoneId,token,tmplName,idx+1,sent,failed+1); },100);
     return;
   }
@@ -10661,10 +10612,9 @@ function dlSendBatch(students,phoneId,token,tmplName,idx,sent,failed){
       language:{code:'en'},
       components:[
         {type:'body',parameters:[
-          {type:'text',parameter_name:'studentname',text:String(s.name||s.adm||'Student')},
-          {type:'text',parameter_name:'admno',text:String(s.adm||'N/A')},
-          {type:'text',parameter_name:'currentmonth',text:new Date().toLocaleString('en-IN',{month:'long',year:'numeric'})},
-          {type:'text',parameter_name:'amount',text:String(Math.round(Number(s.balance)))}
+          {type:'text',parameter_name:'name',text:String(s.name||s.adm||'Student')},
+          {type:'text',parameter_name:'class',text:String(s.cls||'N/A')},
+          {type:'text',parameter_name:'balance',text:String(Math.round(Number(s.balance)))}
         ]},
         {type:'button',sub_type:'url',index:'0',parameters:[
           {type:'text',text:suffix}
@@ -10678,25 +10628,11 @@ function dlSendBatch(students,phoneId,token,tmplName,idx,sent,failed){
     headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
     body:body
   }).then(function(r){
-    if(r.ok){
-      sent++;
-      setTimeout(function(){ dlSendBatch(students,phoneId,token,tmplName,idx+1,sent,failed); },100);
-    } else {
-      r.json().then(function(j){
-        var errMsg='API Error '+r.status;
-        if(j&&j.error&&j.error.message) errMsg=j.error.message;
-        else if(j&&j.error&&j.error.code) errMsg='Error code: '+j.error.code;
-        dlAddFailedRow(s.name,s.adm,errMsg);
-        setTimeout(function(){ dlSendBatch(students,phoneId,token,tmplName,idx+1,sent,failed+1); },100);
-      }).catch(function(){
-        dlAddFailedRow(s.name,s.adm,'API Error '+r.status);
-        setTimeout(function(){ dlSendBatch(students,phoneId,token,tmplName,idx+1,sent,failed+1); },100);
-      });
-    }
-  }).catch(function(err){
-    dlAddFailedRow(s.name,s.adm,'Network error: '+((err&&err.message)||'connection failed'));
+    if(r.ok) sent++; else failed++;
+    setTimeout(function(){ dlSendBatch(students,phoneId,token,tmplName,idx+1,sent,failed); },350);
+  }).catch(function(){
     failed++;
-    setTimeout(function(){ dlSendBatch(students,phoneId,token,tmplName,idx+1,sent,failed); },100);
+    setTimeout(function(){ dlSendBatch(students,phoneId,token,tmplName,idx+1,sent,failed); },350);
   });
 }
 
@@ -10705,6 +10641,128 @@ window.dlCloseProgress=function(){
   if(prog){ prog.style.display='none'; prog.classList.remove('active'); }
   dlCancelSelectMode();
 };
+
+// ── Due List Firebase Sync ──
+var DL_FB_URL_KEY = 'dl_fb_url';
+var DL_FB_CODE_KEY = 'dl_fb_code';
+var _dlFbListener = null;
+
+function dlFbGetCfg(){
+  var url = (localStorage.getItem(DL_FB_URL_KEY)||'').trim().replace(/\/+$/,'');
+  var code = (localStorage.getItem(DL_FB_CODE_KEY)||'').trim();
+  return {url:url, code:code};
+}
+
+function dlFbEndpoint(path){
+  var cfg = dlFbGetCfg();
+  if(!cfg.url) return null;
+  var ep = cfg.url + '/' + path + '.json';
+  if(cfg.code) ep += '?auth=' + encodeURIComponent(cfg.code);
+  return ep;
+}
+
+function dlFbSetStatus(msg, color){
+  var el = document.getElementById('dl-fb-status');
+  if(el){ el.textContent = msg; el.style.color = color||'#9a3412'; }
+}
+
+window.dlFbSaveAndConnect = function(){
+  var urlEl = document.getElementById('dl-fb-url');
+  var codeEl = document.getElementById('dl-fb-code');
+  var url = (urlEl?urlEl.value.trim():'').replace(/\/+$/,'');
+  var code = codeEl?codeEl.value.trim():'';
+  if(!url){ dlFbSetStatus('⚠️ Enter Firebase URL first','#d97706'); return; }
+  localStorage.setItem(DL_FB_URL_KEY, url);
+  localStorage.setItem(DL_FB_CODE_KEY, code);
+  dlFbSetStatus('⏳ Connecting…','#1d4ed8');
+  dlFbFetchNow(true);
+};
+
+window.dlFbPushNow = async function(){
+  var ep = dlFbEndpoint('dl_due_data');
+  if(!ep){ dlFbSetStatus('⚠️ Firebase not configured','#d97706'); return; }
+  if(!window.dlData||!window.dlData.length){ dlFbSetStatus('⚠️ No data to push','#d97706'); return; }
+  dlFbSetStatus('⏳ Pushing data…','#1d4ed8');
+  try{
+    var r = await fetch(ep, {method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(window.dlData)});
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    var ts = new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',hour12:true});
+    dlFbSetStatus('✅ Pushed '+window.dlData.length+' records at '+ts,'#15803d');
+  } catch(e){
+    dlFbSetStatus('❌ Push failed: '+e.message,'#dc2626');
+  }
+};
+
+window.dlFbFetchNow = async function(silent){
+  var ep = dlFbEndpoint('dl_due_data');
+  if(!ep){ if(!silent) dlFbSetStatus('⚠️ Firebase not configured','#d97706'); return; }
+  if(!silent) dlFbSetStatus('⏳ Fetching…','#1d4ed8');
+  try{
+    var r = await fetch(ep);
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    var data = await r.json();
+    if(!data||!Array.isArray(data)) throw new Error('No data in Firebase');
+    window.dlData = data;
+    try{ localStorage.setItem(DL_STORE_KEY, JSON.stringify(data)); }catch(ex){}
+    dlBuildClassBar(); dlRender();
+    var ts = new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',hour12:true});
+    dlFbSetStatus('✅ Synced '+data.length+' records at '+ts,'#15803d');
+    // Update banner
+    var banner = document.getElementById('dl-load-banner');
+    var bannerSub = document.getElementById('dl-load-banner-sub');
+    if(banner) banner.style.display='flex';
+    if(bannerSub) bannerSub.textContent = '🔥 Firebase · '+data.length+' students · '+ts;
+  } catch(e){
+    if(!silent) dlFbSetStatus('❌ Fetch failed: '+e.message,'#dc2626');
+  }
+};
+
+// Start Firebase polling when app loads (every 30s if configured)
+function dlFbStartPolling(){
+  var cfg = dlFbGetCfg();
+  if(!cfg.url) return;
+  if(window._dlFbPollTimer) clearInterval(window._dlFbPollTimer);
+  dlFbFetchNow(true); // initial fetch
+  window._dlFbPollTimer = setInterval(function(){ dlFbFetchNow(true); }, 30000);
+}
+
+// Load Firebase URL/code into settings fields when modal opens
+(function(){
+  var _origOpen = window.dlOpenSettings;
+  window.dlOpenSettings = function(){
+    if(_origOpen) _origOpen.apply(this,arguments);
+    var cfg = dlFbGetCfg();
+    var urlEl = document.getElementById('dl-fb-url');
+    var codeEl = document.getElementById('dl-fb-code');
+    if(urlEl) urlEl.value = cfg.url||'';
+    if(codeEl) codeEl.value = cfg.code||'';
+    var connected = !!cfg.url;
+    if(connected){
+      var ts = new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',hour12:true});
+      dlFbSetStatus('🔥 Firebase configured · '+cfg.url.split('/')[2],'#15803d');
+    }
+  };
+})();
+
+// Auto-push to Firebase after manual file upload
+(function(){
+  var _origHandle = window.dlHandleFile;
+  window.dlHandleFile = function(inp){
+    if(_origHandle) _origHandle.apply(this,arguments);
+    // After a short delay (data parsing), push to Firebase
+    setTimeout(function(){
+      var cfg = dlFbGetCfg();
+      if(cfg.url && window.dlData && window.dlData.length){
+        dlFbPushNow();
+      }
+    }, 1500);
+  };
+})();
+
+// Start polling on load
+document.addEventListener('DOMContentLoaded', function(){
+  dlFbStartPolling();
+});
 
 // ── Patch dlSaveMapping to save WA settings too ──
 (function(){
