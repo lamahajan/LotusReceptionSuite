@@ -3323,8 +3323,23 @@ Thank you 🙏</textarea>
               style="width:100%;background:#fff;border:1.5px solid #fdba74;border-radius:8px;padding:8px 10px;font-size:12px;outline:none;margin-bottom:6px;box-sizing:border-box;font-family:inherit"
               onfocus="this.style.borderColor='#f97316'" onblur="this.style.borderColor='#fdba74'"/>
             <input id="dl-fb-code" type="text" placeholder="Auth Code (optional)"
-              style="width:100%;background:#fff;border:1.5px solid #fdba74;border-radius:8px;padding:8px 10px;font-size:12px;outline:none;margin-bottom:8px;box-sizing:border-box;font-family:inherit"
+              style="width:100%;background:#fff;border:1.5px solid #fdba74;border-radius:8px;padding:8px 10px;font-size:12px;outline:none;margin-bottom:6px;box-sizing:border-box;font-family:inherit"
               onfocus="this.style.borderColor='#f97316'" onblur="this.style.borderColor='#fdba74'"/>
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+              <label style="font-size:11px;font-weight:700;color:#8a6428;white-space:nowrap">⏱ Auto-Pull Every</label>
+              <select id="dl-fb-interval"
+                style="flex:1;background:#fff;border:1.5px solid #fdba74;border-radius:8px;padding:6px 8px;font-size:12px;font-weight:700;color:#1a1035;outline:none;cursor:pointer;font-family:inherit"
+                onchange="dlFbApplyInterval()"
+                onfocus="this.style.borderColor='#f97316'" onblur="this.style.borderColor='#fdba74'">
+                <option value="0">🚫 Off</option>
+                <option value="5">5 seconds</option>
+                <option value="10">10 seconds</option>
+                <option value="15">15 seconds</option>
+                <option value="30" selected>30 seconds</option>
+                <option value="60">1 minute</option>
+                <option value="120">2 minutes</option>
+              </select>
+            </div>
             <div style="display:flex;gap:7px">
               <button onclick="dlFbSaveAndConnect()" style="flex:1;background:#f97316;color:#fff;border:none;border-radius:8px;padding:9px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">🔗 Save & Sync</button>
               <button onclick="dlFbPushNow()" style="background:#fff;color:#f97316;border:1.5px solid #f97316;border-radius:8px;padding:9px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit" title="Push current local data to Firebase">⬆ Push</button>
@@ -9649,7 +9664,15 @@ window.dlHandleFile=function(inp){
         st.textContent=parsed.length+' students loaded from "'+sheetName+'"';st.style.color='#2d7a4f';
         if(typeof updateHomeStats==='function')updateHomeStats();
         dlBuildClassBar();dlRender();
-        dlOpenSettings();
+        // Only open mapping settings if no saved mapping exists yet
+        var hasSavedMap=!!localStorage.getItem(DL_MAP_KEY);
+        if(!hasSavedMap){ dlOpenSettings(); }
+        else if(typeof toast==='function'){ toast('✅ '+parsed.length+' students loaded'); }
+        // Auto-push to Firebase if configured
+        setTimeout(function(){
+          var cfg=dlFbGetCfg();
+          if(cfg.url&&window.dlData&&window.dlData.length){ dlFbPushNow(); }
+        },800);
       }
 
       if(wb.SheetNames.length>1){
@@ -10294,6 +10317,14 @@ window.dlReloadPinned = async function(silent){
       dlBuildClassBar(); dlRender();
       dlHideLoadBanner();
       if(!silent&&typeof toast==='function') toast(parsed.length+' students loaded');
+      // Auto-push to Firebase after pinned reload if configured
+      setTimeout(function(){
+        var cfg=dlFbGetCfg();
+        if(cfg.url&&window.dlData&&window.dlData.length){
+          dlFbPushNow();
+          if(!silent&&typeof toast==='function') toast('🔥 Pushed to Firebase');
+        }
+      },600);
     }
 
     if(needPick && wb.SheetNames.length>1 && !silent){
@@ -10745,6 +10776,7 @@ window.dlCloseProgress=function(){
 // ── Due List Firebase Sync ──
 var DL_FB_URL_KEY = 'dl_fb_url';
 var DL_FB_CODE_KEY = 'dl_fb_code';
+var DL_FB_INTERVAL_KEY = 'dl_fb_interval';
 var _dlFbListener = null;
 
 function dlFbGetCfg(){
@@ -10769,13 +10801,32 @@ function dlFbSetStatus(msg, color){
 window.dlFbSaveAndConnect = function(){
   var urlEl = document.getElementById('dl-fb-url');
   var codeEl = document.getElementById('dl-fb-code');
+  var intEl = document.getElementById('dl-fb-interval');
   var url = (urlEl?urlEl.value.trim():'').replace(/\/+$/,'');
   var code = codeEl?codeEl.value.trim():'';
+  var interval = intEl ? intEl.value : '30';
   if(!url){ dlFbSetStatus('⚠️ Enter Firebase URL first','#d97706'); return; }
   localStorage.setItem(DL_FB_URL_KEY, url);
   localStorage.setItem(DL_FB_CODE_KEY, code);
+  localStorage.setItem(DL_FB_INTERVAL_KEY, interval);
   dlFbSetStatus('⏳ Connecting…','#1d4ed8');
-  dlFbFetchNow(true);
+  dlFbStartPolling();
+  dlFbFetchNow(false);
+};
+
+// Apply interval change immediately without re-saving URL/code
+window.dlFbApplyInterval = function(){
+  var intEl = document.getElementById('dl-fb-interval');
+  if(!intEl) return;
+  var interval = intEl.value;
+  localStorage.setItem(DL_FB_INTERVAL_KEY, interval);
+  dlFbStartPolling();
+  var cfg = dlFbGetCfg();
+  if(interval === '0'){
+    dlFbSetStatus('⏸ Auto-pull disabled','#6b5b95');
+  } else {
+    dlFbSetStatus('✅ Interval set to '+interval+'s'+(cfg.url?' — polling active':''),'#15803d');
+  }
 };
 
 window.dlFbPushNow = async function(){
@@ -10817,13 +10868,14 @@ window.dlFbFetchNow = async function(silent){
   }
 };
 
-// Start Firebase polling when app loads (every 30s if configured)
+// Start Firebase polling when app loads (configurable interval)
 function dlFbStartPolling(){
   var cfg = dlFbGetCfg();
+  if(window._dlFbPollTimer){ clearInterval(window._dlFbPollTimer); window._dlFbPollTimer = null; }
   if(!cfg.url) return;
-  if(window._dlFbPollTimer) clearInterval(window._dlFbPollTimer);
-  dlFbFetchNow(true); // initial fetch
-  window._dlFbPollTimer = setInterval(function(){ dlFbFetchNow(true); }, 30000);
+  var savedInterval = parseInt(localStorage.getItem(DL_FB_INTERVAL_KEY)||'30', 10);
+  if(!savedInterval || savedInterval <= 0) return; // Off
+  window._dlFbPollTimer = setInterval(function(){ dlFbFetchNow(true); }, savedInterval * 1000);
 }
 
 // Load Firebase URL/code into settings fields when modal opens
@@ -10834,28 +10886,18 @@ function dlFbStartPolling(){
     var cfg = dlFbGetCfg();
     var urlEl = document.getElementById('dl-fb-url');
     var codeEl = document.getElementById('dl-fb-code');
+    var intEl = document.getElementById('dl-fb-interval');
     if(urlEl) urlEl.value = cfg.url||'';
     if(codeEl) codeEl.value = cfg.code||'';
+    if(intEl){
+      var savedInt = localStorage.getItem(DL_FB_INTERVAL_KEY)||'30';
+      intEl.value = savedInt;
+    }
     var connected = !!cfg.url;
     if(connected){
       var ts = new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',hour12:true});
       dlFbSetStatus('🔥 Firebase configured · '+cfg.url.split('/')[2],'#15803d');
     }
-  };
-})();
-
-// Auto-push to Firebase after manual file upload
-(function(){
-  var _origHandle = window.dlHandleFile;
-  window.dlHandleFile = function(inp){
-    if(_origHandle) _origHandle.apply(this,arguments);
-    // After a short delay (data parsing), push to Firebase
-    setTimeout(function(){
-      var cfg = dlFbGetCfg();
-      if(cfg.url && window.dlData && window.dlData.length){
-        dlFbPushNow();
-      }
-    }, 1500);
   };
 })();
 
