@@ -4371,15 +4371,19 @@ function renderQGSidebar(){
     return;
   }
   const today=todayStr();
-  list.innerHTML=freq.map(f=>{
-    const todayPass=S.passes.find(p=>p.admissionNumber===f.adm&&p.date===today);
+  const pending=freq.filter(f=>!S.passes.find(p=>p.admissionNumber===f.adm&&p.date===today));
+  cnt.textContent=pending.length;
+  if(!pending.length){
+    list.innerHTML=`<div class="qg-empty">✅ All frequent students picked up today!</div>`;
+    return;
+  }
+  list.innerHTML=pending.map(f=>{
     return `<div class="qg-card" onclick="openQP('${e(f.adm)}')">
       <span class="qg-freq" style="font-size:10px;letter-spacing:.3px">${e(f.adm)}</span>
       <div class="qg-card-name">${e(f.name)}</div>
       <div class="qg-card-info">${f.cls?'Class '+e(f.cls)+' · ':''}<span style="opacity:.65;font-family:monospace">${f.freq}/${f.window}d</span></div>
       <div class="qg-card-info">${f.usualPicker?'👤 '+e(f.usualPicker)+(f.usualRel?' ('+e(f.usualRel)+')':''):''}</div>
       ${f.usualReason?`<div class="qg-reason">📝 ${e(f.usualReason)}</div>`:''}
-      ${todayPass?`<div class="qg-today-done">✅ Done ${todayPass.time}</div>`:''}
     </div>`;
   }).join('');
 }
