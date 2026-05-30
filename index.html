@@ -1399,7 +1399,7 @@ Reason: {reason}"></textarea>
             </div>
             <div class="g2">
               <div class="field">
-                <label class="lbl">Template Name</label>
+                <label class="lbl">Template Name (Pass Issued)</label>
                 <input id="meta-wa-template" class="inp" placeholder="e.g. gatepass_issued" style="font-family:var(--mono);font-size:12px">
                 <div style="font-size:11px;color:var(--muted);margin-top:3px">Leave empty to send plain text (only works within 24hr window)</div>
               </div>
@@ -1407,6 +1407,11 @@ Reason: {reason}"></textarea>
                 <label class="lbl">Language Code</label>
                 <input id="meta-wa-lang" class="inp" placeholder="en_US" style="font-family:var(--mono);font-size:12px" value="en_US">
               </div>
+            </div>
+            <div class="field">
+              <label class="lbl">Template Name (Gate Out) <span style="font-weight:400;font-size:10px;color:var(--muted)">(optional)</span></label>
+              <input id="meta-wa-out-template" class="inp" placeholder="e.g. gatepass_exited" style="font-family:var(--mono);font-size:12px">
+              <div style="font-size:11px;color:var(--muted);margin-top:3px">Sent to parent when student exits gate. Parameters: {{1}} name &nbsp;|&nbsp; {{2}} class &nbsp;|&nbsp; {{3}} gate out time &nbsp;|&nbsp; {{4}} date</div>
             </div>
             <div style="background:var(--blue-l);border:1.5px solid var(--blue);border-radius:var(--rs);padding:10px 13px;margin-bottom:10px;font-size:11.5px;color:var(--blue-d)">
               <div style="font-weight:700;margin-bottom:4px">Template Parameters:</div>
@@ -3915,7 +3920,7 @@ async function fetchAll(){
             }
           });
         }
-        // ── Step B: Detect newly-exited passes → edit Telegram message ──
+        // ── Step B: Detect newly-exited passes → edit Telegram message + Meta WA out notification ──
         if(TGCfg.enabled&&TGCfg.token){
           const oldMap={};S.passes.forEach(p=>{if(p.id)oldMap[p.id]=p.gateOutTime||null;});
           ps.forEach(p=>{
@@ -3924,6 +3929,16 @@ async function fetchAll(){
               const localPass=S.passes.find(x=>x.id===p.id);
               if(localPass&&localPass._hasPhoto)p._hasPhoto=true;
               editTelegramOnExit(p);
+            }
+          });
+        }
+        // Meta WA Gate Out notification (runs regardless of Telegram)
+        if(MetaWACfg.enabled&&MetaWACfg.outTemplateName){
+          const oldMap2={};S.passes.forEach(p=>{if(p.id)oldMap2[p.id]=p.gateOutTime||null;});
+          ps.forEach(p=>{
+            const wasKnown=p.id in oldMap2;
+            if(wasKnown&&p.gateOutTime&&!oldMap2[p.id]){
+              metaWASendGateOut(p);
             }
           });
         }
@@ -4248,7 +4263,7 @@ async function issuePass(){
   const _issueBtn=document.querySelector('[onclick="issuePass()"]');
   if(_issueBtn){_issueBtn.disabled=true;_issueBtn.textContent='⏳ Issuing…';}
   try{
-  const pass={id:uid(),date:todayStr(),time:nowT(),gateOutTime:null,studentName:cpSel.name,admissionNumber:cpSel.admissionNumber,class:cpSel.class||'',fatherName:cpSel.fatherName||'',motherName:cpSel.motherName||'',phone:cpSel.phone||'',pickedUpBy:by,relation:document.getElementById('cprel').value,reason:document.getElementById('cpreason').value.trim(),busNumber:document.getElementById('cpbus').value||cpSel.busNumber||'',pickerPhoto:photo};
+  const pass={id:uid(),date:todayStr(),time:nowT(),gateOutTime:null,studentName:cpSel.name,admissionNumber:cpSel.admissionNumber,class:cpSel.class||'',fatherName:cpSel.fatherName||'',motherName:cpSel.motherName||'',pickedUpBy:by,relation:document.getElementById('cprel').value,reason:document.getElementById('cpreason').value.trim(),busNumber:document.getElementById('cpbus').value||cpSel.busNumber||'',pickerPhoto:photo};
   // Cache photo locally before push strips it
   if(pass.pickerPhoto&&pass.pickerPhoto!=='__has_photo')_photoCache.set(pass.id,pass.pickerPhoto);
   S.passes.unshift(pass);
@@ -4437,7 +4452,7 @@ async function issueQuickPass(){
   const _qpBtn=document.querySelector('[onclick="issueQuickPass()"]');
   if(_qpBtn){_qpBtn.disabled=true;_qpBtn.textContent='⏳ Issuing…';}
   try{
-  const pass={id:uid(),date:todayStr(),time:nowT(),gateOutTime:null,studentName:qpSel.name,admissionNumber:qpSel.adm,class:qpSel.cls||'',fatherName:stu?stu.fatherName||'':'',motherName:stu?stu.motherName||'':'',phone:stu?stu.phone||'':'',pickedUpBy:by,relation:document.getElementById('qprel').value,reason:document.getElementById('qpreason').value.trim(),busNumber:stu?stu.busNumber||'':'',pickerPhoto:null};
+  const pass={id:uid(),date:todayStr(),time:nowT(),gateOutTime:null,studentName:qpSel.name,admissionNumber:qpSel.adm,class:qpSel.cls||'',fatherName:stu?stu.fatherName||'':'',motherName:stu?stu.motherName||'':'',pickedUpBy:by,relation:document.getElementById('qprel').value,reason:document.getElementById('qpreason').value.trim(),busNumber:stu?stu.busNumber||'':'',pickerPhoto:null};
   S.passes.unshift(pass);
   await push('passes');
   gpToast(`⚡ Quick pass issued for ${pass.studentName}`);
@@ -4857,6 +4872,7 @@ function gpSaveWA(){
   var pid=document.getElementById('meta-wa-phone-id');
   var tok=document.getElementById('meta-wa-token');
   var tmplEl=document.getElementById('meta-wa-template');
+  var outTmplEl=document.getElementById('meta-wa-out-template');
   var langEl=document.getElementById('meta-wa-lang');
   var metaAe=document.getElementById('meta-wa-admin-enabled');
   var metaAp=document.getElementById('meta-wa-admin-phone');
@@ -4874,6 +4890,7 @@ function gpSaveWA(){
     metaPhoneId:(pid?pid.value.trim():''),
     metaToken:(tok?tok.value.trim():''),
     metaTemplate:(tmplEl?tmplEl.value.trim():''),
+    metaOutTemplate:(outTmplEl?outTmplEl.value.trim():''),
     metaLang:(langEl?langEl.value.trim()||'en_US':'en_US'),
     metaAdminEnabled:metaAe?metaAe.checked:false,
     metaAdminPhone:(metaAp?metaAp.value.trim().replace(/[^0-9]/g,''):'')
@@ -4883,7 +4900,8 @@ function gpSaveWA(){
   MetaWACfg={
     phoneNumberId:gpWACfg.metaPhoneId,accessToken:gpWACfg.metaToken,
     enabled:mode==='meta',adminEnabled:gpWACfg.metaAdminEnabled,
-    templateName:gpWACfg.metaTemplate,langCode:gpWACfg.metaLang,
+    templateName:gpWACfg.metaTemplate,outTemplateName:gpWACfg.metaOutTemplate,
+    langCode:gpWACfg.metaLang,
     adminPhone:gpWACfg.metaAdminPhone
   };
   gpToast('✅ WhatsApp settings saved');
@@ -5043,7 +5061,7 @@ function gpSwitchSendMode(mode){
 }
 
 // ═══ META WHATSAPP CLOUD API ═══
-var MetaWACfg={phoneNumberId:'',accessToken:'',enabled:false,adminEnabled:false,templateName:'',langCode:'en_US',adminPhone:''};
+var MetaWACfg={phoneNumberId:'',accessToken:'',enabled:false,adminEnabled:false,templateName:'',outTemplateName:'',langCode:'en_US',adminPhone:''};
 
 function loadMetaWACfg(){
   // MetaWACfg is now embedded inside gpWACfg — no separate localStorage key
@@ -5055,18 +5073,21 @@ function loadMetaWACfg(){
     enabled:mode==='meta',
     adminEnabled:!!gpWACfg.metaAdminEnabled,
     templateName:gpWACfg.metaTemplate||'',
+    outTemplateName:gpWACfg.metaOutTemplate||'',
     langCode:gpWACfg.metaLang||'en_US',
     adminPhone:gpWACfg.metaAdminPhone||''
   };
   var pid=document.getElementById('meta-wa-phone-id');
   var tok=document.getElementById('meta-wa-token');
   var tmpl=document.getElementById('meta-wa-template');
+  var outTmpl=document.getElementById('meta-wa-out-template');
   var lang=document.getElementById('meta-wa-lang');
   var ae=document.getElementById('meta-wa-admin-enabled');
   var ap=document.getElementById('meta-wa-admin-phone');
   if(pid)pid.value=MetaWACfg.phoneNumberId;
   if(tok)tok.value=MetaWACfg.accessToken;
   if(tmpl)tmpl.value=MetaWACfg.templateName;
+  if(outTmpl)outTmpl.value=MetaWACfg.outTemplateName;
   if(lang)lang.value=MetaWACfg.langCode||'en_US';
   if(ae)ae.checked=MetaWACfg.adminEnabled;
   if(ap)ap.value=MetaWACfg.adminPhone||'';
@@ -5153,6 +5174,38 @@ async function metaWASendGatepass(pass){
   }
   if(st&&results.length){st.textContent='Last: '+results.join(' · ');st.style.color='var(--green-d)';}
   return true;
+}
+
+// Called when gate out time is detected from Firebase sync
+async function metaWASendGateOut(pass){
+  if(!MetaWACfg.enabled||!MetaWACfg.phoneNumberId||!MetaWACfg.accessToken||!MetaWACfg.outTemplateName)return;
+  var stu=S.students.find(s=>s.admissionNumber===pass.admissionNumber);
+  var parentPhone=((stu?stu.phone||'':'')).replace(/[^0-9]/g,'');
+  if(!parentPhone||parentPhone.length<10)return;
+  try{
+    var body={
+      messaging_product:'whatsapp',to:parentPhone,type:'template',
+      template:{
+        name:MetaWACfg.outTemplateName,
+        language:{code:MetaWACfg.langCode||'en_US'},
+        components:[{type:'body',parameters:[
+          {type:'text',parameter_name:'name',text:pass.studentName||'Student'},
+          {type:'text',parameter_name:'class',text:pass.class||'N/A'},
+          {type:'text',parameter_name:'gate_out_time',text:pass.gateOutTime||''},
+          {type:'text',parameter_name:'date',text:pass.date||''}
+        ]}]
+      }
+    };
+    var resp=await fetch('https://graph.facebook.com/v25.0/'+MetaWACfg.phoneNumberId+'/messages',{
+      method:'POST',
+      headers:{'Authorization':'Bearer '+MetaWACfg.accessToken,'Content-Type':'application/json'},
+      body:JSON.stringify(body)
+    });
+    var data=await resp.json();
+    if(!resp.ok)throw new Error((data.error&&data.error.message)||JSON.stringify(data));
+  }catch(err){
+    console.error('MetaWA gateOut:',err);
+  }
 }
 
 async function testMetaWACfg(){
