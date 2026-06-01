@@ -10461,7 +10461,7 @@ function dlRenderTmplRows(){
       +'<input placeholder="e.g. 1st–8th Reminder" value="'+esc2(t.label||'')+'" oninput="dlWaTemplates['+i+'].label=this.value;dlPopulateTmplSelect()" '
       +'style="width:100%;background:#fff;border:1px solid #e8dcc8;border-radius:7px;padding:6px 8px;font-size:11.5px;outline:none;box-sizing:border-box"/></div>'
       +'<div style="flex:1"><div style="font-size:10px;color:#8a6428;font-weight:700;margin-bottom:3px">Meta Template Name</div>'
-      +'<input placeholder="e.g. due_alert_1" value="'+esc2(t.name||'')+'" oninput="dlWaTemplates['+i+'].name=this.value" '
+      +'<input placeholder="e.g. dl_1" value="'+esc2(t.name||'')+'" oninput="dlWaTemplates['+i+'].name=this.value" '
       +'style="width:100%;background:#fff;border:1px solid #e8dcc8;border-radius:7px;padding:6px 8px;font-size:11.5px;outline:none;box-sizing:border-box"/></div>'
       +'</div>'
       +'<div style="display:flex;gap:6px">'
@@ -10471,6 +10471,10 @@ function dlRenderTmplRows(){
       +'<div style="flex:1"><div style="font-size:10px;color:#8a6428;font-weight:700;margin-bottom:3px">Date To</div>'
       +'<input type="number" min="1" max="31" placeholder="8" value="'+(t.dateTo||'')+'" oninput="dlWaTemplates['+i+'].dateTo=+this.value" '
       +'style="width:100%;background:#fff;border:1px solid #e8dcc8;border-radius:7px;padding:6px 8px;font-size:12px;outline:none;box-sizing:border-box"/></div>'
+      +'</div>'
+      +'<div style="margin-top:8px;display:flex;align-items:center;gap:6px">'
+      +'<input type="checkbox" id="dl-tmpl-btn-'+i+'" '+(t.hasButton?'checked':'')+' onchange="dlWaTemplates['+i+'].hasButton=this.checked" style="width:14px;height:14px;accent-color:#b5883e;cursor:pointer"/>'
+      +'<label for="dl-tmpl-btn-'+i+'" style="font-size:11px;font-weight:700;color:#8a6428;cursor:pointer">Has URL Button (Pay Now)</label>'
       +'</div>'
       +'</div>';
   }).join('');
@@ -10712,7 +10716,7 @@ function dlSendBatch(students,phoneId,token,tmplName,idx,sent,failed){
   var daysLeft=10-today.getDate(); // days until 10th
   if(daysLeft<0) daysLeft=0;
 
-  if(tmplName==='due_alert_1'){
+  if(tmplName==='dl_1'){
     // studentname, admno, currentmonth, amount
     bodyParams=[
       {type:'text',parameter_name:'studentname',text:String(s.name||s.adm||'Student')},
@@ -10720,7 +10724,7 @@ function dlSendBatch(students,phoneId,token,tmplName,idx,sent,failed){
       {type:'text',parameter_name:'currentmonth',text:currentMonth},
       {type:'text',parameter_name:'amount',text:String(Math.round(Number(s.balance)))}
     ];
-  } else if(tmplName==='due_alert_2'){
+  } else if(tmplName==='dl_2'){
     // stdname, admno, numbertoten, currentmonth, amount
     bodyParams=[
       {type:'text',parameter_name:'stdname',text:String(s.name||s.adm||'Student')},
@@ -10729,7 +10733,7 @@ function dlSendBatch(students,phoneId,token,tmplName,idx,sent,failed){
       {type:'text',parameter_name:'currentmonth',text:currentMonth},
       {type:'text',parameter_name:'amount',text:String(Math.round(Number(s.balance)))}
     ];
-  } else if(tmplName==='due_alert_3'||tmplName==='due_alert_4'){
+  } else if(tmplName==='dl_3'||tmplName==='dl_4'){
     // stdname, admno, month, amount
     bodyParams=[
       {type:'text',parameter_name:'stdname',text:String(s.name||s.adm||'Student')},
@@ -10746,6 +10750,17 @@ function dlSendBatch(students,phoneId,token,tmplName,idx,sent,failed){
     ];
   }
 
+  // Find current template config to check hasButton flag
+  var tmplCfg=null;
+  for(var ti=0;ti<dlWaTemplates.length;ti++){
+    if(dlWaTemplates[ti].name===tmplName){ tmplCfg=dlWaTemplates[ti]; break; }
+  }
+  var components=[{type:'body',parameters:bodyParams}];
+  var hasBtn = tmplCfg ? (tmplCfg.hasButton !== false) : true; // default ON
+  if(hasBtn){
+    components.push({type:'button',sub_type:'url',index:'0',parameters:[{type:'text',text:suffix}]});
+  }
+
   var body=JSON.stringify({
     messaging_product:'whatsapp',
     to:mob,
@@ -10753,12 +10768,7 @@ function dlSendBatch(students,phoneId,token,tmplName,idx,sent,failed){
     template:{
       name:tmplName,
       language:{code:'en'},
-      components:[
-        {type:'body',parameters:bodyParams},
-        {type:'button',sub_type:'url',index:'0',parameters:[
-          {type:'text',text:suffix}
-        ]}
-      ]
+      components:components
     }
   });
 
