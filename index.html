@@ -3441,6 +3441,19 @@ Thank you 🙏</textarea>
             <input id="wa-phone-id" type="text" placeholder="Phone Number ID" style="width:100%;background:#fff;border:1.5px solid #86efac;border-radius:8px;padding:8px 10px;font-size:12px;outline:none;margin-bottom:6px;box-sizing:border-box"/>
             <input id="wa-token" type="password" placeholder="Access Token" style="width:100%;background:#fff;border:1.5px solid #86efac;border-radius:8px;padding:8px 10px;font-size:12px;outline:none;box-sizing:border-box"/>
           </div>
+          <!-- Extra Month Toggle -->
+          <div style="background:#fffbeb;border:1.5px solid #fcd34d;border-radius:10px;padding:10px 14px;margin-bottom:10px">
+            <div style="font-size:11px;font-weight:800;color:#92400e;margin-bottom:8px;text-transform:uppercase;letter-spacing:.7px">📅 Month Override</div>
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+              <input type="checkbox" id="dl-extra-month-on" onchange="dlToggleExtraMonth()" style="width:15px;height:15px;accent-color:#b5883e;cursor:pointer"/>
+              <label for="dl-extra-month-on" style="font-size:12px;font-weight:700;color:#92400e;cursor:pointer">Double month bhejo (e.g. June &amp; July)</label>
+            </div>
+            <div id="dl-extra-month-row" style="display:none;display:flex;gap:6px;align-items:center">
+              <div style="font-size:11px;color:#92400e;font-weight:700;white-space:nowrap">Extra Month:</div>
+              <select id="dl-extra-month-val" style="flex:1;background:#fff;border:1.5px solid #fcd34d;border-radius:7px;padding:6px 8px;font-size:12px;outline:none"><option value="January">January</option><option value="February">February</option><option value="March">March</option><option value="April">April</option><option value="May">May</option><option value="June">June</option><option value="July">July</option><option value="August">August</option><option value="September">September</option><option value="October">October</option><option value="November">November</option><option value="December">December</option></select>
+            </div>
+            <div style="font-size:10px;color:#a16207;margin-top:6px">ON hone par month parameter mein dono months ka text jayega</div>
+          </div>
           <div id="wa-tmpl-rows" style="display:flex;flex-direction:column;gap:8px"></div>
           <button onclick="dlAddTmplRow()" style="width:100%;margin-top:8px;background:#f0fdf4;border:1.5px dashed #86efac;border-radius:9px;padding:9px;font-size:12px;font-weight:700;color:#16a34a;cursor:pointer">+ Add Template</button>
         </div>
@@ -10429,18 +10442,34 @@ function waLoadSettings(){
     if(pid&&s.phoneId) pid.value=s.phoneId;
     if(tok&&s.token)   tok.value=s.token;
     dlWaTemplates=s.templates||[];
+    var emChk=document.getElementById('dl-extra-month-on');
+    var emVal=document.getElementById('dl-extra-month-val');
+    var emRow=document.getElementById('dl-extra-month-row');
+    if(emChk){ emChk.checked=!!s.extraMonthOn; }
+    if(emVal&&s.extraMonthVal){ emVal.value=s.extraMonthVal; }
+    if(emRow){ emRow.style.display=s.extraMonthOn?'flex':'none'; }
     dlRenderTmplRows();
     dlPopulateTmplSelect();
   }catch(e){}
 }
 
+window.dlToggleExtraMonth=function(){
+  var emChk=document.getElementById('dl-extra-month-on');
+  var emRow=document.getElementById('dl-extra-month-row');
+  if(emRow) emRow.style.display=(emChk&&emChk.checked)?'flex':'none';
+};
+
 function waSaveSettings(){
   var pid=document.getElementById('wa-phone-id');
   var tok=document.getElementById('wa-token');
+  var emChk=document.getElementById('dl-extra-month-on');
+  var emVal=document.getElementById('dl-extra-month-val');
   localStorage.setItem(WA_STORE_KEY,JSON.stringify({
     phoneId: pid?pid.value.trim():'',
     token:   tok?tok.value.trim():'',
-    templates: dlWaTemplates
+    templates: dlWaTemplates,
+    extraMonthOn: emChk?emChk.checked:false,
+    extraMonthVal: emVal?emVal.value:''
   }));
 }
 
@@ -10713,6 +10742,13 @@ function dlSendBatch(students,phoneId,token,tmplName,idx,sent,failed){
   var today=new Date();
   var monthNames=['January','February','March','April','May','June','July','August','September','October','November','December'];
   var currentMonth=monthNames[today.getMonth()];
+  // Extra month override
+  try{
+    var _emS=JSON.parse(localStorage.getItem(WA_STORE_KEY)||'{}');
+    if(_emS.extraMonthOn&&_emS.extraMonthVal){
+      currentMonth=currentMonth+' & '+_emS.extraMonthVal;
+    }
+  }catch(ex){}
   var daysLeft=10-today.getDate(); // days until 10th
   if(daysLeft<0) daysLeft=0;
 
