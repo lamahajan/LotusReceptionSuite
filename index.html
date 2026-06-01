@@ -10712,7 +10712,15 @@ function dlSendBatch(students,phoneId,token,tmplName,idx,sent,failed){
   var daysLeft=10-today.getDate(); // days until 10th
   if(daysLeft<0) daysLeft=0;
 
-  if(tmplName==='due_alert_2'){
+  if(tmplName==='due_alert_1'){
+    // studentname, admno, currentmonth, amount
+    bodyParams=[
+      {type:'text',parameter_name:'studentname',text:String(s.name||s.adm||'Student')},
+      {type:'text',parameter_name:'admno',text:String(s.adm||'N/A')},
+      {type:'text',parameter_name:'currentmonth',text:currentMonth},
+      {type:'text',parameter_name:'amount',text:String(Math.round(Number(s.balance)))}
+    ];
+  } else if(tmplName==='due_alert_2'){
     // stdname, admno, numbertoten, currentmonth, amount
     bodyParams=[
       {type:'text',parameter_name:'stdname',text:String(s.name||s.adm||'Student')},
@@ -10759,10 +10767,22 @@ function dlSendBatch(students,phoneId,token,tmplName,idx,sent,failed){
     headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
     body:body
   }).then(function(r){
-    if(r.ok) sent++; else failed++;
-    setTimeout(function(){ dlSendBatch(students,phoneId,token,tmplName,idx+1,sent,failed); },350);
-  }).catch(function(){
+    return r.json().then(function(data){
+      if(r.ok){
+        sent++;
+      } else {
+        failed++;
+        var errMsg=(data&&data.error&&data.error.message)||JSON.stringify(data);
+        var det=document.getElementById('dl-wa-prog-detail');
+        if(det) det.textContent='❌ '+(s.name||s.adm||'')+': '+errMsg;
+        console.warn('WA send failed for '+(s.name||s.adm||'')+': '+errMsg);
+      }
+      setTimeout(function(){ dlSendBatch(students,phoneId,token,tmplName,idx+1,sent,failed); },350);
+    });
+  }).catch(function(e){
     failed++;
+    var det=document.getElementById('dl-wa-prog-detail');
+    if(det) det.textContent='❌ Network error: '+(e&&e.message||'unknown');
     setTimeout(function(){ dlSendBatch(students,phoneId,token,tmplName,idx+1,sent,failed); },350);
   });
 }
