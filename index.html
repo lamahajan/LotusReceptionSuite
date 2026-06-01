@@ -10288,10 +10288,7 @@ window.dlReloadPinned = async function(silent){
       if(rows.length<2){ if(!silent&&typeof toast==='function') toast('Sheet is empty','err'); return; }
       dlHeaders=rows[0];
       dlPopulateColSelects(dlHeaders);
-      // Only auto-detect if no saved mapping exists — preserves manual mapping across sessions
-      if(!localStorage.getItem(DL_MAP_KEY)){
-        dlAutoDetectMap(dlHeaders);
-      }
+      dlAutoDetectMap(dlHeaders);
       var map = dlGetMap();
       var parsed = [];
       for(var i=1;i<rows.length;i++){
