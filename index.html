@@ -3289,61 +3289,218 @@ Thank you 🙏</textarea>
          WHATSAPP INBOX  ·  screen-wainbox
     ═══════════════════════════════════════════════ -->
     <style>
-    /* ── WAI color tokens ── */
+    /* ── WAI Apple-Premium Design System ── */
     #screen-wainbox{
-      --wg:#25d366;--wd:#075e54;--wh:#128c7e;
-      --wb:#e5ddd5;--wp:#fff;--wbr:#d1d7db;
-      --wt:#111b21;--ws:#667781;
-      --win:#fff;--wout:#d9fdd3;
+      --wa-bg:#f5f5f7;
+      --wa-surf:#ffffff;
+      --wa-bdr:rgba(0,0,0,.08);
+      --wa-bdr2:rgba(0,0,0,.12);
+      --wa-txt:#1d1d1f;
+      --wa-sub:#6e6e73;
+      --wa-mut:#aeaeb2;
+      --wa-acc:#007aff;
+      --wa-grn:#30d158;
+      --wa-red:#ff3b30;
+      --wa-amber:#ff9f0a;
+      --wa-out:#007aff;
+      --wa-in:#f5f5f7;
+      --wa-r:18px;
+      --wa-sha:0 1px 0 rgba(0,0,0,.06);
+      --wa-sha-md:0 4px 20px rgba(0,0,0,.08);
+      --wa-sha-lg:0 12px 40px rgba(0,0,0,.12);
     }
     body.dark #screen-wainbox{
-      --wb:#0b141a;--wp:#1f2c34;--wbr:#2a3942;
-      --wt:#e9edef;--ws:#8696a0;
-      --win:#1f2c34;--wout:#005c4b;
+      --wa-bg:#000000;
+      --wa-surf:#1c1c1e;
+      --wa-bdr:rgba(255,255,255,.08);
+      --wa-bdr2:rgba(255,255,255,.14);
+      --wa-txt:#f5f5f7;
+      --wa-sub:#98989d;
+      --wa-mut:#48484a;
+      --wa-acc:#0a84ff;
+      --wa-grn:#32d74b;
+      --wa-red:#ff453a;
+      --wa-amber:#ff9f0a;
+      --wa-out:#0a84ff;
+      --wa-in:#2c2c2e;
     }
-    /* ── Header ── */
-    .wai-hdr{height:54px;background:var(--wh);display:flex;align-items:center;gap:10px;padding:0 14px;flex-shrink:0;color:#fff}
-    .wai-back{background:none;border:none;color:#fff;font-size:22px;cursor:pointer;padding:0;line-height:1;display:flex;align-items:center}
-    .wai-hdr-name{font-size:15px;font-weight:800;font-family:'Plus Jakarta Sans',sans-serif;flex:1}
-    .wai-hdr-sub{font-size:10px;opacity:.75;font-family:'Plus Jakarta Sans',sans-serif}
-    .wai-hdr-btn{background:rgba(255,255,255,.18);border:none;color:#fff;border-radius:8px;padding:6px 10px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif}
-    /* ── Tabs ── */
-    .wai-tabs{display:flex;background:var(--wp);border-bottom:2px solid var(--wbr);flex-shrink:0}
-    .wai-tb{flex:1;height:42px;background:none;border:none;border-bottom:2.5px solid transparent;margin-bottom:-2px;color:var(--ws);cursor:pointer;font-size:12px;font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;display:flex;align-items:center;justify-content:center;gap:5px;transition:all .2s;white-space:nowrap}
-    .wai-tb.active{color:var(--wh);border-bottom-color:var(--wh)}
-    .wai-cnt{background:var(--wg);color:#fff;font-size:9px;font-weight:800;padding:1px 5px;border-radius:10px;min-width:15px;text-align:center;line-height:1.6}
+    #screen-wainbox{ background:var(--wa-bg); }
+
     /* ── Thread list ── */
-    .wai-list{flex:1;overflow-y:auto;background:var(--wp);padding-bottom:8px}
-    .wai-thread{display:flex;align-items:center;gap:11px;padding:11px 14px;border-bottom:1px solid var(--wbr);cursor:pointer;transition:background .12s}
-    .wai-thread:hover,.wai-thread:active{background:var(--wb)}
-    .wai-av{width:44px;height:44px;border-radius:50%;background:var(--wh);color:#fff;display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:800;font-family:'Plus Jakarta Sans',sans-serif;flex-shrink:0}
-    .wai-tinfo{flex:1;min-width:0}
-    .wai-tname{font-size:13px;font-weight:700;color:var(--wt);display:flex;align-items:center;gap:6px}
-    .wai-tprev{font-size:11.5px;color:var(--ws);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
-    .wai-tmeta{display:flex;flex-direction:column;align-items:flex-end;gap:5px;flex-shrink:0}
-    .wai-ttime{font-size:10px;color:var(--ws)}
-    .wai-udot{width:18px;height:18px;background:var(--wg);border-radius:50%;font-size:9px;font-weight:800;color:#fff;display:flex;align-items:center;justify-content:center}
-    .wai-app{font-size:9px;font-weight:700;padding:1px 6px;border-radius:8px;color:#fff;flex-shrink:0}
-    /* ── Chat view ── */
-    .wai-chat-hdr{background:var(--wh);color:#fff;padding:8px 12px;display:flex;align-items:center;gap:9px;flex-shrink:0}
-    .wai-msgs{flex:1;overflow-y:auto;padding:10px 12px 16px;background:var(--wb);display:flex;flex-direction:column;gap:5px}
-    .wai-bbl{max-width:78%;padding:7px 11px 5px;border-radius:10px;font-size:13px;font-family:'Plus Jakarta Sans',sans-serif;line-height:1.5;word-break:break-word}
-    .wai-bbl.in{background:var(--win);border-radius:10px 10px 10px 2px;align-self:flex-start;color:var(--wt)}
-    .wai-bbl.out{background:var(--wout);border-radius:10px 10px 2px 10px;align-self:flex-end;color:var(--wt)}
-    .wai-bbl-t{font-size:10px;color:var(--ws);text-align:right;margin-top:3px}
-    .wai-closed-notice{background:#fff3cd;border:1px solid #ffc107;border-radius:8px;padding:8px 12px;margin:8px;text-align:center;font-size:11.5px;color:#856404;font-family:'Plus Jakarta Sans',sans-serif}
-    .wai-reply-bar{background:var(--wp);border-top:1px solid var(--wbr);padding:9px 12px;display:flex;gap:8px;align-items:center;flex-shrink:0}
-    .wai-inp{flex:1;background:#f0f2f5;border:none;border-radius:20px;padding:9px 14px;font-size:13px;font-family:'Plus Jakarta Sans',sans-serif;outline:none;color:var(--wt)}
-    body.dark .wai-inp{background:#2a3942}
-    .wai-send{width:40px;height:40px;background:var(--wh);border:none;border-radius:50%;cursor:pointer;color:#fff;font-size:17px;display:flex;align-items:center;justify-content:center;transition:background .15s;flex-shrink:0}
-    .wai-send:hover{background:var(--wg)}
-    .wai-send:disabled{background:#ccc;cursor:not-allowed}
+    .wai-list{ flex:1;overflow-y:auto;background:var(--wa-bg);padding:8px 16px 20px; }
+    .wai-thread{
+      display:flex;align-items:flex-start;gap:13px;
+      padding:12px 14px;
+      background:var(--wa-surf);
+      border-radius:16px;
+      margin-bottom:8px;
+      cursor:pointer;
+      transition:all .18s cubic-bezier(.25,.46,.45,.94);
+      box-shadow:var(--wa-sha-md);
+      border:1px solid var(--wa-bdr);
+    }
+    .wai-thread:hover{ transform:translateY(-1px);box-shadow:0 6px 24px rgba(0,0,0,.1); }
+    .wai-thread:active{ transform:scale(.985);box-shadow:var(--wa-sha); }
+    .wai-av{
+      width:48px;height:48px;border-radius:50%;
+      background:linear-gradient(135deg,#34c759,#007aff);
+      color:#fff;display:flex;align-items:center;justify-content:center;
+      font-size:17px;font-weight:700;font-family:-apple-system,'Plus Jakarta Sans',sans-serif;
+      flex-shrink:0;
+    }
+    .wai-tinfo{ flex:1;min-width:0; }
+    .wai-tname{
+      font-size:14px;font-weight:600;
+      color:var(--wa-txt);
+      font-family:-apple-system,'Plus Jakarta Sans',sans-serif;
+      display:flex;align-items:center;gap:5px;
+      letter-spacing:-.2px;margin-bottom:1px;
+    }
+    .wai-status-dot{ display:inline-block;width:7px;height:7px;border-radius:50%;flex-shrink:0; }
+    /* Student info row */
+    .wai-stu-info{
+      font-size:11px;color:var(--wa-acc);font-weight:500;
+      margin-bottom:3px;display:flex;align-items:center;gap:5px;flex-wrap:wrap;
+      font-family:-apple-system,'Plus Jakarta Sans',sans-serif;
+    }
+    .wai-cls-badge{
+      background:rgba(0,122,255,.1);color:var(--wa-acc);
+      border-radius:6px;padding:1px 7px;font-size:9.5px;font-weight:700;
+      letter-spacing:.3px;text-transform:uppercase;
+    }
+    .wai-bal-chip{
+      background:rgba(255,59,48,.1);color:var(--wa-red);
+      border-radius:6px;padding:1px 7px;font-size:9.5px;font-weight:700;
+    }
+    .wai-parent-ph{ font-size:10.5px;color:var(--wa-sub); }
+    .wai-tprev{
+      font-size:12px;color:var(--wa-sub);
+      white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+      font-family:-apple-system,'Plus Jakarta Sans',sans-serif;
+    }
+    .wai-tmeta{ display:flex;flex-direction:column;align-items:flex-end;gap:5px;flex-shrink:0;padding-top:2px; }
+    .wai-ttime{ font-size:10.5px;color:var(--wa-mut);font-family:-apple-system,sans-serif; }
+    .wai-udot{
+      width:18px;height:18px;
+      background:var(--wa-acc);
+      border-radius:50%;font-size:9px;font-weight:700;color:#fff;
+      display:flex;align-items:center;justify-content:center;
+    }
+    .wai-app{
+      font-size:9px;font-weight:700;padding:2px 7px;border-radius:20px;
+      color:#fff;flex-shrink:0;letter-spacing:.2px;
+    }
+    /* ── Count bar ── */
+    #wai-count-bar{
+      background:var(--wa-bg)!important;
+      border-bottom:none!important;
+      padding:8px 16px 4px!important;
+    }
+    /* ── Chat header (keep existing white bar, just update sub-elements) ── */
+    .wai-chat-hdr{ background:var(--wa-surf);display:flex;align-items:center;gap:10px;flex-shrink:0; }
+    /* ── Chat background ── */
+    .wai-msgs{
+      flex:1;overflow-y:auto;
+      padding:16px 16px 20px;
+      background:var(--wa-bg);
+      display:flex;flex-direction:column;gap:3px;
+    }
+    /* ── Bubbles ── */
+    .wai-bbl{
+      max-width:72%;padding:9px 13px 7px;
+      font-size:14px;
+      font-family:-apple-system,'Plus Jakarta Sans',sans-serif;
+      line-height:1.45;word-break:break-word;
+    }
+    .wai-bbl.in{
+      background:var(--wa-surf);
+      border-radius:4px 18px 18px 18px;
+      align-self:flex-start;
+      color:var(--wa-txt);
+      box-shadow:0 1px 4px rgba(0,0,0,.07);
+    }
+    .wai-bbl.out{
+      background:var(--wa-out);
+      border-radius:18px 4px 18px 18px;
+      align-self:flex-end;
+      color:#fff;
+      box-shadow:0 1px 6px rgba(0,122,255,.25);
+    }
+    .wai-bbl-t{
+      font-size:10px;margin-top:4px;
+      display:flex;align-items:center;justify-content:flex-end;gap:3px;
+    }
+    .wai-bbl.in .wai-bbl-t{ color:var(--wa-sub); }
+    .wai-bbl.out .wai-bbl-t{ color:rgba(255,255,255,.7); }
+    /* Date separator */
+    .wai-date-sep{ text-align:center;margin:12px 0; }
+    .wai-date-sep span{
+      background:var(--wa-surf);color:var(--wa-sub);
+      font-size:10.5px;font-weight:600;padding:4px 12px;
+      border-radius:20px;
+      box-shadow:0 1px 4px rgba(0,0,0,.08);
+      font-family:-apple-system,'Plus Jakarta Sans',sans-serif;
+    }
+    /* ── Closed notice ── */
+    .wai-closed-notice{
+      background:rgba(255,159,10,.1);
+      border:none;border-radius:12px;
+      padding:10px 16px;margin:10px 16px;
+      text-align:center;font-size:12px;
+      color:var(--wa-amber);font-weight:600;
+      font-family:-apple-system,'Plus Jakarta Sans',sans-serif;
+    }
+    /* ── Reply bar ── */
+    .wai-reply-bar{
+      background:var(--wa-surf);
+      border-top:1px solid var(--wa-bdr);
+      padding:10px 14px;
+      display:flex;gap:10px;align-items:center;flex-shrink:0;
+    }
+    .wai-inp{
+      flex:1;
+      background:var(--wa-bg);
+      border:1px solid var(--wa-bdr2);
+      border-radius:22px;
+      padding:10px 16px;
+      font-size:14px;
+      font-family:-apple-system,'Plus Jakarta Sans',sans-serif;
+      outline:none;color:var(--wa-txt);
+      transition:border .2s,box-shadow .2s;
+    }
+    .wai-inp:focus{
+      border-color:var(--wa-acc);
+      box-shadow:0 0 0 3px rgba(0,122,255,.12);
+    }
+    .wai-inp::placeholder{ color:var(--wa-mut); }
+    .wai-send{
+      width:38px;height:38px;
+      background:var(--wa-acc);
+      border:none;border-radius:50%;
+      cursor:pointer;color:#fff;font-size:16px;
+      display:flex;align-items:center;justify-content:center;
+      transition:all .18s;flex-shrink:0;
+      box-shadow:0 2px 8px rgba(0,122,255,.35);
+    }
+    .wai-send:hover{ transform:scale(1.08);box-shadow:0 4px 14px rgba(0,122,255,.4); }
+    .wai-send:active{ transform:scale(.94); }
+    .wai-send:disabled{ background:var(--wa-mut);box-shadow:none;cursor:not-allowed;transform:none; }
     /* ── Empty state ── */
-    .wai-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;padding:32px 24px;text-align:center;color:var(--ws)}
-    .wai-empty-ico{font-size:52px;margin-bottom:14px}
-    .wai-empty-ttl{font-size:14px;font-weight:700;color:var(--wt);margin-bottom:6px}
-    .wai-empty-sub{font-size:12px;line-height:1.7}
-    /* ── Settings modal (like duelist) ── */
+    .wai-empty{
+      display:flex;flex-direction:column;align-items:center;
+      justify-content:center;flex:1;padding:40px 28px;text-align:center;
+    }
+    .wai-empty-ico{ font-size:56px;margin-bottom:16px;opacity:.5; }
+    .wai-empty-ttl{
+      font-size:17px;font-weight:600;color:var(--wa-txt);
+      margin-bottom:8px;font-family:-apple-system,'Plus Jakarta Sans',sans-serif;
+      letter-spacing:-.3px;
+    }
+    .wai-empty-sub{
+      font-size:13px;line-height:1.6;color:var(--wa-sub);
+      font-family:-apple-system,'Plus Jakarta Sans',sans-serif;
+    }
+    /* ── Settings modal ── */
     #wai-settings-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.52);z-index:1000;align-items:center;justify-content:center;padding:16px}
     #wai-settings-modal.open{display:flex}
     .wai-modal-box{background:#faf8f3;border-radius:20px;width:100%;max-width:420px;max-height:88vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.3);border:1.5px solid #e8dcc8}
@@ -3357,8 +3514,8 @@ Thank you 🙏</textarea>
     .wai-finp{width:100%;background:#f5f0e8;border:1.5px solid #e8dcc8;border-radius:9px;padding:9px 11px;font-size:12.5px;font-family:'Plus Jakarta Sans',sans-serif;color:#1a1208;outline:none;transition:border .18s;box-sizing:border-box}
     .wai-finp:focus{border-color:#25d366}
     .wai-finp::placeholder{color:#b0a090}
-    .wai-save-btn{width:100%;background:#25d366;color:#fff;border:none;border-radius:10px;padding:11px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;margin-top:4px;transition:background .15s}
-    .wai-save-btn:hover{background:#128c7e}
+    .wai-save-btn{width:100%;background:#007aff;color:#fff;border:none;border-radius:12px;padding:12px;font-size:14px;font-weight:600;cursor:pointer;font-family:-apple-system,'Plus Jakarta Sans',sans-serif;margin-top:4px;transition:all .18s;letter-spacing:-.1px}
+    .wai-save-btn:hover{background:#0062cc;box-shadow:0 4px 14px rgba(0,122,255,.3)}
     .wai-info-box{background:#f0fdf4;border:1px solid #86efac;border-radius:9px;padding:10px 12px;font-size:11px;color:#166534;line-height:1.6;margin-bottom:10px}
     .wai-code-box{background:#1a1208;border-radius:9px;padding:10px 12px;font-size:10.5px;font-family:'JetBrains Mono',monospace;color:#a8e6cf;line-height:1.7;white-space:pre-wrap;word-break:break-all;margin-bottom:8px;max-height:180px;overflow-y:auto}
     </style>
@@ -3385,17 +3542,16 @@ Thank you 🙏</textarea>
       body.dark #screen-wainbox > div:first-child > div:nth-child(3){color:#6a6055!important}
       </style>
 
-      <!-- Unread count bar (replaces tabs) -->
-      <div id="wai-count-bar" style="background:#fff;border-bottom:1px solid #f1f5f9;padding:6px 14px;display:flex;align-items:center;gap:8px;flex-shrink:0">
-        <div id="wai-bar-label" style="font-size:11px;font-weight:700;color:#64748b;flex:1">
-          <span id="wai-bar-open-cnt" style="background:#dcfce7;color:#16a34a;border:1px solid #86efac;border-radius:10px;padding:2px 8px;font-size:10px;font-weight:800;margin-right:6px">0</span>
+      <!-- Unread count bar -->
+      <div id="wai-count-bar" style="background:var(--wa-bg);padding:8px 16px 4px;display:flex;align-items:center;gap:8px;flex-shrink:0">
+        <div id="wai-bar-label" style="font-size:12px;font-weight:500;color:var(--wa-sub);flex:1;font-family:-apple-system,'Plus Jakarta Sans',sans-serif">
+          <span id="wai-bar-open-cnt" style="background:rgba(0,122,255,.1);color:#007aff;border-radius:20px;padding:2px 9px;font-size:10.5px;font-weight:700;margin-right:7px">0</span>
           Open conversations
         </div>
-        <div id="wai-archive-label" style="display:none;font-size:11px;font-weight:700;color:#8b5cf6;background:#f3e8ff;border:1px solid #d8b4fe;border-radius:10px;padding:2px 10px">
-          🗂 Archived view
+        <div id="wai-archive-label" style="display:none;font-size:11px;font-weight:600;color:#6e3aed;background:rgba(110,58,237,.1);border-radius:20px;padding:2px 10px;font-family:-apple-system,sans-serif">
+          🗂 Archived
         </div>
       </div>
-      <style>body.dark #wai-count-bar{background:#1a1714!important;border-bottom-color:#2a2620!important}</style>
 
       <!-- List pane -->
       <div id="wai-list-pane" style="display:flex;flex-direction:column;flex:1;overflow:hidden">
@@ -3404,23 +3560,26 @@ Thank you 🙏</textarea>
 
       <!-- Chat pane (hidden by default) -->
       <div id="wai-chat-pane" style="display:none;flex-direction:column;flex:1;overflow:hidden">
-        <div class="wai-chat-hdr" style="background:#fff;border-bottom:1px solid #e2e8f0;color:#0f172a;padding:0 12px;height:50px">
-          <button onclick="waiCloseChat()" style="background:none;border:none;color:#64748b;font-size:20px;cursor:pointer;padding:0;margin-right:8px;line-height:1">&#8592;</button>
-          <div id="wai-cav" class="wai-av" style="width:36px;height:36px;font-size:14px;background:#128c7e">P</div>
-          <div style="flex:1;min-width:0;margin-left:8px">
-            <div style="font-size:13px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#0f172a" id="wai-cname">Parent</div>
-            <div style="font-size:10px;color:#64748b" id="wai-cphone"></div>
+        <div class="wai-chat-hdr" style="background:var(--wa-surf);border-bottom:1px solid var(--wa-bdr);color:var(--wa-txt);padding:0 14px;height:56px">
+          <button onclick="waiCloseChat()" style="background:none;border:none;color:var(--wa-acc);font-size:15px;font-weight:600;cursor:pointer;padding:0;margin-right:6px;line-height:1;display:flex;align-items:center;gap:3px;font-family:-apple-system,sans-serif">
+            <svg width="10" height="16" viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M8.5 1.5L1.5 8L8.5 14.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <div id="wai-cav" class="wai-av" style="width:38px;height:38px;font-size:14px">P</div>
+          <div style="flex:1;min-width:0;margin-left:10px">
+            <div style="font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--wa-txt);letter-spacing:-.2px;font-family:-apple-system,'Plus Jakarta Sans',sans-serif" id="wai-cname">Parent</div>
+            <div style="font-size:10.5px;color:var(--wa-sub);font-family:-apple-system,sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" id="wai-cphone"></div>
           </div>
-          <span id="wai-capp" style="font-size:9px;font-weight:700;padding:2px 8px;border-radius:8px;background:#dcfce7;color:#16a34a;border:1px solid #86efac"></span>
+          <span id="wai-capp" style="font-size:9px;font-weight:700;padding:3px 9px;border-radius:20px;background:rgba(0,122,255,.1);color:#007aff;letter-spacing:.2px"></span>
         </div>
-        <style>body.dark #wai-chat-pane .wai-chat-hdr{background:#1a1714!important;border-bottom-color:#2a2620!important} body.dark #wai-chat-pane .wai-chat-hdr button{color:#9e9488!important} body.dark #wai-cname{color:#f4ede0!important} body.dark #wai-cphone{color:#6a6055!important}</style>
         <div class="wai-msgs" id="wai-msgs"></div>
         <div id="wai-closed-bar" class="wai-closed-notice" style="display:none">
-          ⏰ 24-hour window closed — this chat is now read-only
+          ⏰ 24-hour window closed — this chat is read-only
         </div>
         <div class="wai-reply-bar" id="wai-reply-bar">
-          <input class="wai-inp" id="wai-inp" placeholder="Type a reply…" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();waiSend()}"/>
-          <button class="wai-send" id="wai-send-btn" onclick="waiSend()">&#10148;</button>
+          <input class="wai-inp" id="wai-inp" placeholder="Message…" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();waiSend()}"/>
+          <button class="wai-send" id="wai-send-btn" onclick="waiSend()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M22 2L11 13M22 2L15 22L11 13L2 9L22 2Z" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
         </div>
       </div>
 
@@ -3778,10 +3937,12 @@ Thank you 🙏</textarea>
               <div id="dl-pw-status" style="font-size:11px;margin-top:6px;min-height:16px;color:#16a34a"></div>
 
               <div style="font-size:10px;font-weight:800;color:#8a6428;text-transform:uppercase;letter-spacing:.8px;margin-top:14px;margin-bottom:8px">Danger Zone</div>
-              <div style="display:flex;gap:8px">
+              <div style="display:flex;gap:8px;margin-bottom:8px">
                 <button onclick="dlClearData()" style="flex:1;background:#fff;color:#7c3aed;border:1.5px solid #7c3aed;border-radius:9px;padding:9px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit" onmouseover="this.style.background='#f3e8ff'" onmouseout="this.style.background='#fff'">🗑 Clear Data</button>
                 <button onclick="dlResetToDefault()" style="flex:1;background:#fff;color:#c0392b;border:1.5px solid #c0392b;border-radius:9px;padding:9px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit" onmouseover="this.style.background='#fee2e2'" onmouseout="this.style.background='#fff'">↩️ Reset Default</button>
               </div>
+              <button onclick="clearAppStorage('duelist')" style="width:100%;background:#fff;color:#b5883e;border:1.5px solid #b5883e;border-radius:9px;padding:9px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:6px;transition:background .15s" onmouseover="this.style.background='#fdf8ee'" onmouseout="this.style.background='#fff'">🧹 Clear Due List Local Storage</button>
+              <div style="font-size:10.5px;color:#a89f92;margin-top:6px;line-height:1.5">Firebase data safe rahega. Sirf local settings, column mapping, aur cached data clear hoga. Page reload hoga.</div>
             </div>
           </div>
 
@@ -9601,6 +9762,7 @@ const APP_STORAGE_KEYS = {
   register: ['ref_cfg','ref_data','ref_fb_url','ref_fb_code','ref_fb_stu_url','ref_fb_stu_code','ref_fs_cfg','ref_od_cfg','ref_tg_cfg','ref_wix_cfg','ref_students','ref_extra_fys'],
   feeqr:    ['feeqr_fb','feeqr_settings','feeqr_settings_pw','feeqr_students','feeqr_wa_enabled'],
   theme:    ['lis_theme','lis_sb'],
+  duelist:  ['dl_data_v1','dl_col_map_v1','dl_sheet_v1','dl_class_mode_v1','dl_wa_settings','dl_auto_reload','dl_pinned_sheet','dl_settings_pw','dl_fb_url','dl_fb_code','dl_settings'],
 };
 function clearAppStorage(app){
   const stEl=document.getElementById('global-clear-status');
@@ -9615,7 +9777,7 @@ function clearAppStorage(app){
     if(!confirm(confirmMsg))return;
     // Delete all gp_, ref_, feeqr_, lis_ keys
     const toDelete=[];
-    for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&(k.startsWith('gp_')||k.startsWith('ref_')||k.startsWith('feeqr_')||k.startsWith('lis_')))toDelete.push(k);}
+    for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&(k.startsWith('gp_')||k.startsWith('ref_')||k.startsWith('feeqr_')||k.startsWith('lis_')||k.startsWith('dl_')||k.startsWith('wai_')))toDelete.push(k);}
     toDelete.forEach(k=>localStorage.removeItem(k));
     setStatus('✅ All local storage cleared ('+toDelete.length+' keys) — reloading…','var(--green)');
     if(typeof toast==='function')toast('🗑️ Full reset — reloading','err');
@@ -9623,7 +9785,7 @@ function clearAppStorage(app){
     return;
   }
   keys=APP_STORAGE_KEYS[app]||[];
-  const appNames={gatepass:'Gatepass',register:'Register',feeqr:'Fee QR',theme:'Theme / UI'};
+  const appNames={gatepass:'Gatepass',register:'Register',feeqr:'Fee QR',theme:'Theme / UI',duelist:'Due List'};
   label=appNames[app]||app;
   if(!keys.length)return;
   if(!confirm('Clear '+label+' local data?\n\nFirebase data stays safe.\nPage will reload.'))return;
@@ -10488,6 +10650,7 @@ window.goTo=function(name){
     } else if(window._dlFbHasNewData){
       // Firebase fetched new data while screen was inactive — re-render now
       window._dlFbHasNewData = false;
+      dlLoadData(); // FIX: refresh dlData from localStorage (has fresh Firebase records)
     }
     dlBuildClassBar();
     dlRender();
@@ -11317,7 +11480,8 @@ window.dlFbFetchNow = async function(silent){
       return;
     }
 
-    // ── Save to localStorage + window.dlData ──
+    // ── Save to localStorage + window.dlData + dlData ──
+    dlData = data;            // FIX: local var sync (dlRender uses this directly)
     window.dlData = data;
     try{ localStorage.setItem(DL_STORE_KEY, JSON.stringify(data)); }catch(ex){}
     window._dlFbHasNewData = true; // flag for goTo to re-render
@@ -11782,6 +11946,47 @@ var _waiPollTimer   = null;
 // ── Escape helper ──
 function _waiEsc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
+// ── Lookup student by phone number from Due List / STUDENTS data ──
+function _waiGetStudentByPhone(phone){
+  if(!phone) return null;
+  // Normalize: strip leading +, spaces, country code variants
+  var normalized = String(phone).replace(/\D/g,'');
+  var last10 = normalized.slice(-10);
+
+  // Check dlData (Due List) first — has adm, name, cls, mob, balance
+  if(window.dlData && window.dlData.length){
+    for(var i=0;i<window.dlData.length;i++){
+      var row = window.dlData[i];
+      var mob = String(row.mob||'').replace(/\D/g,'');
+      if(mob.slice(-10) === last10){
+        return {name: row.name||'', cls: row.cls||'', adm: row.adm||'', balance: row.balance||0, source:'dl'};
+      }
+    }
+  }
+
+  // Check EMBEDDED fallback [adm, name, cls, mob, due, recv, bal]
+  if(typeof EMBEDDED !== 'undefined' && EMBEDDED.length){
+    for(var j=0;j<EMBEDDED.length;j++){
+      var emob = String(EMBEDDED[j][3]||'').replace(/\D/g,'');
+      if(emob.slice(-10) === last10){
+        return {name: EMBEDDED[j][1]||'', cls: EMBEDDED[j][2]||'', adm: EMBEDDED[j][0]||'', balance: EMBEDDED[j][6]||0, source:'embedded'};
+      }
+    }
+  }
+
+  // Check STUDENTS (Reference Register students)
+  if(typeof STUDENTS !== 'undefined' && STUDENTS.length){
+    for(var k=0;k<STUDENTS.length;k++){
+      var s = STUDENTS[k];
+      var smob = String(s.mob||s.mobile||s.phone||'').replace(/\D/g,'');
+      if(smob.slice(-10) === last10){
+        return {name: s.name||'', cls: s.cls||s.class||'', adm: s.adm||s.id||'', balance:0, source:'ref'};
+      }
+    }
+  }
+  return null;
+}
+
 // ── Format time ──
 function _waiTime(ts){
   if(!ts) return '';
@@ -11892,20 +12097,37 @@ function _waiRenderList(){
 
   el.innerHTML = filtered.map(function(t){
     var last = t.msgs[t.msgs.length-1];
-    var preview = last ? (_waiEsc((last.direction==='out'?'You: ':'')+last.body)).substring(0,55) : '';
-    var initials = (t.name||t.phone).replace(/\+/g,'').substring(0,2).toUpperCase();
+    var preview = last ? (_waiEsc((last.direction==='out'?'You: ':'')+last.body)).substring(0,52) : '';
     var appTag = last ? (last.app_tag||'') : '';
     var unreadHtml = t.unread>0 ? '<div class="wai-udot">'+t.unread+'</div>' : '';
-    var appHtml = appTag ? '<span class="wai-app" style="background:'+_waiAppColor(appTag)+'">'+appTag+'</span>' : '';
-    var isOpen = _waiIsOpen(t.msgs);
-    var statusDot = isOpen
-      ? '<span style="display:inline-block;width:7px;height:7px;background:#25d366;border-radius:50%;flex-shrink:0;margin-top:1px"></span>'
-      : '<span style="display:inline-block;width:7px;height:7px;background:#94a3b8;border-radius:50%;flex-shrink:0;margin-top:1px"></span>';
+    var appHtml = appTag && appTag!=='unknown' ? '<span class="wai-app" style="background:'+_waiAppColor(appTag)+'">'+appTag+'</span>' : '';
+    var isThreadOpen = _waiIsOpen(t.msgs);
+    var statusDot = isThreadOpen
+      ? '<span class="wai-status-dot" style="background:#25d366"></span>'
+      : '<span class="wai-status-dot" style="background:#94a3b8"></span>';
+
+    var stu = _waiGetStudentByPhone(t.phone);
+    var displayName = stu ? stu.name : (t.name||t.phone);
+    var initials = displayName.replace(/\+/g,'').substring(0,2).toUpperCase();
+
+    var stuInfoHtml = '';
+    if(stu){
+      stuInfoHtml = '<div class="wai-stu-info">'
+        +'<span class="wai-cls-badge">'+_waiEsc(stu.cls)+'</span>'
+        +' Adm #'+stu.adm
+        +(stu.balance>0 ? ' &middot; <span class="wai-bal-chip">₹'+stu.balance+'</span>' : '')
+        +'</div>';
+    }
+    var previewLine = stu
+      ? '<div class="wai-tprev"><span style="color:var(--ws);opacity:.7;font-size:10.5px">'+_waiEsc(t.phone)+'</span> · '+preview+'</div>'
+      : '<div class="wai-tprev">'+preview+'</div>';
+
     return '<div class="wai-thread" onclick="_waiOpenChat(\''+t.phone+'\')">'+
       '<div class="wai-av">'+initials+'</div>'+
       '<div class="wai-tinfo">'+
-        '<div class="wai-tname" style="display:flex;align-items:center;gap:5px">'+statusDot+' '+_waiEsc(t.name||t.phone)+' '+appHtml+'</div>'+
-        '<div class="wai-tprev">'+preview+'</div>'+
+        '<div class="wai-tname">'+statusDot+' '+_waiEsc(displayName)+' '+appHtml+'</div>'+
+        stuInfoHtml+
+        previewLine+
       '</div>'+
       '<div class="wai-tmeta">'+
         '<span class="wai-ttime">'+_waiTime(last?last.ts:0)+'</span>'+
@@ -12027,24 +12249,43 @@ window._waiOpenChat = function(phone){
   _waiSaveMsgs();
   _waiUpdateCounts();
 
-  // Set header
-  var initials = (thread.name||thread.phone).replace(/\+/g,'').substring(0,2).toUpperCase();
+  // Set header — show student/child name if found
+  var stu = _waiGetStudentByPhone(phone);
+  var displayName = stu ? stu.name : (thread.name||thread.phone);
+  var initials = displayName.replace(/\+/g,'').substring(0,2).toUpperCase();
   var cavEl = document.getElementById('wai-cav'); if(cavEl) cavEl.textContent = initials;
-  var cnEl  = document.getElementById('wai-cname'); if(cnEl) cnEl.textContent = thread.name||thread.phone;
-  var cpEl  = document.getElementById('wai-cphone'); if(cpEl) cpEl.textContent = thread.phone;
+  var cnEl  = document.getElementById('wai-cname'); if(cnEl) cnEl.textContent = displayName;
+  var cpEl  = document.getElementById('wai-cphone');
+  if(cpEl){
+    if(stu){
+      cpEl.innerHTML = '🎓 '+_waiEsc(stu.cls)+' · Adm #'+stu.adm+' · 📱 '+thread.phone+(stu.balance>0?' · <span style="background:#fef2f2;color:#dc2626;border:1px solid #fca5a5;border-radius:6px;padding:1px 6px;font-size:9px;font-weight:800">₹'+stu.balance+' due</span>':'');
+    } else {
+      cpEl.textContent = thread.phone;
+    }
+  }
   var lastMsg = thread.msgs[thread.msgs.length-1];
   var appTag = lastMsg ? (lastMsg.app_tag||'') : '';
   var cappEl = document.getElementById('wai-capp');
-  if(cappEl){ cappEl.textContent=appTag; cappEl.style.background=appTag?('rgba(255,255,255,.2)'):'transparent'; }
+  if(cappEl){ cappEl.textContent=appTag&&appTag!=='unknown'?appTag:''; cappEl.style.background=appTag&&appTag!=='unknown'?('rgba(255,255,255,.2)'):'transparent'; }
 
-  // Render bubbles
+  // Render bubbles with date separators
   var wrap = document.getElementById('wai-msgs');
   if(wrap){
+    var lastDate = '';
     wrap.innerHTML = thread.msgs.map(function(m){
-      return '<div class="wai-bbl '+(m.direction==='in'?'in':'out')+'">'+
+      var html = '';
+      var d = new Date(m.ts);
+      var dateStr = d.toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'});
+      if(dateStr !== lastDate){
+        lastDate = dateStr;
+        html += '<div class="wai-date-sep"><span>'+dateStr+'</span></div>';
+      }
+      var ticks = m.direction==='out' ? ' <span style="color:#53bdeb">✓✓</span>' : '';
+      html += '<div class="wai-bbl '+(m.direction==='in'?'in':'out')+'">'+
         _waiEsc(m.body)+
-        '<div class="wai-bbl-t">'+_waiTime(m.ts)+(m.direction==='out'?' ✓':'')+'</div>'+
+        '<div class="wai-bbl-t">'+_waiTime(m.ts)+ticks+'</div>'+
       '</div>';
+      return html;
     }).join('');
     setTimeout(function(){ wrap.scrollTop=wrap.scrollHeight; }, 50);
   }
