@@ -254,6 +254,7 @@ body.dark .home-sub{color:#9e9488;}
 body.dark .app-card{background:#1e1b16;border-color:#2a2620;}
 .app-card:hover{border-color:#cfc8b8;transform:translateY(-3px);box-shadow:0 10px 28px rgba(0,0,0,.09);}
 body.dark .app-card:hover{border-color:#3c3628;}
+body.dark #home-wa-previews>div{background:rgba(255,255,255,.05)!important;border-color:rgba(37,211,102,.15)!important}
 .ac-head{display:flex;align-items:center;gap:13px;margin-bottom:13px}
 .ac-icon{width:48px;height:48px;border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:23px;flex-shrink:0}
 .ac-name{font-size:16px;font-weight:800;color:var(--txt)}
@@ -1002,8 +1003,8 @@ body.dark .fq-mtitle{color:#f4ede0}
       <button class="sb-btn" id="sb-feeqr" onclick="goTo('feeqr')">
         <span class="sb-icon">📲</span><span class="sb-lbl">Fee QR</span>
       </button>
-      <button class="sb-btn" id="sb-due" onclick="goTo('due')">
-        <span class="sb-icon">💸</span><span class="sb-lbl">Due List</span>
+      <button class="sb-btn" id="sb-due" onclick="goTo('due')" style="background:rgba(181,136,62,.1);color:#b5883e;">
+        <span class="sb-icon">💸</span><span class="sb-lbl" style="color:#b5883e;font-weight:800">Due List</span>
       </button>
       <button class="sb-btn" id="sb-wainbox" onclick="goTo('wainbox')" style="position:relative">
         <span class="sb-icon">💬</span><span class="sb-lbl">WA Inbox</span>
@@ -1041,7 +1042,7 @@ body.dark .fq-mtitle{color:#f4ede0}
             </div>
             <div class="ac-foot">
               <span class="ac-stat" id="home-rec-stat">— passes today</span>
-              <span class="ac-open" style="color:var(--blue);border-color:var(--blue)">Open →</span>
+              <span class="ac-open" style="color:#2563eb;border-color:#2563eb">Open →</span>
             </div>
           </div>
           <div class="app-card" onclick="goTo('ref')">
@@ -1055,27 +1056,29 @@ body.dark .fq-mtitle{color:#f4ede0}
             </div>
           </div>
           <div class="app-card" onclick="goTo('feeqr')">
-            <div class="ac-head"><div class="ac-icon" style="background:rgba(37,99,235,.1);border:1.5px solid rgba(37,99,235,.2)">📲</div><div><div class="ac-name">Fee QR</div><div class="ac-desc">UPI fee cards with QR code for each student</div></div></div>
+            <div class="ac-head"><div class="ac-icon" style="background:rgba(124,58,237,.1);border:1.5px solid rgba(124,58,237,.2)">📲</div><div><div class="ac-name">Fee QR</div><div class="ac-desc">UPI fee cards with QR code for each student</div></div></div>
             <div class="ac-foot"><span class="ac-stat" id="home-feeqr-stat">— students</span><span class="ac-open" style="color:#7c3aed;border-color:#7c3aed">Open →</span></div>
           </div>
           <div class="app-card" onclick="goTo('due')">
             <div class="ac-head">
-              <div class="ac-icon" style="background:rgba(34,197,94,.12);border:1.5px solid rgba(34,197,94,.3)">💸</div>
-              <div><div class="ac-name">Due List</div><div class="ac-desc">Pending fee balance, class-wise student due tracker</div></div>
+              <div class="ac-icon" style="background:rgba(181,136,62,.1);border:1.5px solid rgba(181,136,62,.25)">💸</div>
+              <div><div class="ac-name">Due List</div><div class="ac-desc">Pending fee balance, class-wise tracker</div></div>
             </div>
             <div class="ac-foot">
               <span class="ac-stat" id="home-due-stat">— students due</span>
-              <span class="ac-open" style="color:#16a34a;border-color:#16a34a">Open →</span>
+              <span class="ac-open" style="color:#ca8a04;border-color:#fde047;background:#fefce8">Open →</span>
             </div>
           </div>
-          <div class="app-card" onclick="goTo('wainbox')" style="grid-column:1/-1">
+          <div class="app-card" onclick="goTo('wainbox')">
             <div class="ac-head">
               <div class="ac-icon" style="background:rgba(37,211,102,.12);border:1.5px solid rgba(37,211,102,.3)">💬</div>
-              <div><div class="ac-name">WhatsApp Inbox</div><div class="ac-desc">Parent replies from all apps — reply within 24 hrs</div></div>
+              <div><div class="ac-name">WA Inbox</div><div class="ac-desc">Parent replies, reply within 24 hrs</div></div>
             </div>
+            <!-- Live chat mini-previews -->
+            <div id="home-wa-previews" style="margin:8px 0 4px;display:flex;flex-direction:column;gap:4px"></div>
             <div class="ac-foot">
               <span class="ac-stat" id="home-wainbox-stat">— messages</span>
-              <span class="ac-open" style="color:#25d366;border-color:#25d366">Open →</span>
+              <span class="ac-open" style="color:#16a34a;border-color:#16a34a">Open →</span>
             </div>
           </div>
         </div>
@@ -3362,26 +3365,37 @@ Thank you 🙏</textarea>
 
     <div id="screen-wainbox" class="screen" style="flex-direction:column;overflow:hidden">
 
-      <!-- Header -->
-      <div class="wai-hdr">
-        <button class="wai-back" onclick="goTo('home')">&#8592;</button>
+      <!-- Header — same style as other app screens -->
+      <div style="background:#fff;border-bottom:1px solid #e2e8f0;padding:0 14px;height:54px;display:flex;align-items:center;gap:10px;flex-shrink:0;position:sticky;top:0;z-index:9">
+        <div style="width:34px;height:34px;background:rgba(37,211,102,.12);border:1.5px solid rgba(37,211,102,.3);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0">💬</div>
         <div style="flex:1">
-          <div class="wai-hdr-name">💬 WhatsApp Inbox</div>
-          <div class="wai-hdr-sub" id="wai-sync-sub">Pull-to-refresh for latest</div>
+          <div style="font-size:15px;font-weight:800;color:#0f172a;letter-spacing:-.2px">WhatsApp Inbox</div>
         </div>
-        <button class="wai-hdr-btn" onclick="waiFetch(true)">↻</button>
-        <button class="wai-hdr-btn" style="margin-left:6px" onclick="waiOpenSettings()">⚙️</button>
+        <!-- Sync status -->
+        <div id="wai-sync-sub" style="font-size:10px;color:#94a3b8;margin-right:4px;display:none"></div>
+        <!-- Refresh button -->
+        <button onclick="waiFetch(true)" style="background:#f1f5f9;border:1.5px solid #e2e8f0;border-radius:9px;width:36px;height:36px;cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;transition:all .15s;flex-shrink:0" title="Refresh" onmouseover="this.style.background='#e0f2e9';this.style.borderColor='#25d366'" onmouseout="this.style.background='#f1f5f9';this.style.borderColor='#e2e8f0'">↻</button>
+        <!-- Archive / Closed toggle button -->
+        <button id="wai-archive-btn" onclick="waiToggleArchive()" style="background:#f1f5f9;border:1.5px solid #e2e8f0;border-radius:9px;width:36px;height:36px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;transition:all .15s;flex-shrink:0" title="View Closed / Archived" onmouseover="this.style.background='#f0fdf4'" onmouseout="this.style.background='#f1f5f9'">🗂</button>
+        <!-- Settings -->
+        <button onclick="waiOpenSettings()" style="background:#f1f5f9;border:1.5px solid #e2e8f0;border-radius:9px;width:36px;height:36px;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;transition:all .15s;flex-shrink:0" title="Settings" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='#f1f5f9'">⚙️</button>
       </div>
+      <style>
+      body.dark #screen-wainbox > div:first-child{background:#1a1714!important;border-bottom-color:#2a2620!important}
+      body.dark #screen-wainbox > div:first-child > div:nth-child(3){color:#6a6055!important}
+      </style>
 
-      <!-- Tabs -->
-      <div class="wai-tabs">
-        <button class="wai-tb active" id="wai-tb-open" onclick="waiTab('open',this)">
-          Open <span class="wai-cnt" id="wai-cnt-open" style="display:none">0</span>
-        </button>
-        <button class="wai-tb" id="wai-tb-closed" onclick="waiTab('closed',this)">
-          Closed
-        </button>
+      <!-- Unread count bar (replaces tabs) -->
+      <div id="wai-count-bar" style="background:#fff;border-bottom:1px solid #f1f5f9;padding:6px 14px;display:flex;align-items:center;gap:8px;flex-shrink:0">
+        <div id="wai-bar-label" style="font-size:11px;font-weight:700;color:#64748b;flex:1">
+          <span id="wai-bar-open-cnt" style="background:#dcfce7;color:#16a34a;border:1px solid #86efac;border-radius:10px;padding:2px 8px;font-size:10px;font-weight:800;margin-right:6px">0</span>
+          Open conversations
+        </div>
+        <div id="wai-archive-label" style="display:none;font-size:11px;font-weight:700;color:#8b5cf6;background:#f3e8ff;border:1px solid #d8b4fe;border-radius:10px;padding:2px 10px">
+          🗂 Archived view
+        </div>
       </div>
+      <style>body.dark #wai-count-bar{background:#1a1714!important;border-bottom-color:#2a2620!important}</style>
 
       <!-- List pane -->
       <div id="wai-list-pane" style="display:flex;flex-direction:column;flex:1;overflow:hidden">
@@ -3390,15 +3404,16 @@ Thank you 🙏</textarea>
 
       <!-- Chat pane (hidden by default) -->
       <div id="wai-chat-pane" style="display:none;flex-direction:column;flex:1;overflow:hidden">
-        <div class="wai-chat-hdr">
-          <button onclick="waiCloseChat()" style="background:none;border:none;color:#fff;font-size:20px;cursor:pointer;padding:0;margin-right:4px">&#8592;</button>
-          <div id="wai-cav" class="wai-av" style="width:36px;height:36px;font-size:14px">P</div>
-          <div style="flex:1;min-width:0;margin-left:2px">
-            <div style="font-size:13px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" id="wai-cname">Parent</div>
-            <div style="font-size:10px;opacity:.8" id="wai-cphone"></div>
+        <div class="wai-chat-hdr" style="background:#fff;border-bottom:1px solid #e2e8f0;color:#0f172a;padding:0 12px;height:50px">
+          <button onclick="waiCloseChat()" style="background:none;border:none;color:#64748b;font-size:20px;cursor:pointer;padding:0;margin-right:8px;line-height:1">&#8592;</button>
+          <div id="wai-cav" class="wai-av" style="width:36px;height:36px;font-size:14px;background:#128c7e">P</div>
+          <div style="flex:1;min-width:0;margin-left:8px">
+            <div style="font-size:13px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#0f172a" id="wai-cname">Parent</div>
+            <div style="font-size:10px;color:#64748b" id="wai-cphone"></div>
           </div>
-          <span id="wai-capp" style="font-size:9px;font-weight:700;padding:2px 8px;border-radius:8px;background:rgba(255,255,255,.2);color:#fff"></span>
+          <span id="wai-capp" style="font-size:9px;font-weight:700;padding:2px 8px;border-radius:8px;background:#dcfce7;color:#16a34a;border:1px solid #86efac"></span>
         </div>
+        <style>body.dark #wai-chat-pane .wai-chat-hdr{background:#1a1714!important;border-bottom-color:#2a2620!important} body.dark #wai-chat-pane .wai-chat-hdr button{color:#9e9488!important} body.dark #wai-cname{color:#f4ede0!important} body.dark #wai-cphone{color:#6a6055!important}</style>
         <div class="wai-msgs" id="wai-msgs"></div>
         <div id="wai-closed-bar" class="wai-closed-notice" style="display:none">
           ⏰ 24-hour window closed — this chat is now read-only
@@ -3895,7 +3910,7 @@ Thank you 🙏</textarea>
       <button class="sb-btn" id="mdr-rec" onclick="goTo('rec');closeMobileDrawer()"><span class="sb-icon">🚪</span><span class="sb-lbl">Gatepass</span></button>
       <button class="sb-btn" id="mdr-ref" onclick="goTo('ref');closeMobileDrawer()"><span class="sb-icon">📒</span><span class="sb-lbl">Reference Register</span></button>
       <button class="sb-btn" id="mdr-feeqr" onclick="goTo('feeqr');closeMobileDrawer()"><span class="sb-icon">📲</span><span class="sb-lbl">Fee QR</span></button>
-      <button class="sb-btn" id="mdr-due" onclick="goTo('due');closeMobileDrawer()"><span class="sb-icon">💸</span><span class="sb-lbl">Due List</span></button>
+      <button class="sb-btn" id="mdr-due" onclick="goTo('due');closeMobileDrawer()" style="background:rgba(181,136,62,.1);color:#b5883e;"><span class="sb-icon">💸</span><span class="sb-lbl" style="color:#b5883e;font-weight:800">Due List</span></button>
       <button class="sb-btn" id="mdr-wainbox" onclick="goTo('wainbox');closeMobileDrawer()" style="position:relative"><span class="sb-icon">💬</span><span class="sb-lbl">WA Inbox</span><span id="mdr-wai-dot" style="display:none;position:absolute;top:6px;right:8px;width:8px;height:8px;background:#25d366;border-radius:50%;"></span></button>
     </nav>
     <div class="sb-bottom">
@@ -10454,6 +10469,17 @@ var _origGoTo=window.goTo;
 window.goTo=function(name){
   // First call original — it sets active class correctly on ALL screens including screen-due
   _origGoTo&&_origGoTo(name);
+  // Re-apply due list yellow style (goTo resets class to 'sb-btn')
+  var dueBtn=document.getElementById('sb-due');
+  if(dueBtn&&name!=='due'){
+    dueBtn.style.background='rgba(181,136,62,.1)';dueBtn.style.color='#b5883e';
+    var lbl=dueBtn.querySelector('.sb-lbl');if(lbl){lbl.style.color='#b5883e';lbl.style.fontWeight='800';}
+  }
+  var mdrDue=document.getElementById('mdr-due');
+  if(mdrDue&&name!=='due'){
+    mdrDue.style.background='rgba(181,136,62,.1)';mdrDue.style.color='#b5883e';
+    var mdrLbl=mdrDue.querySelector('.sb-lbl');if(mdrLbl){mdrLbl.style.color='#b5883e';mdrLbl.style.fontWeight='800';}
+  }
   // Then init/render if due screen opened
   if(name==='due'){
     if(!_dlInited){
@@ -11299,15 +11325,15 @@ window.dlFbFetchNow = async function(silent){
     var ts = new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',hour12:true});
     dlFbSetStatus('✅ Synced '+data.length+' records at '+ts,'#15803d');
 
-    // ── Render immediately if screen is active ──
+    // ── Always update window.dlData and localStorage, render if screen is active ──
+    window._dlInited = true; // mark inited so goTo won't re-run dlLoadData (embedded)
     var dueScreen = document.getElementById('screen-due');
     var isActive  = dueScreen && dueScreen.classList.contains('active');
     if(isActive){
-      window._dlInited = true;
       dlBuildClassBar();
       dlRender();
     }
-    // If not active: goTo('due') will pick up _dlFbHasNewData flag and render fresh
+    // If not active: goTo('due') will pick up fresh localStorage data via dlLoadData
   } catch(e){
     if(!silent) dlFbSetStatus('❌ Fetch failed: '+e.message,'#dc2626');
     else console.warn('[DL Firebase] silent fetch error:', e.message);
@@ -11713,6 +11739,18 @@ window.dlTxnRender = function(){
 // Init
 document.addEventListener('DOMContentLoaded', function(){
   dlTxnRender();
+  // Apply due list yellow accent on initial load
+  function _applyDueYellow(){
+    ['sb-due','mdr-due'].forEach(function(id){
+      var btn=document.getElementById(id);
+      if(btn){
+        btn.style.background='rgba(181,136,62,.1)';btn.style.color='#b5883e';
+        var lbl=btn.querySelector('.sb-lbl');if(lbl){lbl.style.color='#b5883e';lbl.style.fontWeight='800';}
+      }
+    });
+  }
+  _applyDueYellow();
+  setTimeout(_applyDueYellow, 300); // ensure after any goTo calls
 });
 
 </script>
@@ -11859,10 +11897,14 @@ function _waiRenderList(){
     var appTag = last ? (last.app_tag||'') : '';
     var unreadHtml = t.unread>0 ? '<div class="wai-udot">'+t.unread+'</div>' : '';
     var appHtml = appTag ? '<span class="wai-app" style="background:'+_waiAppColor(appTag)+'">'+appTag+'</span>' : '';
+    var isOpen = _waiIsOpen(t.msgs);
+    var statusDot = isOpen
+      ? '<span style="display:inline-block;width:7px;height:7px;background:#25d366;border-radius:50%;flex-shrink:0;margin-top:1px"></span>'
+      : '<span style="display:inline-block;width:7px;height:7px;background:#94a3b8;border-radius:50%;flex-shrink:0;margin-top:1px"></span>';
     return '<div class="wai-thread" onclick="_waiOpenChat(\''+t.phone+'\')">'+
       '<div class="wai-av">'+initials+'</div>'+
       '<div class="wai-tinfo">'+
-        '<div class="wai-tname">'+_waiEsc(t.name||t.phone)+' '+appHtml+'</div>'+
+        '<div class="wai-tname" style="display:flex;align-items:center;gap:5px">'+statusDot+' '+_waiEsc(t.name||t.phone)+' '+appHtml+'</div>'+
         '<div class="wai-tprev">'+preview+'</div>'+
       '</div>'+
       '<div class="wai-tmeta">'+
@@ -11877,12 +11919,29 @@ function _waiRenderList(){
 function _waiUpdateCounts(){
   var threads = _waiGetThreads();
   var openCount = threads.filter(function(t){ return _waiIsOpen(t.msgs); }).length;
+  var closedCount = threads.filter(function(t){ return !_waiIsOpen(t.msgs); }).length;
   var totalUnread = 0;
   threads.forEach(function(t){ totalUnread += t.unread; });
 
-  // Tab count badge
-  var cntEl = document.getElementById('wai-cnt-open');
-  if(cntEl){ cntEl.textContent = openCount; cntEl.style.display = openCount>0?'inline-flex':'none'; }
+  // New count bar
+  var cntEl = document.getElementById('wai-bar-open-cnt');
+  if(cntEl){
+    if(_waiCurrentTab==='open'){
+      cntEl.textContent = openCount;
+      cntEl.style.background = totalUnread>0?'#dcfce7':'#f1f5f9';
+      cntEl.style.color = totalUnread>0?'#16a34a':'#64748b';
+      cntEl.style.borderColor = totalUnread>0?'#86efac':'#e2e8f0';
+    } else {
+      cntEl.textContent = closedCount;
+      cntEl.style.background = '#f3e8ff';
+      cntEl.style.color = '#7c3aed';
+      cntEl.style.borderColor = '#d8b4fe';
+    }
+  }
+
+  // Legacy compat
+  var oldCnt = document.getElementById('wai-cnt-open');
+  if(oldCnt){ oldCnt.textContent = openCount; oldCnt.style.display = openCount>0?'inline-flex':'none'; }
 
   // Sidebar + bottom nav dots
   ['sb-wai-dot','mdr-wai-dot','bn-wa-dot'].forEach(function(id){
@@ -11893,9 +11952,58 @@ function _waiUpdateCounts(){
   // Home stat
   var hs = document.getElementById('home-wainbox-stat');
   if(hs) hs.textContent = totalUnread>0 ? totalUnread+' unread' : openCount+' open chats';
+
+  // Home WA mini-previews
+  _waiRenderHomePreviews();
 }
 
-// ── Tab switch ──
+function _waiRenderHomePreviews(){
+  var el = document.getElementById('home-wa-previews');
+  if(!el) return;
+  var threads = _waiGetThreads();
+  var open = threads.filter(function(t){ return _waiIsOpen(t.msgs); }).slice(0,3);
+  if(!open.length){
+    el.innerHTML='';
+    return;
+  }
+  el.innerHTML = open.map(function(t){
+    var last = t.msgs[t.msgs.length-1];
+    var preview = last ? (last.direction==='out'?'You: ':'')+last.body : '';
+    preview = preview.substring(0,36)+(preview.length>36?'…':'');
+    var initials = (t.name||t.phone).replace(/\+/g,'').substring(0,2).toUpperCase();
+    var unreadBadge = t.unread>0
+      ? '<span style="background:#25d366;color:#fff;font-size:8px;font-weight:800;padding:1px 5px;border-radius:8px;flex-shrink:0">'+t.unread+'</span>'
+      : '';
+    return '<div style="display:flex;align-items:center;gap:7px;background:rgba(255,255,255,.7);border-radius:8px;padding:5px 8px;border:1px solid rgba(37,211,102,.2)">'
+      +'<div style="width:24px;height:24px;border-radius:50%;background:#128c7e;color:#fff;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;flex-shrink:0">'+initials+'</div>'
+      +'<div style="flex:1;min-width:0">'
+        +'<div style="font-size:11px;font-weight:700;color:#15803d;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+_waiEsc(t.name||t.phone)+'</div>'
+        +'<div style="font-size:10px;color:#64748b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+_waiEsc(preview)+'</div>'
+      +'</div>'
+      +unreadBadge
+    +'</div>';
+  }).join('');
+}
+
+// ── Toggle archive/closed view ──
+window.waiToggleArchive = function(){
+  _waiCurrentTab = _waiCurrentTab==='open' ? 'closed' : 'open';
+  var archLabel = document.getElementById('wai-archive-label');
+  var barLabel  = document.getElementById('wai-bar-label');
+  var archBtn   = document.getElementById('wai-archive-btn');
+  if(_waiCurrentTab==='closed'){
+    if(archLabel) archLabel.style.display='';
+    if(archBtn){ archBtn.style.background='#f3e8ff'; archBtn.style.borderColor='#d8b4fe'; }
+    if(barLabel) barLabel.querySelector('#wai-bar-open-cnt').textContent='';
+  } else {
+    if(archLabel) archLabel.style.display='none';
+    if(archBtn){ archBtn.style.background='#f1f5f9'; archBtn.style.borderColor='#e2e8f0'; }
+  }
+  _waiUpdateCounts();
+  _waiRenderList();
+};
+
+// ── Tab switch (legacy compat) ──
 window.waiTab = function(tab, btn){
   _waiCurrentTab = tab;
   ['open','closed'].forEach(function(t){
