@@ -10087,8 +10087,15 @@ function dlLoadData(){
   try{
     var saved=localStorage.getItem(DL_STORE_KEY);
     if(saved){dlData=JSON.parse(saved);window.dlData=dlData;}
+    else if(window.dlData&&window.dlData.length){
+      // localStorage empty (quota/security) but Firebase already loaded data
+      dlData=window.dlData;
+    }
     else{dlUseEmbedded();}
-  }catch(e){dlUseEmbedded();}
+  }catch(e){
+    if(window.dlData&&window.dlData.length){dlData=window.dlData;}
+    else{dlUseEmbedded();}
+  }
   if(typeof updateHomeStats==='function')updateHomeStats();
 }
 
@@ -10650,7 +10657,9 @@ window.goTo=function(name){
     } else if(window._dlFbHasNewData){
       // Firebase fetched new data while screen was inactive — re-render now
       window._dlFbHasNewData = false;
-      dlLoadData(); // FIX: refresh dlData from localStorage (has fresh Firebase records)
+      // dlData + window.dlData already have fresh Firebase records (set in dlFbFetchNow)
+      // DO NOT call dlLoadData() — localStorage may be empty/quota-exceeded,
+      // which would trigger dlUseEmbedded() and overwrite 675 records with 145!
     }
     dlBuildClassBar();
     dlRender();
