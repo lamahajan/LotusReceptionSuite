@@ -11249,11 +11249,28 @@ window.dlFbFetchNow = async function(silent){
     if(!r.ok) throw new Error('HTTP '+r.status);
     var data = await r.json();
     if(!data||!Array.isArray(data)) throw new Error('No data in Firebase');
+
+    // ── Always save to localStorage so any device gets it on next open ──
     window.dlData = data;
     try{ localStorage.setItem(DL_STORE_KEY, JSON.stringify(data)); }catch(ex){}
-    dlBuildClassBar(); dlRender();
+
     var ts = new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',hour12:true});
     dlFbSetStatus('✅ Synced '+data.length+' records at '+ts,'#15803d');
+
+    // ── Only render if Due List screen is currently active ──
+    var dueScreen = document.getElementById('screen-due');
+    var isActive  = dueScreen && dueScreen.classList.contains('active');
+    if(isActive){
+      // Ensure init has run (DOM elements exist)
+      if(!window._dlInited){
+        window._dlInited = true;
+        // classBar needs the data to be set first (already done above)
+      }
+      dlBuildClassBar();
+      dlRender();
+    }
+    // If screen not active: data is in localStorage + window.dlData
+    // Next time goTo('due') runs it will dlBuildClassBar()+dlRender() with fresh data
   } catch(e){
     if(!silent) dlFbSetStatus('❌ Fetch failed: '+e.message,'#dc2626');
   }
