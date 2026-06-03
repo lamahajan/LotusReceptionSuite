@@ -205,16 +205,39 @@ body.dark .mt-screen-name{color:#f4ede0;}
 #mobile-drawer.open .md-panel{transform:none}
 
 /* ─── Bottom nav ─── */
-#bottom-nav{display:none;position:fixed;bottom:0;left:0;right:0;height:58px;z-index:300;background:var(--surf);border-top:1.5px solid var(--bdr);}
-.bn-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;background:none;border:none;color:var(--mut);cursor:pointer;font-family:var(--sans);font-size:8px;font-weight:700;letter-spacing:.3px;transition:color .15s}
-.bn-icon{font-size:19px}
+/* ── Bottom Nav ── */
+#bottom-nav{
+  display:none;position:fixed;bottom:0;left:0;right:0;
+  height:calc(54px + env(safe-area-inset-bottom));
+  padding-bottom:env(safe-area-inset-bottom);
+  z-index:300;background:var(--surf);
+  border-top:1.5px solid var(--bdr);
+  overflow-x:auto;overflow-y:hidden;
+  -webkit-overflow-scrolling:touch;
+  scrollbar-width:none;
+}
+#bottom-nav::-webkit-scrollbar{display:none}
+.bn-btn{
+  flex:0 0 auto;min-width:58px;max-width:72px;
+  display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:1px;
+  background:none;border:none;color:var(--mut);cursor:pointer;
+  font-family:var(--sans);font-size:9px;font-weight:700;
+  letter-spacing:.2px;transition:color .15s;padding:6px 4px 4px;
+  white-space:nowrap;
+}
+.bn-icon{font-size:20px;line-height:1}
 .bn-btn.active{color:#b5883e}
+.bn-btn.active .bn-icon{transform:scale(1.12);transition:transform .15s}
+/* Unread dot on WA button */
+.bn-wa-dot{width:7px;height:7px;background:#25d366;border-radius:50%;
+  position:absolute;top:4px;right:calc(50% - 14px);}
 
 @media(max-width:768px){
   #sidebar{display:none!important}
   #mobile-topbar{display:none!important}
-  #bottom-nav{display:flex!important}
-  .screen{top:0;bottom:58px}
+  #bottom-nav{display:flex!important;align-items:stretch}
+  .screen{top:0;bottom:calc(54px + env(safe-area-inset-bottom))}
 }
 @media(min-width:769px){.screen{top:0;bottom:0}}
 
@@ -331,7 +354,7 @@ body{color:var(--text);font-family:var(--sans);min-height:100vh}
 #screen-rec .ba {background:var(--amber-l);border:1.5px solid var(--amber);color:var(--amber)}.ba:hover{background:var(--amber);color:#fff}
 #screen-rec .bfull {width:100%;margin-top:6px;padding:13px;font-size:15px;border-radius:var(--r)}
 /* TOAST */
-#toast {position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--bg2);border:1.5px solid var(--border2);border-radius:var(--r);padding:10px 18px;font-size:13px;font-weight:600;z-index:300;transition:transform .3s;white-space:nowrap;pointer-events:none;box-shadow:var(--sha-lg)}
+#toast {position:fixed;bottom:calc(62px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%) translateY(80px);background:var(--bg2);border:1.5px solid var(--border2);border-radius:var(--r);padding:10px 18px;font-size:13px;font-weight:600;z-index:400;transition:transform .3s;white-space:nowrap;pointer-events:none;box-shadow:var(--sha-lg)}
 #toast.show {transform:translateX(-50%) translateY(0)}
 #toast.ok {border-color:var(--green);color:var(--green)}
 #toast.err {border-color:var(--red);color:var(--red)}
@@ -935,7 +958,7 @@ body.dark .fq-mtitle{color:#f4ede0}
 .dl-cls-header{display:flex;align-items:center;gap:8px;padding:8px 14px;background:#f0f4ff;border-bottom:1.5px solid #e0e8ff;position:sticky;top:0;z-index:3;flex-shrink:0;}
 .dl-cls-selall{width:16px;height:16px;accent-color:#25D366;cursor:pointer;display:none;flex-shrink:0;}
 .dl-select-mode .dl-cls-selall{display:block;}
-#dl-wa-fab{background:linear-gradient(135deg,#075E54,#128C7E);padding:10px 14px;z-index:50;flex-direction:column;gap:8px;box-shadow:0 -4px 20px rgba(0,0,0,.2);flex-shrink:0;}
+#dl-wa-fab{background:linear-gradient(135deg,#075E54,#128C7E);padding:10px 14px;z-index:301;flex-direction:column;gap:8px;box-shadow:0 -4px 20px rgba(0,0,0,.2);flex-shrink:0;}
 #dl-wa-fab-row1{display:flex;align-items:center;gap:8px;}
 #dl-wa-fab-row2{display:flex;align-items:center;gap:8px;}
 .dl-wa-sel-count{font-size:13px;font-weight:800;color:#fff;flex:1;}
@@ -3291,7 +3314,7 @@ Thank you 🙏</textarea>
     .wai-tb.active{color:var(--wh);border-bottom-color:var(--wh)}
     .wai-cnt{background:var(--wg);color:#fff;font-size:9px;font-weight:800;padding:1px 5px;border-radius:10px;min-width:15px;text-align:center;line-height:1.6}
     /* ── Thread list ── */
-    .wai-list{flex:1;overflow-y:auto;background:var(--wp)}
+    .wai-list{flex:1;overflow-y:auto;background:var(--wp);padding-bottom:8px}
     .wai-thread{display:flex;align-items:center;gap:11px;padding:11px 14px;border-bottom:1px solid var(--wbr);cursor:pointer;transition:background .12s}
     .wai-thread:hover,.wai-thread:active{background:var(--wb)}
     .wai-av{width:44px;height:44px;border-radius:50%;background:var(--wh);color:#fff;display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:800;font-family:'Plus Jakarta Sans',sans-serif;flex-shrink:0}
@@ -3304,7 +3327,7 @@ Thank you 🙏</textarea>
     .wai-app{font-size:9px;font-weight:700;padding:1px 6px;border-radius:8px;color:#fff;flex-shrink:0}
     /* ── Chat view ── */
     .wai-chat-hdr{background:var(--wh);color:#fff;padding:8px 12px;display:flex;align-items:center;gap:9px;flex-shrink:0}
-    .wai-msgs{flex:1;overflow-y:auto;padding:10px 12px;background:var(--wb);display:flex;flex-direction:column;gap:5px}
+    .wai-msgs{flex:1;overflow-y:auto;padding:10px 12px 16px;background:var(--wb);display:flex;flex-direction:column;gap:5px}
     .wai-bbl{max-width:78%;padding:7px 11px 5px;border-radius:10px;font-size:13px;font-family:'Plus Jakarta Sans',sans-serif;line-height:1.5;word-break:break-word}
     .wai-bbl.in{background:var(--win);border-radius:10px 10px 10px 2px;align-self:flex-start;color:var(--wt)}
     .wai-bbl.out{background:var(--wout);border-radius:10px 10px 2px 10px;align-self:flex-end;color:var(--wt)}
@@ -3418,8 +3441,8 @@ Thank you 🙏</textarea>
             <input id="wai-s-token" class="wai-finp" type="text" placeholder="e.g. lotus_wa_2024"/>
           </div>
           <div class="wai-field">
-            <label class="wai-lbl">Firebase DB URL</label>
-            <input id="wai-s-fburl" class="wai-finp" type="text" placeholder="https://your-db.firebaseio.com"/>
+            <label class="wai-lbl">WA Inbox Firebase URL <span style="font-weight:400;color:#a89f92;text-transform:none;letter-spacing:0">(alag DB — duelist se different)</span></label>
+            <input id="wai-s-fburl" class="wai-finp" type="text" placeholder="https://wa-inbox-db.firebaseio.com"/>
           </div>
           <div class="wai-field">
             <label class="wai-lbl">Firebase Auth Code (optional)</label>
@@ -3891,10 +3914,14 @@ Thank you 🙏</textarea>
 <!-- Bottom nav -->
 <nav id="bottom-nav">
   <button class="bn-btn active" id="bn-home" onclick="goTo('home')"><span class="bn-icon">🏠</span>Home</button>
-  <button class="bn-btn" id="bn-rec" onclick="goTo('rec')"><span class="bn-icon">🚪</span>Gatepass</button>
-  <button class="bn-btn" id="bn-ref" onclick="goTo('ref')"><span class="bn-icon">📒</span>Register</button>
+  <button class="bn-btn" id="bn-rec" onclick="goTo('rec')"><span class="bn-icon">🚪</span>Gate</button>
+  <button class="bn-btn" id="bn-ref" onclick="goTo('ref')"><span class="bn-icon">📒</span>Reg</button>
   <button class="bn-btn" id="bn-feeqr" onclick="goTo('feeqr')"><span class="bn-icon">📲</span>Fee QR</button>
-  <button class="bn-btn" id="bn-due" onclick="goTo('due')"><span class="bn-icon">💸</span>Due List</button>
+  <button class="bn-btn" id="bn-due" onclick="goTo('due')"><span class="bn-icon">💸</span>Due</button>
+  <button class="bn-btn" id="bn-wainbox" onclick="goTo('wainbox')" style="position:relative">
+    <span class="bn-icon">💬</span>Inbox
+    <span id="bn-wa-dot" style="display:none;position:absolute;top:6px;right:12px;width:8px;height:8px;background:#25d366;border-radius:50%;"></span>
+  </button>
 </nav>
 
 <!-- CUSTOM PASSWORD PROMPT MODAL -->
@@ -11742,9 +11769,12 @@ function _waiLoadCfg(){
         if(!_waiCfg.token)   _waiCfg.token   = dlWA.metaToken||'';
       }catch(e){}
     }
+    // WA Inbox has its own separate Firebase DB — no auto-fill from other apps
+    // Stored under wai_fb_url / wai_fb_code keys
+    // Load WA-specific Firebase (separate from duelist)
     if(!_waiCfg.fbUrl){
-      _waiCfg.fbUrl  = localStorage.getItem('dl_fb_url')  || localStorage.getItem('gp_url')  || '';
-      _waiCfg.fbCode = localStorage.getItem('dl_fb_code') || localStorage.getItem('gp_code') || '';
+      _waiCfg.fbUrl  = localStorage.getItem('wai_fb_url')  || '';
+      _waiCfg.fbCode = localStorage.getItem('wai_fb_code') || '';
     }
   }catch(e){ _waiCfg={}; }
 }
@@ -11841,8 +11871,8 @@ function _waiUpdateCounts(){
   var cntEl = document.getElementById('wai-cnt-open');
   if(cntEl){ cntEl.textContent = openCount; cntEl.style.display = openCount>0?'inline-flex':'none'; }
 
-  // Sidebar dots
-  ['sb-wai-dot','mdr-wai-dot'].forEach(function(id){
+  // Sidebar + bottom nav dots
+  ['sb-wai-dot','mdr-wai-dot','bn-wa-dot'].forEach(function(id){
     var el = document.getElementById(id);
     if(el) el.style.display = totalUnread>0?'block':'none';
   });
@@ -12060,6 +12090,9 @@ window.waiSaveSettings = function(){
   _waiCfg.verifyToken  = g('wai-s-token');
   _waiCfg.fbUrl        = g('wai-s-fburl').replace(/\/+$/,'');
   _waiCfg.fbCode       = g('wai-s-fbcode');
+  // Save WA-specific Firebase separately so it never conflicts with duelist
+  try{ localStorage.setItem('wai_fb_url',  _waiCfg.fbUrl);
+       localStorage.setItem('wai_fb_code', _waiCfg.fbCode); }catch(e){}
   _waiCfg.phoneId      = g('wai-s-pid');
   _waiCfg.token        = g('wai-s-tok');
   _waiCfg.interval     = g('wai-s-interval');
