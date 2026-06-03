@@ -3636,6 +3636,11 @@ Thank you 🙏</textarea>
             </select>
           </div>
 
+          <div class="wai-field" style="margin-top:10px;padding-top:10px;border-top:1px solid #e8dcc8">
+            <label class="wai-lbl" style="display:flex;align-items:center;gap:5px">🔐 Settings Password <span style="font-weight:400;color:#a89f92;text-transform:none;letter-spacing:0">(blank = no lock)</span></label>
+            <input id="wai-s-pw" class="wai-finp" type="password" placeholder="Set a password to lock these settings"/>
+          </div>
+
           <button class="wai-save-btn" onclick="waiSaveSettings()">💾 Save Settings</button>
           <div id="wai-s-status" style="font-size:11px;color:#16a34a;margin-top:7px;min-height:16px;text-align:center;font-weight:700"></div>
 
@@ -9752,6 +9757,8 @@ const SETTINGS_EXPORT_KEYS=[
   'feeqr_fb','feeqr_settings','feeqr_wa_enabled',
   // Due List
   'dl_col_map_v1','dl_sheet_v1','dl_class_mode_v1','dl_wa_settings','dl_auto_reload','dl_pinned_sheet','dl_settings_pw','dl_fb_url','dl_fb_code',
+  // WA Inbox
+  'wai_cfg_v1','wai_fb_url','wai_fb_code','wai_inbox_pw',
   // Theme
   'lis_theme'
 ];
@@ -12078,14 +12085,19 @@ function _waiRenderHomePreviews(){
   var el = document.getElementById('home-wa-previews');
   if(!el) return;
   var threads = _waiGetThreads();
-  var open = threads.filter(function(t){ return _waiIsOpen(t.msgs); }).slice(0,3);
+  // Only show threads where the last message is FROM them (inbound), not from us
+  var open = threads.filter(function(t){
+    if(!_waiIsOpen(t.msgs)) return false;
+    var last = t.msgs[t.msgs.length-1];
+    return last && last.direction === 'in';
+  }).slice(0,3);
   if(!open.length){
     el.innerHTML='';
     return;
   }
   el.innerHTML = open.map(function(t){
     var last = t.msgs[t.msgs.length-1];
-    var preview = last ? (last.direction==='out'?'You: ':'')+last.body : '';
+    var preview = last ? last.body : '';
     preview = preview.substring(0,36)+(preview.length>36?'…':'');
     var initials = (t.name||t.phone).replace(/\+/g,'').substring(0,2).toUpperCase();
     var unreadBadge = t.unread>0
@@ -12277,11 +12289,16 @@ window.waiFetch = async function(showStatus){
     if(!data||typeof data!=='object') return;
 
     var changed = false;
+    var newInbound = []; // track new inbound phones for auto-reply
     Object.entries(data).forEach(function(e){
       var id=e[0], m=e[1];
       if(!_waiMsgs.find(function(x){ return x.id===id; })){
         _waiMsgs.push(Object.assign({id:id, read:false}, m));
         changed=true;
+        // Track new inbound messages for auto-reply
+        if(m.direction==='in' || !m.direction){
+          newInbound.push(m.from);
+        }
       }
     });
 
@@ -12292,6 +12309,13 @@ window.waiFetch = async function(showStatus){
       _waiRenderList();
       // If chat open — refresh it
       if(_waiActivePhone) _waiOpenChat(_waiActivePhone);
+      // ── Auto-reply to new inbound messages ──
+      var replied = {};
+      newInbound.forEach(function(phone){
+        if(!phone || replied[phone]) return;
+        replied[phone] = true;
+        _waiAutoReply(phone);
+      });
     }
 
     if(sub){
@@ -12302,6 +12326,47 @@ window.waiFetch = async function(showStatus){
     if(showStatus && sub) sub.textContent = 'Sync failed: '+e.message;
   }
 };
+
+// ── Auto-reply to inbound messages ──
+var _waiAutoReplied = {}; // phone → last auto-reply ts (prevent spam: 1 per 10 min per phone)
+function _waiAutoReply(phone){
+  if(!phone) return;
+  var pid   = _waiCfg.phoneId||'';
+  var token = _waiCfg.token||'';
+  if(!pid || !token) return;
+
+  // Rate-limit: only auto-reply once per 10 minutes per phone
+  var now = Date.now();
+  if(_waiAutoReplied[phone] && (now - _waiAutoReplied[phone]) < 10*60*1000) return;
+  _waiAutoReplied[phone] = now;
+
+  var replyText = 'Please contact on +91 9872760880 as this is an alert terminal only.';
+  var toNum = String(phone).replace(/\D/g,'');
+
+  // Send via Meta Graph API
+  fetch('https://graph.facebook.com/v18.0/'+pid+'/messages',{
+    method:'POST',
+    headers:{'Authorization':'Bearer '+token,'Content-Type':'application/json'},
+    body:JSON.stringify({
+      messaging_product:'whatsapp',
+      to:toNum, type:'text',
+      text:{body:replyText}
+    })
+  }).then(function(){
+    // Log the auto-reply as an outbound message in local store
+    var msg = {
+      id:'auto_'+Date.now()+'_'+Math.random().toString(36).slice(2,5),
+      from:'me', to:phone,
+      from_name:'School',
+      body:replyText, ts:Date.now(),
+      direction:'out', app_tag:'manual'
+    };
+    _waiMsgs.push(msg);
+    _waiSaveMsgs();
+    _waiRenderList();
+    if(_waiActivePhone===phone) _waiOpenChat(phone);
+  }).catch(function(e){ console.warn('WAI auto-reply error',e); });
+}
 
 // ── Start / stop polling (pull only) ──
 function _waiStartPolling(){
@@ -12322,6 +12387,13 @@ window.waiOnOpen = function(){
 
 // ── Settings Modal ──
 window.waiOpenSettings = function(){
+  // ── Password Gate ──
+  var storedPw = localStorage.getItem('wai_inbox_pw') || '';
+  if(storedPw){
+    var entered = prompt('🔐 WA Inbox Settings Password:');
+    if(entered === null) return; // cancelled
+    if(entered !== storedPw){ alert('❌ Incorrect password'); return; }
+  }
   _waiLoadCfg();
   var f = function(id,val){ var e=document.getElementById(id); if(e&&val!==undefined) e.value=val||''; };
   f('wai-s-worker',  _waiCfg.workerUrl||'');
@@ -12331,6 +12403,7 @@ window.waiOpenSettings = function(){
   f('wai-s-pid',     _waiCfg.phoneId||'');
   f('wai-s-tok',     _waiCfg.token||'');
   f('wai-s-interval',_waiCfg.interval||'30');
+  f('wai-s-pw',      localStorage.getItem('wai_inbox_pw')||'');
   _waiUpdateCodePreview();
   var modal = document.getElementById('wai-settings-modal');
   if(modal) modal.classList.add('open');
@@ -12353,6 +12426,10 @@ window.waiSaveSettings = function(){
   _waiCfg.phoneId      = g('wai-s-pid');
   _waiCfg.token        = g('wai-s-tok');
   _waiCfg.interval     = g('wai-s-interval');
+  // Save password
+  var pw = g('wai-s-pw');
+  if(pw) localStorage.setItem('wai_inbox_pw', pw);
+  else   localStorage.removeItem('wai_inbox_pw');
   _waiSaveCfg();
   _waiStartPolling();
   _waiUpdateCodePreview();
