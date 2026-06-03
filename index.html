@@ -3913,6 +3913,36 @@ Thank you 🙏</textarea>
             </div>
           </div>
 
+          <!-- ── EDIT MODE ── -->
+          <div class="dl-acc">
+            <button class="dl-acc-hdr" onclick="this.closest('.dl-acc').classList.toggle('open')">
+              <span class="dl-acc-hdr-icon">✏️</span>
+              <div class="dl-acc-hdr-info">
+                <div class="dl-acc-hdr-title">Edit Student Details</div>
+                <div class="dl-acc-hdr-sub">Enable inline editing of student info</div>
+              </div>
+              <span class="dl-acc-arrow">▼</span>
+            </button>
+            <div class="dl-acc-body">
+              <div style="margin-top:10px;background:#fffbf0;border:1.5px solid #f5d97a;border-radius:11px;padding:13px 14px;">
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+                  <div>
+                    <div style="font-size:12.5px;font-weight:800;color:#7a5c2e">✏️ Enable Edit Mode</div>
+                    <div style="font-size:11px;color:#a89f92;margin-top:3px;line-height:1.5">Enable karne par har student card par ek <b>Edit</b> button aayega jisse aap directly name, class, mobile aur balance edit kar sakte hain.</div>
+                  </div>
+                  <label style="position:relative;display:inline-block;width:44px;height:24px;flex-shrink:0;cursor:pointer">
+                    <input type="checkbox" id="dl-edit-mode-toggle" onchange="dlToggleEditMode()" style="opacity:0;width:0;height:0;position:absolute">
+                    <span id="dl-edit-mode-slider" style="position:absolute;inset:0;background:#d1d5db;border-radius:24px;transition:.3s;cursor:pointer">
+                      <span style="position:absolute;left:3px;top:3px;width:18px;height:18px;background:#fff;border-radius:50%;transition:.3s;display:block" id="dl-edit-knob"></span>
+                    </span>
+                  </label>
+                </div>
+                <div id="dl-edit-mode-status" style="font-size:11px;margin-top:8px;color:#16a34a;min-height:14px;font-weight:700"></div>
+              </div>
+              <div style="font-size:10.5px;color:#a89f92;margin-top:8px;line-height:1.5;padding:0 2px">⚠️ Ye sirf local data edit karta hai (Firebase data separate update hoga). Excel reload karne par changes overwrite ho sakte hain.</div>
+            </div>
+          </div>
+
           <!-- ── 6. SECURITY & DATA ── -->
           <div class="dl-acc">
             <button class="dl-acc-hdr" onclick="this.closest('.dl-acc').classList.toggle('open')">
@@ -3950,6 +3980,129 @@ Thank you 🙏</textarea>
         </div><!-- /dl-settings-content -->
       </div>
     </div><!-- /dl-settings-modal -->
+
+<!-- ══ DL Edit Student Modal ══ -->
+<div id="dl-edit-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.52);z-index:2000;align-items:center;justify-content:center;padding:16px">
+  <div style="background:#fff;border-radius:18px;width:100%;max-width:380px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.25)">
+    <!-- Header -->
+    <div style="background:linear-gradient(135deg,#b5883e,#d4a54e);padding:16px 18px;display:flex;align-items:center;justify-content:space-between">
+      <div>
+        <div style="font-size:15px;font-weight:800;color:#fff">✏️ Edit Student</div>
+        <div id="dl-edit-adm-label" style="font-size:11px;color:rgba(255,255,255,.8);margin-top:2px"></div>
+      </div>
+      <button onclick="dlCloseEditModal()" style="background:rgba(255,255,255,.2);border:none;border-radius:8px;width:30px;height:30px;color:#fff;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center">✕</button>
+    </div>
+    <!-- Body -->
+    <div style="padding:16px 18px;display:flex;flex-direction:column;gap:10px">
+      <div>
+        <label style="font-size:10.5px;font-weight:800;color:#7a5c2e;text-transform:uppercase;letter-spacing:.6px;display:block;margin-bottom:4px">Student Name</label>
+        <input id="dl-edit-name" type="text" placeholder="Student name" style="width:100%;border:1.5px solid #e0d4be;border-radius:9px;padding:9px 12px;font-size:13px;font-family:'Plus Jakarta Sans',sans-serif;outline:none;color:#1a1035;background:#fdf8ee" onfocus="this.style.borderColor='#b5883e'" onblur="this.style.borderColor='#e0d4be'">
+      </div>
+      <div>
+        <label style="font-size:10.5px;font-weight:800;color:#7a5c2e;text-transform:uppercase;letter-spacing:.6px;display:block;margin-bottom:4px">Class</label>
+        <input id="dl-edit-cls" type="text" placeholder="e.g. 10-A" style="width:100%;border:1.5px solid #e0d4be;border-radius:9px;padding:9px 12px;font-size:13px;font-family:'Plus Jakarta Sans',sans-serif;outline:none;color:#1a1035;background:#fdf8ee" onfocus="this.style.borderColor='#b5883e'" onblur="this.style.borderColor='#e0d4be'">
+      </div>
+      <div>
+        <label style="font-size:10.5px;font-weight:800;color:#7a5c2e;text-transform:uppercase;letter-spacing:.6px;display:block;margin-bottom:4px">Mobile Number</label>
+        <input id="dl-edit-mob" type="tel" placeholder="Mobile number" style="width:100%;border:1.5px solid #e0d4be;border-radius:9px;padding:9px 12px;font-size:13px;font-family:'Plus Jakarta Sans',sans-serif;outline:none;color:#1a1035;background:#fdf8ee" onfocus="this.style.borderColor='#b5883e'" onblur="this.style.borderColor='#e0d4be'">
+      </div>
+      <div>
+        <label style="font-size:10.5px;font-weight:800;color:#7a5c2e;text-transform:uppercase;letter-spacing:.6px;display:block;margin-bottom:4px">Balance (₹)</label>
+        <input id="dl-edit-bal" type="number" placeholder="0" style="width:100%;border:1.5px solid #e0d4be;border-radius:9px;padding:9px 12px;font-size:13px;font-family:'Plus Jakarta Sans',sans-serif;outline:none;color:#1a1035;background:#fdf8ee" onfocus="this.style.borderColor='#b5883e'" onblur="this.style.borderColor='#e0d4be'">
+      </div>
+      <div id="dl-edit-status" style="font-size:11.5px;min-height:16px;font-weight:700;color:#16a34a;text-align:center"></div>
+      <button onclick="dlSaveEditedStudent()" style="width:100%;background:linear-gradient(135deg,#b5883e,#d4a54e);color:#fff;border:none;border-radius:11px;padding:12px;font-size:13px;font-weight:800;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;transition:all .2s" onmouseover="this.style.opacity='.88'" onmouseout="this.style.opacity='1'">
+        💾 Save Changes
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══ DL Edit Mode Logic ══
+(function(){
+  var EDIT_KEY = 'dl_edit_mode';
+
+  // Load toggle state on settings open
+  var _origDlOpenSettings = window.dlOpenSettings;
+  window.dlOpenSettings = function(){
+    if(_origDlOpenSettings) _origDlOpenSettings.apply(this, arguments);
+    setTimeout(function(){
+      var chk = document.getElementById('dl-edit-mode-toggle');
+      var slider = document.getElementById('dl-edit-mode-slider');
+      var knob = document.getElementById('dl-edit-knob');
+      var status = document.getElementById('dl-edit-mode-status');
+      var on = localStorage.getItem(EDIT_KEY) === '1';
+      if(chk) chk.checked = on;
+      if(slider) slider.style.background = on ? '#16a34a' : '#d1d5db';
+      if(knob) knob.style.transform = on ? 'translateX(20px)' : 'translateX(0)';
+      if(status) status.textContent = on ? '✅ Edit Mode ON — Cards par ✏️ button dikhega' : '';
+    }, 50);
+  };
+
+  window.dlToggleEditMode = function(){
+    var chk = document.getElementById('dl-edit-mode-toggle');
+    var slider = document.getElementById('dl-edit-mode-slider');
+    var knob = document.getElementById('dl-edit-knob');
+    var status = document.getElementById('dl-edit-mode-status');
+    var on = chk && chk.checked;
+    localStorage.setItem(EDIT_KEY, on ? '1' : '0');
+    if(slider) slider.style.background = on ? '#16a34a' : '#d1d5db';
+    if(knob) knob.style.transform = on ? 'translateX(20px)' : 'translateX(0)';
+    if(status) status.textContent = on ? '✅ Edit Mode ON — Cards par ✏️ button dikhega' : '⭕ Edit Mode OFF';
+    // Re-render list
+    if(typeof dlRender === 'function') dlRender();
+  };
+
+  // Patch removed — edit button now directly in dlCardHTML
+
+  // Open edit modal
+  window.dlOpenEditModal = function(admKey){
+    var student = (window.dlData || []).find(function(s){ return String(s.adm || s.name) === admKey; });
+    if(!student){ alert('Student nahi mila!'); return; }
+    window._dlEditingAdm = admKey;
+    document.getElementById('dl-edit-adm-label').textContent = 'Adm: ' + (student.adm || '—');
+    document.getElementById('dl-edit-name').value = student.name || '';
+    document.getElementById('dl-edit-cls').value = student.cls || '';
+    document.getElementById('dl-edit-mob').value = student.mob || '';
+    document.getElementById('dl-edit-bal').value = student.balance || '';
+    document.getElementById('dl-edit-status').textContent = '';
+    var modal = document.getElementById('dl-edit-modal');
+    if(modal){ modal.style.display = 'flex'; }
+  };
+
+  window.dlCloseEditModal = function(){
+    var modal = document.getElementById('dl-edit-modal');
+    if(modal) modal.style.display = 'none';
+    window._dlEditingAdm = null;
+  };
+
+  window.dlSaveEditedStudent = function(){
+    var admKey = window._dlEditingAdm;
+    if(!admKey) return;
+    var idx = (window.dlData || []).findIndex(function(s){ return String(s.adm || s.name) === admKey; });
+    if(idx === -1){ alert('Student nahi mila!'); return; }
+    window.dlData[idx].name    = document.getElementById('dl-edit-name').value.trim() || window.dlData[idx].name;
+    window.dlData[idx].cls     = document.getElementById('dl-edit-cls').value.trim();
+    window.dlData[idx].mob     = document.getElementById('dl-edit-mob').value.trim();
+    var newBal = parseFloat(document.getElementById('dl-edit-bal').value);
+    if(!isNaN(newBal)) window.dlData[idx].balance = newBal;
+    // Save to localStorage
+    try{ localStorage.setItem(typeof DL_STORE_KEY !== 'undefined' ? DL_STORE_KEY : 'dl_data', JSON.stringify(window.dlData)); }catch(e){}
+    var status = document.getElementById('dl-edit-status');
+    if(status){ status.textContent = '✅ Saved!'; status.style.color = '#16a34a'; }
+    // Re-render
+    if(typeof dlRender === 'function') dlRender();
+    setTimeout(function(){ window.dlCloseEditModal(); }, 700);
+  };
+
+  // Close modal on backdrop click
+  document.addEventListener('click', function(e){
+    var modal = document.getElementById('dl-edit-modal');
+    if(modal && e.target === modal) window.dlCloseEditModal();
+  });
+})();
+</script>
 
 </main>
 </div>
@@ -10427,6 +10580,11 @@ function dlCardHTML(s){
   var balCol=bal>=5000?'#ef4444':bal>=2000?'#f97316':'#16a34a';
   var admKey=String(s.adm||s.name);
   var isChk=dlSelected.has(admKey);
+  var editOn=localStorage.getItem('dl_edit_mode')==='1';
+  var admEsc=esc(admKey).replace(/'/g,'&#39;');
+  var editBtn=editOn
+    ?'<button onclick="event.stopPropagation();dlOpenEditModal(\''+admEsc+'\')" style="background:#b5883e;color:#fff;border:none;border-radius:7px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:\'Plus Jakarta Sans\',sans-serif;flex-shrink:0;line-height:1.5">✏️ Edit</button>'
+    :'';
   return '<div class="dl-card-wrap'+(isChk?' selected':'')+'" data-adm="'+esc(admKey)+'" onclick="dlCardClick(this,event)">'
     +'<input type="checkbox" class="dl-chk" data-adm="'+esc(admKey)+'" '+(isChk?'checked':'')+' onclick="dlChkClick(this,event)"/>'
     +'<div class="dl-card-inner" style="background:#fff;border-radius:14px;padding:12px 14px;display:flex;align-items:center;gap:10px;border-bottom:1px solid #f1f5f9;border:1.5px solid transparent;transition:border-color .15s;">'
@@ -10439,8 +10597,9 @@ function dlCardHTML(s){
     +(mob?'<a href="tel:'+mob+'" onclick="if(dlSelectModeOn){event.preventDefault();event.stopPropagation();dlCardClick(this.closest(\'.dl-card-wrap\'),event);}else{event.stopPropagation();}" style="font-size:10px;color:#94a3b8;font-family:\'Outfit\',sans-serif;text-decoration:none">'+mob+'</a>':'')
     +'</div>'
     +'</div>'
-    +'<div style="text-align:right;flex-shrink:0;min-width:68px">'
+    +'<div style="text-align:right;flex-shrink:0;min-width:68px;display:flex;flex-direction:column;align-items:flex-end;gap:5px">'
     +'<div style="font-size:16px;font-weight:800;color:'+balCol+';font-family:\'Outfit\',sans-serif;letter-spacing:-.5px">₹'+balFmt+'</div>'
+    +editBtn
     +'</div>'
     +'</div>'
     +'</div>';
