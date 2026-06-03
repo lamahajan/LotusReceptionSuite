@@ -212,19 +212,15 @@ body.dark .mt-screen-name{color:#f4ede0;}
   padding-bottom:env(safe-area-inset-bottom);
   z-index:300;background:var(--surf);
   border-top:1.5px solid var(--bdr);
-  overflow-x:auto;overflow-y:hidden;
-  -webkit-overflow-scrolling:touch;
-  scrollbar-width:none;
 }
-#bottom-nav::-webkit-scrollbar{display:none}
 .bn-btn{
-  flex:0 0 auto;min-width:58px;max-width:72px;
+  flex:1 1 0;min-width:0;
   display:flex;flex-direction:column;align-items:center;
   justify-content:center;gap:1px;
   background:none;border:none;color:var(--mut);cursor:pointer;
   font-family:var(--sans);font-size:9px;font-weight:700;
-  letter-spacing:.2px;transition:color .15s;padding:6px 4px 4px;
-  white-space:nowrap;
+  letter-spacing:.2px;transition:color .15s;padding:6px 2px 4px;
+  white-space:nowrap;overflow:hidden;
 }
 .bn-icon{font-size:20px;line-height:1}
 .bn-btn.active{color:#b5883e}
@@ -1060,7 +1056,7 @@ body.dark .fq-mtitle{color:#f4ede0}
           </div>
           <div class="app-card" onclick="goTo('feeqr')">
             <div class="ac-head"><div class="ac-icon" style="background:rgba(37,99,235,.1);border:1.5px solid rgba(37,99,235,.2)">📲</div><div><div class="ac-name">Fee QR</div><div class="ac-desc">UPI fee cards with QR code for each student</div></div></div>
-            <div class="ac-foot"><span class="ac-stat" id="home-feeqr-stat">— students</span><span class="ac-open" style="color:var(--blue);border-color:var(--blue)">Open →</span></div>
+            <div class="ac-foot"><span class="ac-stat" id="home-feeqr-stat">— students</span><span class="ac-open" style="color:#7c3aed;border-color:#7c3aed">Open →</span></div>
           </div>
           <div class="app-card" onclick="goTo('due')">
             <div class="ac-head">
@@ -10462,7 +10458,10 @@ window.goTo=function(name){
   if(name==='due'){
     if(!_dlInited){
       _dlInited=true;
-      dlLoadData();
+      dlLoadData(); // loads from localStorage (may already have Firebase data)
+    } else if(window._dlFbHasNewData){
+      // Firebase fetched new data while screen was inactive — re-render now
+      window._dlFbHasNewData = false;
     }
     dlBuildClassBar();
     dlRender();
@@ -11231,8 +11230,10 @@ window.dlFbSaveAndConnect = function(){
   if(!url){ dlFbSetStatus('⚠️ Enter Firebase URL first','#d97706'); return; }
   localStorage.setItem(DL_FB_URL_KEY, url);
   localStorage.setItem(DL_FB_CODE_KEY, code);
-  localStorage.setItem(DL_FB_INTERVAL_KEY, interval);
+  localStorage.setItem(DL_FB_INTERVAL_KEY, interval); // always save chosen interval
   dlFbSetStatus('⏳ Connecting…','#1d4ed8');
+  // Restart polling with saved interval
+  if(window._dlFbPollTimer){ clearInterval(window._dlFbPollTimer); window._dlFbPollTimer = null; }
   dlFbStartPolling();
   dlFbFetchNow(false);
 };
@@ -11274,42 +11275,54 @@ window.dlFbFetchNow = async function(silent){
   try{
     var r = await fetch(ep);
     if(!r.ok) throw new Error('HTTP '+r.status);
-    var data = await r.json();
-    if(!data||!Array.isArray(data)) throw new Error('No data in Firebase');
+    var raw = await r.json();
 
-    // ── Always save to localStorage so any device gets it on next open ──
+    // Firebase can return null (empty node) or an Array or an Object
+    var data = null;
+    if(Array.isArray(raw)){
+      data = raw;
+    } else if(raw && typeof raw === 'object'){
+      // Firebase sometimes returns object with numeric keys — convert
+      data = Object.values(raw);
+    }
+
+    if(!data || !data.length){
+      if(!silent) dlFbSetStatus('⚠️ Firebase empty — push data first','#d97706');
+      return;
+    }
+
+    // ── Save to localStorage + window.dlData ──
     window.dlData = data;
     try{ localStorage.setItem(DL_STORE_KEY, JSON.stringify(data)); }catch(ex){}
+    window._dlFbHasNewData = true; // flag for goTo to re-render
 
     var ts = new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',hour12:true});
     dlFbSetStatus('✅ Synced '+data.length+' records at '+ts,'#15803d');
 
-    // ── Only render if Due List screen is currently active ──
+    // ── Render immediately if screen is active ──
     var dueScreen = document.getElementById('screen-due');
     var isActive  = dueScreen && dueScreen.classList.contains('active');
     if(isActive){
-      // Ensure init has run (DOM elements exist)
-      if(!window._dlInited){
-        window._dlInited = true;
-        // classBar needs the data to be set first (already done above)
-      }
+      window._dlInited = true;
       dlBuildClassBar();
       dlRender();
     }
-    // If screen not active: data is in localStorage + window.dlData
-    // Next time goTo('due') runs it will dlBuildClassBar()+dlRender() with fresh data
+    // If not active: goTo('due') will pick up _dlFbHasNewData flag and render fresh
   } catch(e){
     if(!silent) dlFbSetStatus('❌ Fetch failed: '+e.message,'#dc2626');
+    else console.warn('[DL Firebase] silent fetch error:', e.message);
   }
 };
 
-// Start Firebase polling when app loads (configurable interval)
+// Start Firebase polling — pull only, push is manual button
 function dlFbStartPolling(){
   var cfg = dlFbGetCfg();
   if(window._dlFbPollTimer){ clearInterval(window._dlFbPollTimer); window._dlFbPollTimer = null; }
   if(!cfg.url) return;
+  // Read saved interval; if nothing saved yet, default to 30s
   var savedInterval = parseInt(localStorage.getItem(DL_FB_INTERVAL_KEY)||'30', 10);
-  if(!savedInterval || savedInterval <= 0) return; // Off
+  if(isNaN(savedInterval) || savedInterval <= 0) return; // Off
+  console.log('[DL Firebase] Polling every', savedInterval, 'sec');
   window._dlFbPollTimer = setInterval(function(){ dlFbFetchNow(true); }, savedInterval * 1000);
 }
 
