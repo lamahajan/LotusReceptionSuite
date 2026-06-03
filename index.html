@@ -10486,7 +10486,22 @@ window.dlGoTab = function(name) {
 document.head.insertAdjacentHTML('beforeend','<style>#screen-due.active{display:flex!important;flex-direction:column!important;overflow:hidden!important}#screen-due:not(.active){display:none!important}#screen-wainbox.active{display:flex!important;flex-direction:column!important;overflow:hidden!important}#screen-wainbox:not(.active){display:none!important}</style>');
 
 // Pre-load data so home screen stat is correct from the start
-(function(){try{var saved=localStorage.getItem(DL_STORE_KEY);if(saved){dlData=JSON.parse(saved);window.dlData=dlData;}else{dlUseEmbedded();}}catch(e){dlUseEmbedded();}})();
+(function(){
+  try{
+    var saved=localStorage.getItem(DL_STORE_KEY);
+    if(saved){
+      dlData=JSON.parse(saved);window.dlData=dlData;
+    } else {
+      // Firebase configured hai toh empty mat set karo — fetch pending hai
+      var _fbUrl=localStorage.getItem('dl_fb_url')||'';
+      if(!_fbUrl){ dlUseEmbedded(); }
+      // else: dlData=[] rahega, Firebase DOMContentLoaded pe fetch karega
+    }
+  } catch(e){
+    var _fbUrl2=localStorage.getItem('dl_fb_url')||'';
+    if(!_fbUrl2){ dlUseEmbedded(); }
+  }
+})();
 
 var _dlInited=false;
 var _origGoTo=window.goTo;
@@ -10508,13 +10523,23 @@ window.goTo=function(name){
   if(name==='due'){
     if(!_dlInited){
       _dlInited=true;
-      dlLoadData(); // loads from localStorage (may already have Firebase data)
+      var _fbCfg=dlFbGetCfg();
+      if(_fbCfg.url){
+        // Firebase configured — load cache first, then fetch fresh data
+        dlLoadData();        // load from localStorage (may be stale or empty)
+        dlBuildClassBar();
+        dlRender();          // show cached/empty immediately
+        dlFbFetchNow(false); // async: will re-render when 675 records arrive
+        return;              // skip duplicate render below
+      } else {
+        dlLoadData(); // no Firebase — use localStorage / embedded only
+      }
     } else if(window._dlFbHasNewData){
       // Firebase fetched new data while screen was inactive — re-render now
       window._dlFbHasNewData = false;
       // dlData + window.dlData already have fresh Firebase records (set in dlFbFetchNow)
       // DO NOT call dlLoadData() — localStorage may be empty/quota-exceeded,
-      // which would trigger dlUseEmbedded() and overwrite 675 records with 145!
+      // which would trigger dlUseEmbedded() and overwrite 675 records with empty!
     }
     dlBuildClassBar();
     dlRender();
@@ -11403,9 +11428,15 @@ function dlFbStartPolling(){
   };
 })();
 
-// Start polling on load
+// Start polling on load + immediate eager fetch so data is ready before screen opens
 document.addEventListener('DOMContentLoaded', function(){
   dlFbStartPolling();
+  // Turant ek fetch maaro — polling ka wait mat karo
+  // Isse data localStorage mein aa jaata hai screen open hone se pehle
+  var _cfg = dlFbGetCfg();
+  if(_cfg.url){
+    dlFbFetchNow(true); // silent=true, background mein
+  }
 });
 
 // ── Patch dlSaveMapping to save WA settings too ──
