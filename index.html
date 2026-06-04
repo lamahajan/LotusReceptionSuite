@@ -1003,8 +1003,8 @@ body.dark .fq-mtitle{color:#f4ede0}
       <button class="sb-btn" id="sb-feeqr" onclick="goTo('feeqr')">
         <span class="sb-icon">📲</span><span class="sb-lbl">Fee QR</span>
       </button>
-      <button class="sb-btn" id="sb-due" onclick="goTo('due')">
-        <span class="sb-icon">💸</span><span class="sb-lbl">Due List</span>
+      <button class="sb-btn" id="sb-due" onclick="goTo('due')" style="background:rgba(181,136,62,.1);color:#b5883e;">
+        <span class="sb-icon">💸</span><span class="sb-lbl" style="color:#b5883e;font-weight:800">Due List</span>
       </button>
       <button class="sb-btn" id="sb-wainbox" onclick="goTo('wainbox')" style="position:relative">
         <span class="sb-icon">💬</span><span class="sb-lbl">WA Inbox</span>
@@ -3450,6 +3450,35 @@ Thank you 🙏</textarea>
       color:var(--wa-amber);font-weight:600;
       font-family:-apple-system,'Plus Jakarta Sans',sans-serif;
     }
+    /* ── Quick Replies ── */
+    .wai-qr-bar{
+      background:var(--wa-surf);
+      border-top:1px solid var(--wa-bdr);
+      padding:7px 12px;
+      display:flex;gap:6px;align-items:center;flex-shrink:0;
+      overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;
+    }
+    .wai-qr-bar::-webkit-scrollbar{display:none;}
+    .wai-qr-chip{
+      flex-shrink:0;
+      background:transparent;
+      border:1.5px solid var(--wa-bdr2);
+      border-radius:14px;
+      padding:4px 11px;
+      font-size:12px;font-weight:500;
+      font-family:-apple-system,'Plus Jakarta Sans',sans-serif;
+      color:var(--wa-sub);
+      cursor:pointer;
+      white-space:nowrap;
+      transition:all .15s;
+      line-height:1.4;
+    }
+    .wai-qr-chip:hover{
+      border-color:var(--wa-acc);
+      color:var(--wa-acc);
+      background:rgba(0,122,255,.06);
+    }
+    .wai-qr-chip:active{ transform:scale(.93); }
     /* ── Reply bar ── */
     .wai-reply-bar{
       background:var(--wa-surf);
@@ -3575,6 +3604,17 @@ Thank you 🙏</textarea>
         <div id="wai-closed-bar" class="wai-closed-notice" style="display:none">
           ⏰ 24-hour window closed — this chat is read-only
         </div>
+        <div class="wai-qr-bar" id="wai-qr-bar">
+          <button class="wai-qr-chip" onclick="waiQR('Thank you for reaching out. How can we help?')">Thank you for reaching out</button>
+          <button class="wai-qr-chip" onclick="waiQR('Noted, we will look into this shortly.')">Noted, looking into it</button>
+          <button class="wai-qr-chip" onclick="waiQR('Please visit the reception for further assistance.')">Visit reception</button>
+          <button class="wai-qr-chip" onclick="waiQR('Your fee receipt will be sent shortly.')">Fee receipt coming</button>
+          <button class="wai-qr-chip" onclick="waiQR('The gate pass has been issued. Please collect it from reception.')">Gate pass issued</button>
+          <button class="wai-qr-chip" onclick="waiQR('Please contact the accounts office to clear the outstanding balance.')">Outstanding balance</button>
+          <button class="wai-qr-chip" onclick="waiQR('We will get back to you within 24 hours.')">Will revert in 24hrs</button>
+          <button class="wai-qr-chip" onclick="waiQR('School timings are 8:00 AM to 2:30 PM.')">School timings</button>
+          <button class="wai-qr-chip" onclick="waiQR('Is there anything else we can assist you with?')">Anything else?</button>
+        </div>
         <div class="wai-reply-bar" id="wai-reply-bar">
           <input class="wai-inp" id="wai-inp" placeholder="Message…" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();waiSend()}"/>
           <button class="wai-send" id="wai-send-btn" onclick="waiSend()">
@@ -3611,7 +3651,7 @@ Thank you 🙏</textarea>
             <input id="wai-s-token" class="wai-finp" type="text" placeholder="e.g. lotus_wa_2024"/>
           </div>
           <div class="wai-field">
-            <label class="wai-lbl">WA Inbox Firebase URL <span style="font-weight:400;color:#a89f92;text-transform:none;letter-spacing:0">(alag DB — duelist se different)</span></label>
+            <label class="wai-lbl">WA Inbox Firebase URL <span style="font-weight:400;color:#a89f92;text-transform:none;letter-spacing:0">(separate DB — independent of Due List)</span></label>
             <input id="wai-s-fburl" class="wai-finp" type="text" placeholder="https://wa-inbox-db.firebaseio.com"/>
           </div>
           <div class="wai-field">
@@ -4076,7 +4116,7 @@ Thank you 🙏</textarea>
       <button class="sb-btn" id="mdr-rec" onclick="goTo('rec');closeMobileDrawer()"><span class="sb-icon">🚪</span><span class="sb-lbl">Gatepass</span></button>
       <button class="sb-btn" id="mdr-ref" onclick="goTo('ref');closeMobileDrawer()"><span class="sb-icon">📒</span><span class="sb-lbl">Reference Register</span></button>
       <button class="sb-btn" id="mdr-feeqr" onclick="goTo('feeqr');closeMobileDrawer()"><span class="sb-icon">📲</span><span class="sb-lbl">Fee QR</span></button>
-      <button class="sb-btn" id="mdr-due" onclick="goTo('due');closeMobileDrawer()"><span class="sb-icon">💸</span><span class="sb-lbl">Due List</span></button>
+      <button class="sb-btn" id="mdr-due" onclick="goTo('due');closeMobileDrawer()" style="background:rgba(181,136,62,.1);color:#b5883e;"><span class="sb-icon">💸</span><span class="sb-lbl" style="color:#b5883e;font-weight:800">Due List</span></button>
       <button class="sb-btn" id="mdr-wainbox" onclick="goTo('wainbox');closeMobileDrawer()" style="position:relative"><span class="sb-icon">💬</span><span class="sb-lbl">WA Inbox</span><span id="mdr-wai-dot" style="display:none;position:absolute;top:6px;right:8px;width:8px;height:8px;background:#25d366;border-radius:50%;"></span></button>
     </nav>
     <div class="sb-bottom">
@@ -12205,6 +12245,8 @@ window._waiOpenChat = function(phone){
   var inpEl     = document.getElementById('wai-inp');
   if(closedBar) closedBar.style.display = isOpen ? 'none' : 'block';
   if(replyBar)  replyBar.style.display  = isOpen ? 'flex' : 'none';
+  var qrBar = document.getElementById('wai-qr-bar');
+  if(qrBar) qrBar.style.display = isOpen ? 'flex' : 'none';
   if(sendBtn)   sendBtn.disabled = !isOpen;
   if(inpEl)     inpEl.disabled   = !isOpen;
 
@@ -12226,6 +12268,10 @@ window.waiCloseChat = function(){
 };
 
 // ── Send reply ──
+window.waiQR = function(text){
+  var inp = document.getElementById('wai-inp');
+  if(inp){ inp.value = text; inp.focus(); }
+};
 window.waiSend = async function(){
   if(!_waiActivePhone) return;
   var inpEl = document.getElementById('wai-inp');
