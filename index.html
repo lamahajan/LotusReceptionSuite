@@ -1003,8 +1003,8 @@ body.dark .fq-mtitle{color:#f4ede0}
       <button class="sb-btn" id="sb-feeqr" onclick="goTo('feeqr')">
         <span class="sb-icon">📲</span><span class="sb-lbl">Fee QR</span>
       </button>
-      <button class="sb-btn" id="sb-due" onclick="goTo('due')" style="background:rgba(181,136,62,.1);color:#b5883e;">
-        <span class="sb-icon">💸</span><span class="sb-lbl" style="color:#b5883e;font-weight:800">Due List</span>
+      <button class="sb-btn" id="sb-due" onclick="goTo('due')">
+        <span class="sb-icon">💸</span><span class="sb-lbl">Due List</span>
       </button>
       <button class="sb-btn" id="sb-wainbox" onclick="goTo('wainbox')" style="position:relative">
         <span class="sb-icon">💬</span><span class="sb-lbl">WA Inbox</span>
@@ -3452,24 +3452,16 @@ Thank you 🙏</textarea>
     }
     /* ── Quick Replies ── */
     .wai-qr-bar{
-      background:var(--wa-surf);
-      border-top:1px solid var(--wa-bdr);
-      padding:7px 12px;
-      display:flex;gap:6px;align-items:center;flex-shrink:0;
+      background:var(--wa-surf);border-top:1px solid var(--wa-bdr);
+      padding:7px 12px;display:flex;gap:6px;align-items:center;flex-shrink:0;
       overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;
     }
     .wai-qr-bar::-webkit-scrollbar{display:none;}
     .wai-qr-chip{
-      flex-shrink:0;
-      background:transparent;
-      border:1.5px solid var(--wa-bdr2);
-      border-radius:14px;
-      padding:4px 11px;
-      font-size:12px;font-weight:500;
+      flex-shrink:0;background:transparent;border:1.5px solid var(--wa-bdr2);
+      border-radius:14px;padding:4px 11px;font-size:12px;font-weight:500;
       font-family:-apple-system,'Plus Jakarta Sans',sans-serif;
-      color:var(--wa-sub);
-      cursor:pointer;white-space:nowrap;
-      transition:all .15s;line-height:1.4;
+      color:var(--wa-sub);cursor:pointer;white-space:nowrap;transition:all .15s;
     }
     .wai-qr-chip:hover{border-color:var(--wa-acc);color:var(--wa-acc);background:rgba(0,122,255,.06);}
     .wai-qr-chip:active{transform:scale(.93);}
@@ -4110,7 +4102,7 @@ Thank you 🙏</textarea>
       <button class="sb-btn" id="mdr-rec" onclick="goTo('rec');closeMobileDrawer()"><span class="sb-icon">🚪</span><span class="sb-lbl">Gatepass</span></button>
       <button class="sb-btn" id="mdr-ref" onclick="goTo('ref');closeMobileDrawer()"><span class="sb-icon">📒</span><span class="sb-lbl">Reference Register</span></button>
       <button class="sb-btn" id="mdr-feeqr" onclick="goTo('feeqr');closeMobileDrawer()"><span class="sb-icon">📲</span><span class="sb-lbl">Fee QR</span></button>
-      <button class="sb-btn" id="mdr-due" onclick="goTo('due');closeMobileDrawer()" style="background:rgba(181,136,62,.1);color:#b5883e;"><span class="sb-icon">💸</span><span class="sb-lbl" style="color:#b5883e;font-weight:800">Due List</span></button>
+      <button class="sb-btn" id="mdr-due" onclick="goTo('due');closeMobileDrawer()"><span class="sb-icon">💸</span><span class="sb-lbl">Due List</span></button>
       <button class="sb-btn" id="mdr-wainbox" onclick="goTo('wainbox');closeMobileDrawer()" style="position:relative"><span class="sb-icon">💬</span><span class="sb-lbl">WA Inbox</span><span id="mdr-wai-dot" style="display:none;position:absolute;top:6px;right:8px;width:8px;height:8px;background:#25d366;border-radius:50%;"></span></button>
     </nav>
     <div class="sb-bottom">
@@ -10549,17 +10541,6 @@ var _origGoTo=window.goTo;
 window.goTo=function(name){
   // First call original — it sets active class correctly on ALL screens including screen-due
   _origGoTo&&_origGoTo(name);
-  // Re-apply due list yellow style (goTo resets class to 'sb-btn')
-  var dueBtn=document.getElementById('sb-due');
-  if(dueBtn&&name!=='due'){
-    dueBtn.style.background='rgba(181,136,62,.1)';dueBtn.style.color='#b5883e';
-    var lbl=dueBtn.querySelector('.sb-lbl');if(lbl){lbl.style.color='#b5883e';lbl.style.fontWeight='800';}
-  }
-  var mdrDue=document.getElementById('mdr-due');
-  if(mdrDue&&name!=='due'){
-    mdrDue.style.background='rgba(181,136,62,.1)';mdrDue.style.color='#b5883e';
-    var mdrLbl=mdrDue.querySelector('.sb-lbl');if(mdrLbl){mdrLbl.style.color='#b5883e';mdrLbl.style.fontWeight='800';}
-  }
   // Then init/render if due screen opened
   if(name==='due'){
     if(!_dlInited){
@@ -11839,18 +11820,7 @@ window.dlTxnRender = function(){
 // Init
 document.addEventListener('DOMContentLoaded', function(){
   dlTxnRender();
-  // Apply due list yellow accent on initial load
-  function _applyDueYellow(){
-    ['sb-due','mdr-due'].forEach(function(id){
-      var btn=document.getElementById(id);
-      if(btn){
-        btn.style.background='rgba(181,136,62,.1)';btn.style.color='#b5883e';
-        var lbl=btn.querySelector('.sb-lbl');if(lbl){lbl.style.color='#b5883e';lbl.style.fontWeight='800';}
-      }
-    });
-  }
-  _applyDueYellow();
-  setTimeout(_applyDueYellow, 300); // ensure after any goTo calls
+
 });
 
 </script>
