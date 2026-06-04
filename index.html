@@ -3468,17 +3468,11 @@ Thank you 🙏</textarea>
       font-size:12px;font-weight:500;
       font-family:-apple-system,'Plus Jakarta Sans',sans-serif;
       color:var(--wa-sub);
-      cursor:pointer;
-      white-space:nowrap;
-      transition:all .15s;
-      line-height:1.4;
+      cursor:pointer;white-space:nowrap;
+      transition:all .15s;line-height:1.4;
     }
-    .wai-qr-chip:hover{
-      border-color:var(--wa-acc);
-      color:var(--wa-acc);
-      background:rgba(0,122,255,.06);
-    }
-    .wai-qr-chip:active{ transform:scale(.93); }
+    .wai-qr-chip:hover{border-color:var(--wa-acc);color:var(--wa-acc);background:rgba(0,122,255,.06);}
+    .wai-qr-chip:active{transform:scale(.93);}
     /* ── Reply bar ── */
     .wai-reply-bar{
       background:var(--wa-surf);
@@ -3605,15 +3599,15 @@ Thank you 🙏</textarea>
           ⏰ 24-hour window closed — this chat is read-only
         </div>
         <div class="wai-qr-bar" id="wai-qr-bar">
-          <button class="wai-qr-chip" onclick="waiQR('Thank you for reaching out. How can we help?')">Thank you for reaching out</button>
-          <button class="wai-qr-chip" onclick="waiQR('Noted, we will look into this shortly.')">Noted, looking into it</button>
+          <button class="wai-qr-chip" onclick="waiQR('Thank you for reaching out. How can we assist you?')">Thank you for reaching out</button>
+          <button class="wai-qr-chip" onclick="waiQR('Noted. We will look into this and get back to you shortly.')">Noted, will look into it</button>
           <button class="wai-qr-chip" onclick="waiQR('Please visit the reception for further assistance.')">Visit reception</button>
-          <button class="wai-qr-chip" onclick="waiQR('Your fee receipt will be sent shortly.')">Fee receipt coming</button>
-          <button class="wai-qr-chip" onclick="waiQR('The gate pass has been issued. Please collect it from reception.')">Gate pass issued</button>
+          <button class="wai-qr-chip" onclick="waiQR('Your fee receipt will be shared with you shortly.')">Fee receipt coming</button>
+          <button class="wai-qr-chip" onclick="waiQR('The gate pass has been issued. Please collect it from the reception.')">Gate pass issued</button>
           <button class="wai-qr-chip" onclick="waiQR('Please contact the accounts office to clear the outstanding balance.')">Outstanding balance</button>
-          <button class="wai-qr-chip" onclick="waiQR('We will get back to you within 24 hours.')">Will revert in 24hrs</button>
-          <button class="wai-qr-chip" onclick="waiQR('School timings are 8:00 AM to 2:30 PM.')">School timings</button>
-          <button class="wai-qr-chip" onclick="waiQR('Is there anything else we can assist you with?')">Anything else?</button>
+          <button class="wai-qr-chip" onclick="waiQR('We will get back to you within 24 hours.')">Will revert in 24 hrs</button>
+          <button class="wai-qr-chip" onclick="waiQR('School timings are 8:00 AM to 2:30 PM, Monday to Saturday.')">School timings</button>
+          <button class="wai-qr-chip" onclick="waiQR('Is there anything else we can help you with?')">Anything else?</button>
         </div>
         <div class="wai-reply-bar" id="wai-reply-bar">
           <input class="wai-inp" id="wai-inp" placeholder="Message…" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();waiSend()}"/>
@@ -3639,7 +3633,7 @@ Thank you 🙏</textarea>
         <div class="wai-modal-body">
 
           <div class="wai-info-box">
-            Worker URL enter karo → <strong>Copy Webhook Code</strong> → apne <code>wa-worker.js</code> mein paste karo → Cloudflare pe deploy karo → Meta Console mein Callback URL set karo
+            Enter your Worker URL → click <strong>Copy Webhook Code</strong> → paste into your <code>wa-worker.js</code> → deploy on Cloudflare → set the Callback URL in Meta Console
           </div>
 
           <div class="wai-field">
@@ -3686,7 +3680,7 @@ Thank you 🙏</textarea>
 
           <div style="margin-top:14px;border-top:1px solid #e8dcc8;padding-top:12px">
             <div style="font-size:11px;font-weight:800;color:#8a6428;text-transform:uppercase;letter-spacing:.7px;margin-bottom:7px">📋 Cloudflare Worker Code</div>
-            <div style="font-size:11px;color:#7a5c2e;margin-bottom:8px;line-height:1.5">Nayi file <strong>wa-worker.js</strong> banao, yeh code paste karo, deploy karo</div>
+            <div style="font-size:11px;color:#7a5c2e;margin-bottom:8px;line-height:1.5">Create a new file <strong>wa-worker.js</strong>, paste this code, and deploy to Cloudflare</div>
             <div class="wai-code-box" id="wai-code-preview">// Save settings first to see your config</div>
             <button onclick="waiCopyCode()" style="width:100%;background:#f5f0e8;color:#8a6428;border:1.5px solid #e8dcc8;border-radius:9px;padding:9px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">📋 Copy Worker Code</button>
             <div id="wai-copy-st" style="font-size:11px;color:#16a34a;margin-top:5px;text-align:center;min-height:16px"></div>
@@ -3987,7 +3981,7 @@ Thank you 🙏</textarea>
                 <button onclick="dlResetToDefault()" style="flex:1;background:#fff;color:#c0392b;border:1.5px solid #c0392b;border-radius:9px;padding:9px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit" onmouseover="this.style.background='#fee2e2'" onmouseout="this.style.background='#fff'">↩️ Reset Default</button>
               </div>
               <button onclick="clearAppStorage('duelist')" style="width:100%;background:#fff;color:#b5883e;border:1.5px solid #b5883e;border-radius:9px;padding:9px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:6px;transition:background .15s" onmouseover="this.style.background='#fdf8ee'" onmouseout="this.style.background='#fff'">🧹 Clear Due List Local Storage</button>
-              <div style="font-size:10.5px;color:#a89f92;margin-top:6px;line-height:1.5">Firebase data safe rahega. Sirf local settings, column mapping, aur cached data clear hoga. Page reload hoga.</div>
+              <div style="font-size:10.5px;color:#a89f92;margin-top:6px;line-height:1.5">Firebase data will remain intact. Only local settings, column mapping, and cached data will be cleared. Page will reload.</div>
             </div>
           </div>
 
@@ -10539,7 +10533,7 @@ document.head.insertAdjacentHTML('beforeend','<style>#screen-due.active{display:
     if(saved){
       dlData=JSON.parse(saved);window.dlData=dlData;
     } else {
-      // Firebase configured hai toh empty mat set karo — fetch pending hai
+      // Firebase is configured — do not set empty, fetch is pending
       var _fbUrl=localStorage.getItem('dl_fb_url')||'';
       if(!_fbUrl){ dlUseEmbedded(); }
       // else: dlData=[] rahega, Firebase DOMContentLoaded pe fetch karega
@@ -11478,7 +11472,7 @@ function dlFbStartPolling(){
 // Start polling on load + immediate eager fetch so data is ready before screen opens
 document.addEventListener('DOMContentLoaded', function(){
   dlFbStartPolling();
-  // Turant ek fetch maaro — polling ka wait mat karo
+  // Trigger an immediate fetch — do not wait for polling
   // Isse data localStorage mein aa jaata hai screen open hone se pehle
   var _cfg = dlFbGetCfg();
   if(_cfg.url){
@@ -12282,7 +12276,7 @@ window.waiSend = async function(){
   var pid   = _waiCfg.phoneId||'';
   var token = _waiCfg.token||'';
   if(!pid||!token){
-    alert('Meta credentials nahi hain — Settings mein add karo');
+    alert('Meta credentials not configured — please add them in Settings');
     return;
   }
 
