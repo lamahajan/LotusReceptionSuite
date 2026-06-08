@@ -10042,7 +10042,7 @@ window.dlHandleFile=function(inp){
         // Auto-push to Firebase if configured
         setTimeout(function(){
           var cfg=dlFbGetCfg();
-          // Push disabled on auto-load — use Push button manually
+          if(cfg.url){ dlFbSetStatus('⏳ Auto-pushing to Firebase…','#1d4ed8'); dlFbPushNow(); }
         },800);
       }
 
