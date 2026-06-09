@@ -10557,11 +10557,8 @@ window.goTo=function(name){
         dlLoadData(); // no Firebase — use localStorage / embedded only
       }
     } else if(window._dlFbHasNewData){
-      // Firebase fetched new data while screen was inactive — re-render now
       window._dlFbHasNewData = false;
-      // dlData + window.dlData already have fresh Firebase records (set in dlFbFetchNow)
-      // DO NOT call dlLoadData() — localStorage may be empty/quota-exceeded,
-      // which would trigger dlUseEmbedded() and overwrite 675 records with empty!
+      // Fresh data already in dlData/window.dlData — just re-render
     }
     dlBuildClassBar();
     dlRender();
@@ -11401,14 +11398,17 @@ window.dlFbFetchNow = async function(silent){
     dlFbSetStatus('✅ Synced '+data.length+' records at '+ts,'#15803d');
 
     // ── Always update window.dlData and localStorage, render if screen is active ──
-    window._dlInited = true; // mark inited so goTo won't re-run dlLoadData (embedded)
+    window._dlInited = true;
+    window._dlFbHasNewData = false; // clear flag — we're rendering fresh now
     var dueScreen = document.getElementById('screen-due');
     var isActive  = dueScreen && dueScreen.classList.contains('active');
     if(isActive){
       dlBuildClassBar();
       dlRender();
+    } else {
+      window._dlFbHasNewData = true; // screen not open — flag for when it opens
     }
-    // If not active: goTo('due') will pick up fresh localStorage data via dlLoadData
+    // If not active: goTo('due') will pick up via _dlFbHasNewData flag
   } catch(e){
     if(!silent) dlFbSetStatus('❌ Fetch failed: '+e.message,'#dc2626');
     else console.warn('[DL Firebase] silent fetch error:', e.message);
