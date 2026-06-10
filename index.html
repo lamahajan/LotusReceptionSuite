@@ -10725,12 +10725,15 @@ window.dlReloadPinned = async function(silent){
       dlBuildClassBar(); dlRender();
       dlHideLoadBanner();
       if(!silent&&typeof toast==='function') toast(parsed.length+' students loaded');
-      // Auto-push to Firebase after pinned reload if configured
+      // Auto-push to Firebase after pinned reload — only if data changed
       setTimeout(function(){
         var cfg=dlFbGetCfg();
         if(cfg.url&&window.dlData&&window.dlData.length){
-          // Push disabled on save — use Push button manually
-          if(!silent&&typeof toast==='function') toast('🔥 Pushed to Firebase');
+          var newHash = window.dlData.length+'|'+(window.dlData[0]&&window.dlData[0].balance||'');
+          if(newHash !== window._dlLastPushHash){
+            window._dlLastPushHash = newHash;
+            dlFbPushNow();
+          }
         }
       },600);
     }
