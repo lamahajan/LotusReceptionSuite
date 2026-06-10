@@ -3866,6 +3866,10 @@ Thank you 🙏</textarea>
               <input id="dl-rzp-proxy-url" class="dl-inp" type="text" placeholder="https://rzp-proxy.your-name.workers.dev"/>
               <label class="dl-lbl">Redirect Page URL</label>
               <input id="dl-rzp-redirect-url" class="dl-inp" type="text" placeholder="https://yourname.github.io/redirect.html" style="margin-bottom:10px"/>
+              <label class="dl-lbl" style="margin-top:8px">Transaction Firebase URL <span style="font-size:10px;color:#6b7280;font-weight:500">(separate DB for payments)</span></label>
+              <input id="dl-txn-fb-url" class="dl-inp" type="text" placeholder="https://your-txn-project-rtdb.firebaseio.com"/>
+              <label class="dl-lbl">Transaction Firebase Secret</label>
+              <input id="dl-txn-fb-secret" class="dl-inp" type="password" placeholder="database secret" style="margin-bottom:10px"/>
               <button onclick="dlRzpSaveConfig()" style="width:100%;background:#16a34a;color:#fff;border:none;border-radius:9px;padding:10px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">💾 Save Razorpay Config</button>
               <div id="dl-rzp-status" style="font-size:11px;color:#166534;margin-top:7px;min-height:16px;font-weight:600"></div>
             </div>
@@ -11490,6 +11494,8 @@ document.addEventListener('DOMContentLoaded',function(){
 
 var DL_RZP_PROXY_KEY    = 'dl_rzp_proxy_url';
 var DL_RZP_REDIRECT_KEY = 'dl_rzp_redirect_url';
+var DL_TXN_FB_URL_KEY   = 'dl_txn_fb_url';
+var DL_TXN_FB_SEC_KEY   = 'dl_txn_fb_secret';
 var DL_TXN_KEY          = 'dl_transactions';   // captured txns cache
 var DL_PENDING_KEY      = 'dl_pending_qrs';    // pending qr_ids list
 
@@ -11497,8 +11503,12 @@ var DL_PENDING_KEY      = 'dl_pending_qrs';    // pending qr_ids list
 window.dlRzpSaveConfig = function(){
   var p = (document.getElementById('dl-rzp-proxy-url')||{}).value||'';
   var r = (document.getElementById('dl-rzp-redirect-url')||{}).value||'';
+  var tfb = (document.getElementById('dl-txn-fb-url')||{}).value||'';
+  var tsc = (document.getElementById('dl-txn-fb-secret')||{}).value||'';
   localStorage.setItem(DL_RZP_PROXY_KEY, p.trim().replace(/\/+$/,''));
   localStorage.setItem(DL_RZP_REDIRECT_KEY, r.trim().replace(/\/+$/,''));
+  if(tfb) localStorage.setItem(DL_TXN_FB_URL_KEY, tfb.trim().replace(/\/+$/,''));
+  if(tsc) localStorage.setItem(DL_TXN_FB_SEC_KEY, tsc.trim());
   var st = document.getElementById('dl-rzp-status');
   if(st){ st.textContent='✅ Saved!'; setTimeout(function(){ st.textContent=''; },2000); }
 };
@@ -11509,8 +11519,12 @@ window.dlRzpSaveConfig = function(){
     if(_origOpen) _origOpen.apply(this,arguments);
     var pEl = document.getElementById('dl-rzp-proxy-url');
     var rEl = document.getElementById('dl-rzp-redirect-url');
-    if(pEl) pEl.value = localStorage.getItem(DL_RZP_PROXY_KEY)||'';
-    if(rEl) rEl.value = localStorage.getItem(DL_RZP_REDIRECT_KEY)||'';
+    var tfbEl = document.getElementById('dl-txn-fb-url');
+    var tscEl = document.getElementById('dl-txn-fb-secret');
+    if(pEl)   pEl.value   = localStorage.getItem(DL_RZP_PROXY_KEY)||'';
+    if(rEl)   rEl.value   = localStorage.getItem(DL_RZP_REDIRECT_KEY)||'';
+    if(tfbEl) tfbEl.value = localStorage.getItem(DL_TXN_FB_URL_KEY)||'';
+    if(tscEl) tscEl.value = localStorage.getItem(DL_TXN_FB_SEC_KEY)||'';
   };
 })();
 
@@ -11598,6 +11612,47 @@ function dlTxnSaveLocal(txn){
   list.unshift(txn); // newest first
   try{ localStorage.setItem(DL_TXN_KEY, JSON.stringify(list)); }catch(e){}
   dlTxnRender();
+}
+
+// ── TXN Firebase polling — pull new transactions from separate DB ──
+var _dlTxnFbTimer = null;
+
+function dlTxnFbPoll(){
+  var fbUrl    = (localStorage.getItem('dl_txn_fb_url')||'').replace(/\/+$/,'');
+  var fbSecret = localStorage.getItem('dl_txn_fb_secret')||'';
+  if(!fbUrl) return;
+
+  var auth = fbSecret ? '?auth='+fbSecret : '';
+  // Fetch only last 20 transactions ordered by paid_at
+  fetch(fbUrl+'/dl_transactions.json'+auth+'&orderBy="paid_at"&limitToLast=20')
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      if(!data || typeof data !== 'object') return;
+      var changed = false;
+      Object.values(data).forEach(function(txn){
+        if(!txn || !txn.payment_id) return;
+        var existing = dlTxnLoad();
+        if(!existing.find(function(t){ return t.payment_id === txn.payment_id; })){
+          // New transaction from Firebase — save locally
+          var list = dlTxnLoad();
+          list.unshift(txn);
+          try{ localStorage.setItem(DL_TXN_KEY, JSON.stringify(list)); }catch(e){}
+          changed = true;
+        }
+      });
+      if(changed){
+        dlTxnRender();
+        dlShowTxnBadge();
+        if(typeof toast === 'function') toast('💰 New payment received!');
+      }
+    })
+    .catch(function(){});
+}
+
+function dlTxnFbStartPolling(){
+  if(_dlTxnFbTimer) clearInterval(_dlTxnFbTimer);
+  dlTxnFbPoll(); // immediate
+  _dlTxnFbTimer = setInterval(dlTxnFbPoll, 15000); // every 15s
 }
 
 // ── Green badge on Transactions tab ──
@@ -11823,6 +11878,7 @@ window.dlTxnRender = function(){
 // Init
 document.addEventListener('DOMContentLoaded', function(){
   dlTxnRender();
+  dlTxnFbStartPolling();
 
 });
 
