@@ -11211,6 +11211,11 @@ function dlSendBatch(students,phoneId,token,tmplName,idx,sent,failed,qrMap,proxy
   if(qrInfo && qrInfo.qr_id){
     suffix+='&qr_id='+encodeURIComponent(qrInfo.qr_id);
     suffix+='&proxy='+encodeURIComponent(proxyUrl||'');
+    // Pass TXN Firebase details so redirect page can poll for confirmation
+    var txnFbUrl = (localStorage.getItem('dl_txn_fb_url')||'').replace(/\/+$/,'');
+    var txnFbSec = localStorage.getItem('dl_txn_fb_secret')||'';
+    if(txnFbUrl) suffix+='&txn_fb='+encodeURIComponent(txnFbUrl);
+    if(txnFbSec) suffix+='&txn_fb_secret='+encodeURIComponent(txnFbSec);
   }
 
   // ── Build parameters based on template name ──
