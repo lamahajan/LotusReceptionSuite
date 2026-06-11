@@ -11128,23 +11128,39 @@ function dlCreateQRsAndSend(students,phoneId,token,tmplName,proxyUrl){
       if(pending<=0) dlSendBatch(students,phoneId,token,tmplName,0,0,0,qrMap,proxyUrl);
       return;
     }
-    fetch(proxyUrl+'/create-qr',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        name: (s.name||s.adm||'Student')+' Fee',
-        amount: amount,
-        description: 'Fee: '+(s.name||s.adm||'')
-      })
+    // Delete old QR for this student (if any) before creating new one
+    // Check Firebase via proxy for any existing QR with same adm
+    var deletePromise = proxyUrl
+      ? fetch(proxyUrl+'/qr-by-adm/'+encodeURIComponent(adm))
+          .then(function(r){ return r.json(); })
+          .then(function(d){
+            if(d.found && d.qr_id){
+              return fetch(proxyUrl+'/delete-qr/'+d.qr_id, { method:'DELETE' }).catch(function(){});
+            }
+          })
+          .catch(function(){})
+      : Promise.resolve();
+
+    deletePromise.then(function(){
+      return fetch(proxyUrl+'/create-qr',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({
+          adm: adm,
+          name: (s.name||s.adm||'Student'),
+          cls: (s.cls||s.class||''),
+          amount: amount,
+          description: 'Fee: '+(s.name||s.adm||'')
+        })
+      });
     })
     .then(function(r){ return r.json(); })
     .then(function(data){
       if(data.qr_id){
-        // Razorpay QR image_url contains the UPI string embedded
-        // We use image_url as the redirect page link target (qr scan)
-        // For UPI deeplink we need to fetch the QR's UPI string
-        // Razorpay short URL for UPI: image_url is a short rzp.io URL
         qrMap[adm]={ qr_id: data.qr_id, image_url: data.image_url };
+        // Track for future cleanup
+        if(!window._dlPendingQrMap) window._dlPendingQrMap = {};
+        window._dlPendingQrMap[adm] = data.qr_id;
       }
     })
     .catch(function(){ /* QR create failed, will use fallback */ })
@@ -11623,30 +11639,43 @@ function dlTxnFbPoll(){
   if(!fbUrl) return;
 
   var auth = fbSecret ? '?auth='+fbSecret : '';
-  // Fetch only last 20 transactions ordered by paid_at
   fetch(fbUrl+'/dl_transactions.json'+auth+'&orderBy="paid_at"&limitToLast=20')
     .then(function(r){ return r.json(); })
     .then(function(data){
       if(!data || typeof data !== 'object') return;
       var changed = false;
+      var newTxns = [];
       Object.values(data).forEach(function(txn){
         if(!txn || !txn.payment_id) return;
         var existing = dlTxnLoad();
         if(!existing.find(function(t){ return t.payment_id === txn.payment_id; })){
-          // New transaction from Firebase — save locally
           var list = dlTxnLoad();
           list.unshift(txn);
           try{ localStorage.setItem(DL_TXN_KEY, JSON.stringify(list)); }catch(e){}
           changed = true;
+          newTxns.push(txn);
         }
       });
       if(changed){
         dlTxnRender();
         dlShowTxnBadge();
         if(typeof toast === 'function') toast('💰 New payment received!');
+        // Auto-close QR for each new payment
+        newTxns.forEach(function(txn){
+          if(txn.qr_id) dlAutoCloseQr(txn.qr_id);
+        });
       }
     })
     .catch(function(){});
+}
+
+function dlAutoCloseQr(qrId){
+  var proxyUrl = (localStorage.getItem(DL_RZP_PROXY_KEY)||'').replace(/\/+$/,'');
+  if(!proxyUrl || !qrId) return;
+  // 1. Close QR on Razorpay (stop further payments)
+  fetch(proxyUrl+'/close-qr/'+qrId, { method:'POST' }).catch(function(){});
+  // 2. Delete from MAIN Firebase qr_map (clean up — next month fresh QR will be created)
+  fetch(proxyUrl+'/delete-qr/'+qrId, { method:'DELETE' }).catch(function(){});
 }
 
 function dlTxnFbStartPolling(){
