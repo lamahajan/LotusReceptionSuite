@@ -8592,7 +8592,16 @@ async function pushToWixCMS(entry, fileData){
 
       // Get upload URL
       const uploadUrlRes=await wixFetch('upload-url','POST',{fileName,mimeType,sizeInBytes:bytes.length},siteId,apiKey);
-      const uploadUrlData=await uploadUrlRes.json();
+      const uploadUrlRawText=await uploadUrlRes.text();
+      let uploadUrlData;
+      try{ uploadUrlData=JSON.parse(uploadUrlRawText); }
+      catch(parseErr){
+        console.warn('Wix generate-upload-url returned non-JSON response:',uploadUrlRawText.slice(0,300));
+        throw new Error('Wix rejected the upload request (HTTP '+uploadUrlRes.status+'). Raw response: '+uploadUrlRawText.slice(0,150));
+      }
+      if(!uploadUrlRes.ok){
+        throw new Error(uploadUrlData.message||('Wix error HTTP '+uploadUrlRes.status));
+      }
 
       if(uploadUrlData.uploadUrl){
         // Upload the actual file
@@ -8610,7 +8619,7 @@ async function pushToWixCMS(entry, fileData){
       }
     }catch(fe){
       console.warn('Wix file upload failed:',fe.message);
-      toast('Wix file upload failed — record not synced to Wix.','err');
+      toast('Wix upload failed: '+fe.message,'err');
       return;
     }
     if(!wixFileObj){
