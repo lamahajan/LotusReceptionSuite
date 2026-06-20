@@ -2502,7 +2502,16 @@ Reason: {reason}"></textarea>
         <!-- ─── WIX CMS TAB ─── -->
         <div id="ctab-content-wix" style="display:none">
           <div style="background:var(--purple-l);border:1.5px solid var(--purple);border-radius:var(--rs);padding:10px 12px;margin-bottom:14px;font-size:11.5px;color:var(--purple);font-weight:600">
-            🌐 Only 2 fields are pushed — <b>Student name</b> and <b>PDF file</b>. Uses your existing "Transfer Certificates" collection.
+            🌐 Student name, Reference Number and PDF file are pushed to your "Transfer Certificates" collection.
+          </div>
+
+          <div style="background:var(--amber-l,#fff7e6);border:1.5px solid var(--amber);border-radius:var(--rs);padding:10px 12px;margin-bottom:14px;font-size:11.5px;color:var(--amber-d,#8a5a00)">
+            ⚠️ <b>Required:</b> Wix's API blocks direct calls from a browser (CORS). A small free Cloudflare Worker is needed as a relay. Deploy <code>wix-proxy.js</code> (provided separately) to Cloudflare Workers, then paste its URL below.
+          </div>
+          <div class="field">
+            <label class="lbl">Wix Proxy Worker URL</label>
+            <input id="wix-proxy-url" class="inp" placeholder="https://wix-proxy.yourname.workers.dev" style="font-family:var(--mono)">
+            <div style="font-size:11px;color:var(--muted);margin-top:3px">The Cloudflare Worker URL you get after deploying wix-proxy.js. Leave empty to attempt a direct call (will fail with CORS error in most browsers).</div>
           </div>
 
           <div class="field">
@@ -7373,6 +7382,7 @@ function renderSettingsPage(){
     document.getElementById('reftg-notify-del').checked=RefTGCfg.notifyDel!==false;
   }
   // Wix CMS
+  document.getElementById('wix-proxy-url').value=WixCfg.proxyUrl||'';
   document.getElementById('wix-siteid').value=WixCfg.siteId||'';
   document.getElementById('wix-apikey').value=WixCfg.apiKey||'';
   document.getElementById('wix-collection').value=WixCfg.collection||'Transfer Certificates';
@@ -8427,7 +8437,7 @@ async function uploadToOneDrive(entry){
 }
 
 // ─── WIX CMS CONFIG & PUSH ────────────────────────────────
-let WixCfg={siteId:'',apiKey:'',collection:'Transfer Certificates',fieldName:'title',fieldRefno:'referenceNumber',fieldFile:'file',enabled:false,uploadFile:true,categories:null};
+let WixCfg={siteId:'',apiKey:'',collection:'Transfer Certificates',fieldName:'title',fieldRefno:'referenceNumber',fieldFile:'file',enabled:false,uploadFile:true,categories:null,proxyUrl:''};
 function loadWixCfg(){try{const d=localStorage.getItem('ref_wix_cfg');if(d)WixCfg=JSON.parse(d);}catch(e){}renderWixCatList();}
 // ─── WIX — PER-CATEGORY SYNC TOGGLE ────────────────────────
 // WixCfg.categories === null  -> all document types sync (default / first run)
@@ -8461,6 +8471,7 @@ function wixCatSetAll(all){
   renderWixCatList();
 }
 function saveWixCfg(){
+  WixCfg.proxyUrl=document.getElementById('wix-proxy-url').value.trim().replace(/\/+$/,'');
   WixCfg.siteId=document.getElementById('wix-siteid').value.trim();
   WixCfg.apiKey=document.getElementById('wix-apikey').value.trim();
   // Auto-fill defaults if fields are empty
@@ -8483,22 +8494,68 @@ function saveWixCfg(){
   st.textContent='✓ Wix settings saved (defaults applied where empty)';st.style.color='var(--green)';
   toast('Wix CMS settings saved.');
 }
+// ─── WIX — REQUEST HELPER (routes through Cloudflare Worker proxy to avoid CORS) ───
+// Wix's REST Data API blocks direct browser calls at the CORS preflight stage.
+// If WixCfg.proxyUrl is set, requests go through the deployed wix-proxy.js worker
+// (server-to-server, no CORS). If not set, falls back to a direct call (will likely
+// fail with a CORS error in most browsers — kept only for environments without that restriction).
+function wixDirectPath(kind, extra){
+  if(kind==='query')return '/wix-data/v2/items/query';
+  if(kind==='insert')return '/wix-data/v2/items';
+  if(kind==='update')return '/wix-data/v2/items/'+extra;
+  if(kind==='upload-url')return '/site-media/v1/files/generate-upload-url';
+  return '';
+}
+function wixProxyPath(kind, extra){
+  if(kind==='query')return '/wix/items/query';
+  if(kind==='insert')return '/wix/items';
+  if(kind==='update')return '/wix/items/'+extra;
+  if(kind==='upload-url')return '/wix/files/generate-upload-url';
+  return '';
+}
+// kind: 'query' | 'insert' | 'update' | 'upload-url'
+// method: HTTP method; extra: item id for 'update'
+async function wixFetch(kind, method, body, siteId, apiKey, extra){
+  const proxy=(WixCfg.proxyUrl||'').replace(/\/+$/,'');
+  if(proxy){
+    return fetch(proxy+wixProxyPath(kind,extra),{
+      method,
+      headers:{'Content-Type':'application/json','x-wix-api-key':apiKey,'x-wix-site-id':siteId},
+      body:body?JSON.stringify(body):undefined
+    });
+  }
+  return fetch('https://www.wixapis.com'+wixDirectPath(kind,extra),{
+    method,
+    headers:{'Content-Type':'application/json','Authorization':apiKey,'wix-site-id':siteId},
+    body:body?JSON.stringify(body):undefined
+  });
+}
+// Raw file bytes upload — Step 2 of the Wix Media upload flow (PUT to a pre-signed URL).
+async function wixUploadRaw(uploadUrl, blob, mimeType){
+  const proxy=(WixCfg.proxyUrl||'').replace(/\/+$/,'');
+  if(proxy){
+    return fetch(proxy+'/wix/raw-upload',{
+      method:'PUT',
+      headers:{'Content-Type':mimeType,'x-wix-upload-url':uploadUrl},
+      body:blob
+    });
+  }
+  return fetch(uploadUrl,{method:'PUT',body:blob,headers:{'Content-Type':mimeType}});
+}
 async function testWixCfg(){
   const st=document.getElementById('wix-status');
   const siteId=document.getElementById('wix-siteid').value.trim();
   const apiKey=document.getElementById('wix-apikey').value.trim();
   const col=document.getElementById('wix-collection').value.trim()||'Documents';
   if(!siteId||!apiKey){st.textContent='Fill Site ID & API Key';st.style.color='var(--red)';return;}
-  st.textContent='Testing…';st.style.color='var(--amber)';
+  if(!document.getElementById('wix-proxy-url').value.trim()){st.textContent='⚠️ No Proxy Worker URL — direct calls will likely fail with a CORS error. See the note above.';st.style.color='var(--amber)';}
+  else st.textContent='Testing…';
+  st.style.color='var(--amber)';
   try{
-    const r=await fetch(`https://www.wixapis.com/wix-data/v2/items/query`,{
-      method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':apiKey,'wix-site-id':siteId},
-      body:JSON.stringify({dataCollectionId:col,query:{paging:{limit:1}}})
-    });
+    const r=await wixFetch('query','POST',{dataCollectionId:col,query:{paging:{limit:1}}},siteId,apiKey);
     if(r.ok||r.status===404){st.textContent='✓ Connected to Wix CMS!';st.style.color='var(--green)';}
     else{const e=await r.json();throw new Error(e.message||'HTTP '+r.status);}
-  }catch(e){st.textContent='❌ '+e.message;st.style.color='var(--red)';}
+  }catch(e){st.textContent='❌ '+e.message+(document.getElementById('wix-proxy-url').value.trim()?'':' — try adding a Proxy Worker URL.');st.style.color='var(--red)';}
 }
 async function pushToWixCMS(entry, fileData){
   if(!WixCfg.enabled||!WixCfg.siteId||!WixCfg.apiKey)return;
@@ -8508,7 +8565,7 @@ async function pushToWixCMS(entry, fileData){
   const refnoField=WixCfg.fieldRefno||'referenceNumber';
   const fileField=WixCfg.fieldFile||'file';
   const collection=WixCfg.collection||'Transfer Certificates';
-  const headers={'Content-Type':'application/json','Authorization':WixCfg.apiKey,'wix-site-id':WixCfg.siteId};
+  const siteId=WixCfg.siteId,apiKey=WixCfg.apiKey;
 
   try{
     let wixFileObj=null;
@@ -8522,16 +8579,13 @@ async function pushToWixCMS(entry, fileData){
       const bytes=Uint8Array.from(atob(b64),c=>c.charCodeAt(0));
 
       // Get upload URL
-      const uploadUrlRes=await fetch('https://www.wixapis.com/site-media/v1/files/generate-upload-url',{
-        method:'POST',headers,
-        body:JSON.stringify({fileName,mimeType,sizeInBytes:bytes.length})
-      });
+      const uploadUrlRes=await wixFetch('upload-url','POST',{fileName,mimeType,sizeInBytes:bytes.length},siteId,apiKey);
       const uploadUrlData=await uploadUrlRes.json();
 
       if(uploadUrlData.uploadUrl){
         // Upload the actual file
         const blob=new Blob([bytes],{type:mimeType});
-        const uploadRes=await fetch(uploadUrlData.uploadUrl,{method:'PUT',body:blob,headers:{'Content-Type':mimeType}});
+        const uploadRes=await wixUploadRaw(uploadUrlData.uploadUrl,blob,mimeType);
         if(uploadRes.ok){
           // Wix file object format for Document field
           wixFileObj={
@@ -8557,29 +8611,20 @@ async function pushToWixCMS(entry, fileData){
     if(wixFileObj)record[fileField]=wixFileObj;
 
     // ── Step 3: Check if entry already exists — match by Reference Number (unique) ──
-    const qRes=await fetch('https://www.wixapis.com/wix-data/v2/items/query',{
-      method:'POST',headers,
-      body:JSON.stringify({
-        dataCollectionId:collection,
-        query:{filter:{[refnoField]:{$eq:entry.refno||''}},paging:{limit:1}}
-      })
-    });
+    const qRes=await wixFetch('query','POST',{
+      dataCollectionId:collection,
+      query:{filter:{[refnoField]:{$eq:entry.refno||''}},paging:{limit:1}}
+    },siteId,apiKey);
     const qData=await qRes.json();
 
     if(qData.dataItems&&qData.dataItems.length>0&&entry.refno){
       // Update existing record
       const existId=qData.dataItems[0].id;
-      const updateRes=await fetch(`https://www.wixapis.com/wix-data/v2/items/${existId}`,{
-        method:'PUT',headers,
-        body:JSON.stringify({dataCollectionId:collection,dataItem:{id:existId,data:record}})
-      });
+      const updateRes=await wixFetch('update','PUT',{dataCollectionId:collection,dataItem:{id:existId,data:record}},siteId,apiKey,existId);
       if(!updateRes.ok){const e=await updateRes.json();throw new Error(e.message||'Update failed');}
     } else {
       // Insert new record
-      const insertRes=await fetch('https://www.wixapis.com/wix-data/v2/items',{
-        method:'POST',headers,
-        body:JSON.stringify({dataCollectionId:collection,dataItem:{data:record}})
-      });
+      const insertRes=await wixFetch('insert','POST',{dataCollectionId:collection,dataItem:{data:record}},siteId,apiKey);
       if(!insertRes.ok){const e=await insertRes.json();throw new Error(e.message||'Insert failed');}
     }
 
