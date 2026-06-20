@@ -2217,6 +2217,7 @@ Reason: {reason}"></textarea>
           <div class="field"><label class="lbl">Separator</label><select id="cfg-sep" class="sel" onchange="updPrefixPreview()"><option value="/">/</option><option value="-">-</option><option value=".">.</option></select></div>
         </div>
         <div class="field"><label class="lbl">Status that triggers Ref No generation</label><input id="cfg-prepare-status" class="inp" placeholder="prepared" style="font-family:var(--mono)"></div>
+        <div class="field"><label class="lbl">Status that prompts for file upload (e.g. Issued/Delivered)</label><input id="cfg-issued-status" class="inp" placeholder="issued" style="font-family:var(--mono)"><div style="font-size:11px;color:var(--muted);margin-top:3px">If a file isn't attached yet and you set the status to this value, a popup will ask you to attach the document first.</div></div>
         <div class="info" style="margin-bottom:12px">Preview: <code id="prefix-live">LIS/2025-26/0001</code></div>
         <button class="btn bpink" onclick="savePrefixSettings()">💾 Save</button>
 
@@ -2526,7 +2527,7 @@ Reason: {reason}"></textarea>
               1. Wix Dashboard → <b>CMS</b> → open "Transfer Certificates" collection<br>
               2. Click the <b>Settings (⚙️)</b> icon at the top<br>
               3. In the <b>Fields</b> tab, each field shows its <b>Field Key</b> in grey<br>
-              4. Note the Field Key for the name column and the file/PDF column
+              4. Note the Field Key for the name column, the reference number column, and the file/PDF column
             </div>
           </div>
 
@@ -2537,23 +2538,37 @@ Reason: {reason}"></textarea>
               <div style="font-size:11px;color:var(--muted);margin-top:3px">Field Key of the student name column</div>
             </div>
             <div class="field">
-              <label class="lbl">File Field Key</label>
-              <input id="wix-field-file" class="inp" placeholder="e.g. file" style="font-family:var(--mono)">
-              <div style="font-size:11px;color:var(--muted);margin-top:3px">Field Key of the PDF file column</div>
+              <label class="lbl">Reference Number Field Key</label>
+              <input id="wix-field-refno" class="inp" placeholder="e.g. referenceNumber" style="font-family:var(--mono)">
+              <div style="font-size:11px;color:var(--muted);margin-top:3px">Field Key of the reference number column (Text type — not Number, since ref numbers contain "/")</div>
             </div>
+          </div>
+          <div class="field">
+            <label class="lbl">File Field Key</label>
+            <input id="wix-field-file" class="inp" placeholder="e.g. file" style="font-family:var(--mono)">
+            <div style="font-size:11px;color:var(--muted);margin-top:3px">Field Key of the PDF file column</div>
           </div>
 
           <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;font-weight:600;margin-bottom:14px">
             <input type="checkbox" id="wix-enabled" style="accent-color:var(--pink);width:16px;height:16px">
             Enable — push to Wix CMS when status is set to Prepared
           </label>
+
+          <div style="font-size:10px;font-weight:800;color:var(--sub);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px">Document Types to Sync</div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:10px">Only the document types selected (✓) below will be pushed to Wix CMS. Others will be saved locally as usual but skipped from Wix sync.</div>
+          <div id="wix-cat-list" style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:8px"></div>
+          <div class="row" style="gap:8px;margin-bottom:16px">
+            <button class="btn bgh" style="font-size:11px;padding:5px 10px" onclick="wixCatSetAll(true)">✓ Select All</button>
+            <button class="btn bgh" style="font-size:11px;padding:5px 10px" onclick="wixCatSetAll(false)">✗ Clear All</button>
+          </div>
+
           <div id="wix-status" style="font-size:12px;min-height:18px;margin-bottom:10px;color:var(--sub)"></div>
           <div class="row" style="gap:8px">
             <button class="btn bpink flex1" onclick="saveWixCfg()">💾 Save</button>
             <button class="btn bgh" onclick="testWixCfg()" style="font-size:12px">🔌 Test Connection</button>
           </div>
           <div style="margin-top:12px;background:var(--bg3);border:1.5px solid var(--border);border-radius:var(--rs);padding:10px 12px;font-size:11px;color:var(--sub);line-height:1.7">
-            💡 <b>How it works:</b> When you attach a file to an entry and set the status to <b>Prepared</b>, the PDF is automatically uploaded to Wix Media and saved in the "Transfer Certificates" collection with the student name and file link.
+            💡 <b>How it works:</b> When you attach a file to an entry and set the status to <b>Prepared</b>, the PDF is automatically uploaded to Wix Media and saved in the "Transfer Certificates" collection with the student name and file link — but only if that entry's document type is checked above.
           </div>
         </div>
 
@@ -2784,20 +2799,22 @@ Reason: {reason}"></textarea>
 
 </div><!-- /ct -->
 
-<!-- REF NO POPUP -->
+<!-- REF NO / FILE PROMPT POPUP (reused for ref-no generation and pre-issue file check) -->
 <div class="refno-popup-ov" id="refno-popup-ov">
   <div class="refno-popup" style="max-width:420px;width:100%">
-    <div style="font-size:26px;margin-bottom:4px">🎉</div>
-    <div style="font-weight:800;font-size:16px;color:var(--pink);margin-bottom:2px">Reference Number Generated!</div>
+    <div style="font-size:26px;margin-bottom:4px" id="refno-popup-icon">🎉</div>
+    <div style="font-weight:800;font-size:16px;color:var(--pink);margin-bottom:2px" id="refno-popup-title">Reference Number Generated!</div>
     <div style="font-size:11px;color:var(--sub);margin-bottom:3px" id="refno-popup-name"></div>
-    <div style="font-size:11px;color:var(--sub);margin-bottom:4px">Tap to copy</div>
-    <div class="refno-popup-num" id="refno-popup-num" onclick="copyRefNo()">—</div>
+    <div id="refno-popup-numwrap">
+      <div style="font-size:11px;color:var(--sub);margin-bottom:4px">Tap to copy</div>
+      <div class="refno-popup-num" id="refno-popup-num" onclick="copyRefNo()">—</div>
+    </div>
     <div id="refno-copy-msg" style="font-size:11px;color:var(--green);min-height:14px;margin-bottom:12px"></div>
 
     <!-- File upload zone -->
     <div style="border-top:1.5px dashed var(--bdr2);padding-top:14px;margin-bottom:14px;text-align:left">
       <div style="font-size:12px;font-weight:700;color:var(--sub);margin-bottom:6px">📎 Attach Document File
-        <span style="font-weight:400;color:var(--mut);font-size:11px">(optional — TC / certificate PDF)</span>
+        <span style="font-weight:400;color:var(--mut);font-size:11px" id="refno-popup-filehint">(optional — TC / certificate PDF)</span>
       </div>
       <div id="popup-file-zone"
         style="position:relative;border:2px dashed var(--bdr2);border-radius:var(--rs);padding:12px 14px;text-align:center;background:var(--bg3);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;min-height:48px;transition:border-color .2s"
@@ -2814,7 +2831,7 @@ Reason: {reason}"></textarea>
     </div>
 
     <div style="display:flex;gap:8px">
-      <button class="btn bgh" style="flex:1;padding:10px" onclick="closeRefNoPopup()">✓ Done</button>
+      <button class="btn bgh" style="flex:1;padding:10px" id="refno-popup-skipbtn" onclick="closeRefNoPopup()">✓ Done</button>
       <button class="btn bpink" id="popup-save-btn" style="flex:1;padding:10px;display:none" onclick="savePopupFile()">💾 Save with File</button>
     </div>
   </div>
@@ -6425,6 +6442,7 @@ let CFG={
   appName:'Reference Register',refPrefix:'LIS',refSep:'/',
   lblIssueTo:'Issue To',lblDocType:'Document Type',settingsPw:'',
   preparedStatus:'prepared', // status val that triggers refno generation
+  issuedStatus:'issued', // status val that prompts for file upload if missing
   statuses:[
     {val:'request_raised',label:'📋 Request Raised',cls:'st-s3'},
     {val:'prepared',      label:'📦 Prepared',      cls:'st-pink'},
@@ -6929,10 +6947,28 @@ function openStatusModal(id){
 }
 function closeStatusModal(){document.getElementById('status-modal').classList.remove('open');statusModalId=null;}
 
-async function applyStatus(id,newStatus){
+async function applyStatus(id,newStatus,skipFilePrompt){
   const en=R.entries.find(e=>e.id===id);if(!en)return;
   const perm=canChangeStatus(en.status);
+  if(perm==='block'){
+    toast('Status change is blocked for: '+getStatusInfo(en.status).label,'err');return;
+  }
+  // If moving to the configured "Issued/Delivered" status and no file is attached yet,
+  // prompt to attach the document first (unless this call is the post-prompt retry, or password is required —
+  // password is checked at the point the user actually commits to the change, inside doApply below).
+  const issuedSt=CFG.issuedStatus||'issued';
+  if(!skipFilePrompt&&newStatus===issuedSt&&!en.fileAttached&&perm!=='password'){
+    closeStatusModal();
+    showIssuePopup(en.to,en.id,newStatus);
+    return;
+  }
   const doApply=async()=>{
+    // Re-check: if password-gated and this is the first pass through (not the post-prompt retry),
+    // still offer the file-attach prompt once password has been verified.
+    if(!skipFilePrompt&&newStatus===issuedSt&&!en.fileAttached){
+      showIssuePopup(en.to,en.id,newStatus);
+      return;
+    }
     const prevStatus=en.status;
     en.status=newStatus;
     en.statusChangedAt=nowTS();
@@ -7285,6 +7321,7 @@ function renderSettingsPage(){
   document.getElementById('cfg-prefix').value=CFG.refPrefix;
   document.getElementById('cfg-sep').value=CFG.refSep;
   document.getElementById('cfg-prepare-status').value=CFG.preparedStatus||'prepared';
+  document.getElementById('cfg-issued-status').value=CFG.issuedStatus||'issued';
   updPrefixPreview();renderStatusTags();renderWATemplateList();renderRefMetaTemplateList();
   renderPermList('edit');renderPermList('delete');renderPermList('change');
   // Load unified override password
@@ -7340,8 +7377,10 @@ function renderSettingsPage(){
   document.getElementById('wix-apikey').value=WixCfg.apiKey||'';
   document.getElementById('wix-collection').value=WixCfg.collection||'Transfer Certificates';
   document.getElementById('wix-field-name').value=WixCfg.fieldName||'title';
+  document.getElementById('wix-field-refno').value=WixCfg.fieldRefno||'referenceNumber';
   document.getElementById('wix-field-file').value=WixCfg.fieldFile||'file';
   document.getElementById('wix-enabled').checked=WixCfg.enabled||false;
+  renderWixCatList();
   // Dashboard map selects
   const dm=CFG.dashMap||{card1:'request_raised',card2:CFG.preparedStatus,card3:'issued',card4:''};
   const opts=CFG.statuses.map(s=>`<option value="${s.val}">${s.label.replace(/\p{Emoji}/gu,'').trim()}</option>`).join('');
@@ -7419,7 +7458,7 @@ function applyNextRefNo(){
   toast('Next reference number for '+fy+' set to '+val+'.');
 }
 function updPrefixPreview(){const p=document.getElementById('cfg-prefix').value.trim();const s=document.getElementById('cfg-sep').value;document.getElementById('prefix-live').textContent=(p?p+s:'')+'2025-26'+s+'0001';}
-function savePrefixSettings(){CFG.refPrefix=document.getElementById('cfg-prefix').value.trim();CFG.refSep=document.getElementById('cfg-sep').value;CFG.preparedStatus=document.getElementById('cfg-prepare-status').value.trim()||'prepared';saveCFG();updPrefixPreview();toast('Reference number prefix and prepare status saved.');}
+function savePrefixSettings(){CFG.refPrefix=document.getElementById('cfg-prefix').value.trim();CFG.refSep=document.getElementById('cfg-sep').value;CFG.preparedStatus=document.getElementById('cfg-prepare-status').value.trim()||'prepared';CFG.issuedStatus=document.getElementById('cfg-issued-status').value.trim()||'issued';saveCFG();updPrefixPreview();toast('Reference number prefix and prepare status saved.');}
 function saveStatusSettings(){saveCFG();renderStatusSelect();applyLabels();renderStatusTags();toast('Status types saved successfully.');}
 function saveWASettings(){
   if(!CFG.waTemplates)CFG.waTemplates={};
@@ -8388,8 +8427,39 @@ async function uploadToOneDrive(entry){
 }
 
 // ─── WIX CMS CONFIG & PUSH ────────────────────────────────
-let WixCfg={siteId:'',apiKey:'',collection:'Transfer Certificates',fieldName:'title',fieldFile:'file',enabled:false,uploadFile:true};
-function loadWixCfg(){try{const d=localStorage.getItem('ref_wix_cfg');if(d)WixCfg=JSON.parse(d);}catch(e){}}
+let WixCfg={siteId:'',apiKey:'',collection:'Transfer Certificates',fieldName:'title',fieldRefno:'referenceNumber',fieldFile:'file',enabled:false,uploadFile:true,categories:null};
+function loadWixCfg(){try{const d=localStorage.getItem('ref_wix_cfg');if(d)WixCfg=JSON.parse(d);}catch(e){}renderWixCatList();}
+// ─── WIX — PER-CATEGORY SYNC TOGGLE ────────────────────────
+// WixCfg.categories === null  -> all document types sync (default / first run)
+// WixCfg.categories === []    -> none sync
+// WixCfg.categories === [...] -> only listed types sync
+function wixCategoryAllowed(category){
+  if(!WixCfg.categories)return true; // null = no restriction set yet, allow all
+  return WixCfg.categories.includes(category||'');
+}
+function renderWixCatList(){
+  const wrap=document.getElementById('wix-cat-list');if(!wrap)return;
+  const types=getDocTypes();
+  // first run: if categories is null, treat all as checked visually
+  const active=WixCfg.categories===null?[...types]:WixCfg.categories;
+  wrap.innerHTML=types.map(t=>{
+    const on=active.includes(t);
+    const safe=encodeURIComponent(t);
+    return`<span class="doc-chip${on?' selected':''}" onclick="toggleWixCat(decodeURIComponent('${safe}'))" style="cursor:pointer">${on?'✓ ':''}${esc(t)}</span>`;
+  }).join('');
+}
+function toggleWixCat(cat){
+  const types=getDocTypes();
+  let active=WixCfg.categories===null?[...types]:[...WixCfg.categories];
+  if(active.includes(cat))active=active.filter(c=>c!==cat);
+  else active.push(cat);
+  WixCfg.categories=active;
+  renderWixCatList();
+}
+function wixCatSetAll(all){
+  WixCfg.categories=all?[...getDocTypes()]:[];
+  renderWixCatList();
+}
 function saveWixCfg(){
   WixCfg.siteId=document.getElementById('wix-siteid').value.trim();
   WixCfg.apiKey=document.getElementById('wix-apikey').value.trim();
@@ -8400,6 +8470,9 @@ function saveWixCfg(){
   const fn=document.getElementById('wix-field-name').value.trim();
   WixCfg.fieldName=fn||'title';
   if(!fn)document.getElementById('wix-field-name').value='title';
+  const rf=document.getElementById('wix-field-refno').value.trim();
+  WixCfg.fieldRefno=rf||'referenceNumber';
+  if(!rf)document.getElementById('wix-field-refno').value='referenceNumber';
   const ff=document.getElementById('wix-field-file').value.trim();
   WixCfg.fieldFile=ff||'file';
   if(!ff)document.getElementById('wix-field-file').value='file';
@@ -8429,7 +8502,10 @@ async function testWixCfg(){
 }
 async function pushToWixCMS(entry, fileData){
   if(!WixCfg.enabled||!WixCfg.siteId||!WixCfg.apiKey)return;
+  if(!wixCategoryAllowed(entry.category)){console.log('Wix sync skipped — category not selected:',entry.category);return;}
+  if(!fileData){console.log('Wix sync skipped — no file attached for:',entry.to);return;}
   const nameField=WixCfg.fieldName||'title';
+  const refnoField=WixCfg.fieldRefno||'referenceNumber';
   const fileField=WixCfg.fieldFile||'file';
   const collection=WixCfg.collection||'Transfer Certificates';
   const headers={'Content-Type':'application/json','Authorization':WixCfg.apiKey,'wix-site-id':WixCfg.siteId};
@@ -8438,51 +8514,54 @@ async function pushToWixCMS(entry, fileData){
     let wixFileObj=null;
 
     // ── Step 1: Upload PDF to Wix Media Manager ──
-    if(fileData){
-      try{
-        const ext=(fileData.match(/data:[^/]+\/([^;]+)/)||[])[1]||'pdf';
-        const mimeType=fileData.split(';')[0].replace('data:','')||'application/pdf';
-        const fileName=(entry.refno||entry.id).replace(/[/\\:*?"<>|]/g,'-')+'.'+ext;
-        const b64=fileData.split(',')[1]||fileData;
-        const bytes=Uint8Array.from(atob(b64),c=>c.charCodeAt(0));
+    try{
+      const ext=(fileData.match(/data:[^/]+\/([^;]+)/)||[])[1]||'pdf';
+      const mimeType=fileData.split(';')[0].replace('data:','')||'application/pdf';
+      const fileName=(entry.refno||entry.id).replace(/[/\\:*?"<>|]/g,'-')+'.'+ext;
+      const b64=fileData.split(',')[1]||fileData;
+      const bytes=Uint8Array.from(atob(b64),c=>c.charCodeAt(0));
 
-        // Get upload URL
-        const uploadUrlRes=await fetch('https://www.wixapis.com/site-media/v1/files/generate-upload-url',{
-          method:'POST',headers,
-          body:JSON.stringify({fileName,mimeType,sizeInBytes:bytes.length})
-        });
-        const uploadUrlData=await uploadUrlRes.json();
+      // Get upload URL
+      const uploadUrlRes=await fetch('https://www.wixapis.com/site-media/v1/files/generate-upload-url',{
+        method:'POST',headers,
+        body:JSON.stringify({fileName,mimeType,sizeInBytes:bytes.length})
+      });
+      const uploadUrlData=await uploadUrlRes.json();
 
-        if(uploadUrlData.uploadUrl){
-          // Upload the actual file
-          const blob=new Blob([bytes],{type:mimeType});
-          const uploadRes=await fetch(uploadUrlData.uploadUrl,{method:'PUT',body:blob,headers:{'Content-Type':mimeType}});
-          if(uploadRes.ok){
-            // Wix file object format for Document field
-            wixFileObj={
-              _id: uploadUrlData.fileId||'',
-              url:  uploadUrlData.fileUrl||uploadUrlData.uploadUrl.split('?')[0],
-              mediaType:'document',
-              title: fileName
-            };
-          }
+      if(uploadUrlData.uploadUrl){
+        // Upload the actual file
+        const blob=new Blob([bytes],{type:mimeType});
+        const uploadRes=await fetch(uploadUrlData.uploadUrl,{method:'PUT',body:blob,headers:{'Content-Type':mimeType}});
+        if(uploadRes.ok){
+          // Wix file object format for Document field
+          wixFileObj={
+            _id: uploadUrlData.fileId||'',
+            url:  uploadUrlData.fileUrl||uploadUrlData.uploadUrl.split('?')[0],
+            mediaType:'document',
+            title: fileName
+          };
         }
-      }catch(fe){
-        console.warn('Wix file upload failed:',fe.message);
-        toast('Wix file upload failed — record will still be saved.','inf');
       }
+    }catch(fe){
+      console.warn('Wix file upload failed:',fe.message);
+      toast('Wix file upload failed — record not synced to Wix.','err');
+      return;
+    }
+    if(!wixFileObj){
+      toast('Wix file upload failed — record not synced to Wix.','err');
+      return;
     }
 
-    // ── Step 2: Build minimal record — name and file only ──
-    const record={[nameField]: entry.to||''};
-    if(wixFileObj)[fileField]=wixFileObj;
+    // ── Step 2: Build record — name, reference number, and file ──
+    const record={[nameField]: entry.to||'', [refnoField]: entry.refno||''};
+    if(wixFileObj)record[fileField]=wixFileObj;
 
-    // ── Step 3: Check if entry already exists (search by name) ──
+    // ── Step 3: Check if entry already exists — match by Reference Number (unique) ──
     const qRes=await fetch('https://www.wixapis.com/wix-data/v2/items/query',{
       method:'POST',headers,
       body:JSON.stringify({
         dataCollectionId:collection,
-        query:{filter:{[nameField]:{$eq:entry.to||''}},paging:{limit:1}}
+        query:{filter:{[refnoField]:{$eq:entry.refno||''}},paging:{limit:1}}
       })
     });
     const qData=await qRes.json();
@@ -8739,8 +8818,17 @@ function clearFileAttachment(){
 
 // ─── REF NO POPUP ─────────────────────────────────────────
 let _popupEntryId=null,_popupFileData=null,_popupFileName='';
+let _popupMode='refno'; // 'refno' = ref number generated flow, 'issue' = pre-issue file-check flow
+let _popupPendingStatus=null; // status to apply once popup is dismissed (issue mode only)
 
 function showRefNoPopup(refno,name,entryId){
+  _popupMode='refno';_popupPendingStatus=null;
+  document.getElementById('refno-popup-icon').textContent='🎉';
+  document.getElementById('refno-popup-title').textContent='Reference Number Generated!';
+  document.getElementById('refno-popup-numwrap').style.display='';
+  document.getElementById('refno-popup-filehint').textContent='(optional — TC / certificate PDF)';
+  document.getElementById('refno-popup-skipbtn').textContent='✓ Done';
+  document.getElementById('refno-popup-skipbtn').setAttribute('onclick','closeRefNoPopup()');
   document.getElementById('refno-popup-num').textContent=refno;
   document.getElementById('refno-popup-name').textContent='For: '+(name||'');
   document.getElementById('refno-copy-msg').textContent='';
@@ -8758,9 +8846,42 @@ function showRefNoPopup(refno,name,entryId){
   if(sb) sb.style.display='none';
   document.getElementById('refno-popup-ov').classList.add('open');
 }
+// Shown when user tries to set status to the "Issued/Delivered" status but no file is attached yet.
+function showIssuePopup(name,entryId,pendingStatus){
+  _popupMode='issue';_popupPendingStatus=pendingStatus;
+  document.getElementById('refno-popup-icon').textContent='📎';
+  document.getElementById('refno-popup-title').textContent='Attach Document Before Issuing';
+  document.getElementById('refno-popup-numwrap').style.display='none';
+  document.getElementById('refno-popup-filehint').textContent='(required to mark as Issued/Delivered)';
+  document.getElementById('refno-popup-skipbtn').textContent='Skip — Mark Issued Anyway';
+  document.getElementById('refno-popup-skipbtn').setAttribute('onclick','skipIssuePopup()');
+  document.getElementById('refno-popup-name').textContent='For: '+(name||'');
+  document.getElementById('refno-copy-msg').textContent='';
+  _popupEntryId=entryId||null; _popupFileData=null; _popupFileName='';
+  const fz=document.getElementById('popup-file-zone');
+  if(fz) fz.style.borderColor='';
+  const fl=document.getElementById('popup-file-label');
+  if(fl) fl.textContent='Drop file or click to browse';
+  const fc=document.getElementById('popup-file-chip');
+  if(fc) fc.innerHTML='';
+  const fi=document.getElementById('popup-f-file');
+  if(fi) fi.value='';
+  const sb=document.getElementById('popup-save-btn');
+  if(sb){sb.style.display='none';sb.textContent='💾 Save & Mark Issued';}
+  document.getElementById('refno-popup-ov').classList.add('open');
+}
+// "Skip" in issue-mode: apply the pending status without a file, same as before this feature existed.
+async function skipIssuePopup(){
+  const entryId=_popupEntryId,pendingStatus=_popupPendingStatus;
+  closeRefNoPopup();
+  if(entryId&&pendingStatus){await applyStatus(entryId,pendingStatus,true);}
+}
 function closeRefNoPopup(){
   document.getElementById('refno-popup-ov').classList.remove('open');
   _popupEntryId=null; _popupFileData=null; _popupFileName='';
+  _popupMode='refno';_popupPendingStatus=null;
+  const sb=document.getElementById('popup-save-btn');
+  if(sb)sb.textContent='💾 Save with File';
 }
 function handlePopupFile(file){
   if(!file) return;
@@ -8811,7 +8932,14 @@ async function savePopupFile(){
     }
   }
   toast('✅ File saved: '+newName);
-  closeRefNoPopup();
+  // Issue-mode: file is attached now, proceed to apply the pending status (e.g. Issued/Delivered)
+  if(_popupMode==='issue'&&_popupPendingStatus){
+    const entryId=_popupEntryId,pendingStatus=_popupPendingStatus;
+    closeRefNoPopup();
+    await applyStatus(entryId,pendingStatus,true);
+  } else {
+    closeRefNoPopup();
+  }
 }
 function copyRefNo(){
   const txt=document.getElementById('refno-popup-num').textContent;
