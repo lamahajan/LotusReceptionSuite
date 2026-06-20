@@ -8591,7 +8591,7 @@ async function pushToWixCMS(entry, fileData){
       const bytes=Uint8Array.from(atob(b64),c=>c.charCodeAt(0));
 
       // Get upload URL
-      const uploadUrlRes=await wixFetch('upload-url','POST',{fileName,mimeType,sizeInBytes:bytes.length},siteId,apiKey);
+      const uploadUrlRes=await wixFetch('upload-url','POST',{fileName,mimeType,sizeInBytes:String(bytes.length)},siteId,apiKey);
       const uploadUrlRawText=await uploadUrlRes.text();
       let uploadUrlData;
       try{ uploadUrlData=JSON.parse(uploadUrlRawText); }
