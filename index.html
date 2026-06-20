@@ -2520,6 +2520,11 @@ Reason: {reason}"></textarea>
             <div style="font-size:11px;color:var(--muted);margin-top:3px">Wix Dashboard → Settings → General Info → copy the Site ID</div>
           </div>
           <div class="field">
+            <label class="lbl">Wix Account ID <span style="font-weight:400;font-size:10px;color:var(--muted)">(only if file upload fails with the Site ID alone)</span></label>
+            <input id="wix-accountid" class="inp" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" style="font-family:var(--mono)">
+            <div style="font-size:11px;color:var(--muted);margin-top:3px">Wix Dashboard → Settings (account level) → some API keys are account-scoped and the Media Manager upload step needs this in addition to the Site ID.</div>
+          </div>
+          <div class="field">
             <label class="lbl">Wix API Key</label>
             <input id="wix-apikey" class="inp" placeholder="IST2..." style="font-family:var(--mono)">
             <div style="font-size:11px;color:var(--muted);margin-top:3px">Wix Dashboard → Settings → API Keys → New Key → give CMS permission</div>
@@ -7384,6 +7389,7 @@ function renderSettingsPage(){
   // Wix CMS
   document.getElementById('wix-proxy-url').value=WixCfg.proxyUrl||'';
   document.getElementById('wix-siteid').value=WixCfg.siteId||'';
+  document.getElementById('wix-accountid').value=WixCfg.accountId||'';
   document.getElementById('wix-apikey').value=WixCfg.apiKey||'';
   document.getElementById('wix-collection').value=WixCfg.collection||'Transfer Certificates';
   document.getElementById('wix-field-name').value=WixCfg.fieldName||'title';
@@ -8437,7 +8443,7 @@ async function uploadToOneDrive(entry){
 }
 
 // ─── WIX CMS CONFIG & PUSH ────────────────────────────────
-let WixCfg={siteId:'',apiKey:'',collection:'Transfer Certificates',fieldName:'title',fieldRefno:'referenceNumber',fieldFile:'file',enabled:false,uploadFile:true,categories:null,proxyUrl:''};
+let WixCfg={siteId:'',accountId:'',apiKey:'',collection:'Transfer Certificates',fieldName:'title',fieldRefno:'referenceNumber',fieldFile:'file',enabled:false,uploadFile:true,categories:null,proxyUrl:''};
 function loadWixCfg(){try{const d=localStorage.getItem('ref_wix_cfg');if(d)WixCfg=JSON.parse(d);}catch(e){}renderWixCatList();}
 // ─── WIX — PER-CATEGORY SYNC TOGGLE ────────────────────────
 // WixCfg.categories === null  -> all document types sync (default / first run)
@@ -8473,6 +8479,7 @@ function wixCatSetAll(all){
 function saveWixCfg(){
   WixCfg.proxyUrl=document.getElementById('wix-proxy-url').value.trim().replace(/\/+$/,'');
   WixCfg.siteId=document.getElementById('wix-siteid').value.trim();
+  WixCfg.accountId=document.getElementById('wix-accountid').value.trim();
   WixCfg.apiKey=document.getElementById('wix-apikey').value.trim();
   // Auto-fill defaults if fields are empty
   const col=document.getElementById('wix-collection').value.trim();
@@ -8517,16 +8524,21 @@ function wixProxyPath(kind, extra){
 // method: HTTP method; extra: item id for 'update'
 async function wixFetch(kind, method, body, siteId, apiKey, extra){
   const proxy=(WixCfg.proxyUrl||'').replace(/\/+$/,'');
+  const accountId=WixCfg.accountId||'';
   if(proxy){
+    const headers={'Content-Type':'application/json','x-wix-api-key':apiKey,'x-wix-site-id':siteId};
+    if(accountId)headers['x-wix-account-id']=accountId;
     return fetch(proxy+wixProxyPath(kind,extra),{
       method,
-      headers:{'Content-Type':'application/json','x-wix-api-key':apiKey,'x-wix-site-id':siteId},
+      headers,
       body:body?JSON.stringify(body):undefined
     });
   }
+  const directHeaders={'Content-Type':'application/json','Authorization':apiKey,'wix-site-id':siteId};
+  if(accountId)directHeaders['wix-account-id']=accountId;
   return fetch('https://www.wixapis.com'+wixDirectPath(kind,extra),{
     method,
-    headers:{'Content-Type':'application/json','Authorization':apiKey,'wix-site-id':siteId},
+    headers:directHeaders,
     body:body?JSON.stringify(body):undefined
   });
 }
