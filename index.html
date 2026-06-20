@@ -8607,14 +8607,26 @@ async function pushToWixCMS(entry, fileData){
         // Upload the actual file
         const blob=new Blob([bytes],{type:mimeType});
         const uploadRes=await wixUploadRaw(uploadUrlData.uploadUrl,blob,mimeType);
-        if(uploadRes.ok){
-          // Wix file object format for Document field
-          wixFileObj={
-            _id: uploadUrlData.fileId||'',
-            url:  uploadUrlData.fileUrl||uploadUrlData.uploadUrl.split('?')[0],
-            mediaType:'document',
-            title: fileName
-          };
+        const uploadRawText=await uploadRes.text();
+        let uploadRespData=null;
+        try{ uploadRespData=JSON.parse(uploadRawText); }catch(e){/* leave null, handled below */}
+
+        if(uploadRes.ok&&uploadRespData&&uploadRespData.file){
+          // The Upload API response wraps file details in a "file" object.
+          // Document-type CMS fields expect a plain string: a web URL or a
+          // Wix Media Manager URL in the form wix:document://v1/{fileId}/{fileName}
+          const f=uploadRespData.file;
+          const fid=f.id||f._id||'';
+          if(fid){
+            wixFileObj='wix:document://v1/'+fid+'/'+encodeURIComponent(fileName);
+          } else if(f.url){
+            wixFileObj=f.url;
+          }
+        } else if(!uploadRes.ok){
+          console.warn('Wix raw upload failed:',uploadRawText.slice(0,300));
+          throw new Error('File upload to Wix failed (HTTP '+uploadRes.status+').');
+        } else {
+          console.warn('Wix upload response missing file object:',uploadRawText.slice(0,300));
         }
       }
     }catch(fe){
@@ -8651,7 +8663,7 @@ async function pushToWixCMS(entry, fileData){
 
     toast('Record synced to Wix CMS: '+(entry.to||''));
     const entryInR=R.entries.find(e=>e.id===entry.id);
-    if(entryInR&&wixFileObj)entryInR.wixFileUrl=wixFileObj.url;
+    if(entryInR&&wixFileObj)entryInR.wixFileUrl=wixFileObj;
     await fbPush();
 
   }catch(e){
