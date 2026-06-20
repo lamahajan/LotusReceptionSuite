@@ -2568,6 +2568,20 @@ Reason: {reason}"></textarea>
             Enable — push to Wix CMS when status is set to Prepared
           </label>
 
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;font-weight:600;margin-bottom:6px">
+            <input type="checkbox" id="wix-file-mandatory" style="accent-color:var(--pink);width:16px;height:16px">
+            Require a file when marking Issued/Delivered
+          </label>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:14px;margin-left:24px">
+            <b>OFF (default):</b> a popup offers to attach a file before issuing, but a "Skip" button lets you continue without one.<br>
+            <b>ON:</b> the popup still appears, but the Skip button is hidden — a file must be attached before the status can be set to Issued/Delivered.
+          </div>
+
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;font-weight:600;margin-bottom:14px">
+            <input type="checkbox" id="wix-delete-sync" style="accent-color:var(--pink);width:16px;height:16px">
+            Also delete from Wix CMS when an entry is deleted from the Register
+          </label>
+
           <div style="font-size:10px;font-weight:800;color:var(--sub);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px">Document Types to Sync</div>
           <div style="font-size:11px;color:var(--muted);margin-bottom:10px">Only the document types selected (✓) below will be pushed to Wix CMS. Others will be saved locally as usual but skipped from Wix sync.</div>
           <div id="wix-cat-list" style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:8px"></div>
@@ -7040,6 +7054,7 @@ function deleteEntry(id){
     R.entries=R.entries.filter(e=>e.id!==id);
     await fbPush();fbPushPublic();renderRegister();renderDashboard();
     toast('🗑 Entry deleted: '+en.to+(en.refno?' ('+en.refno+')':''),'err');
+    if(en.refno&&WixCfg.enabled&&WixCfg.deleteSync){deleteFromWixCMS(en.refno);}
     if(RefTGCfg.enabled&&RefTGCfg.token&&RefTGCfg.notifyDel!==false){
       sendRefTGNotification('deleted',en);
       if(en.tgMsgId) deleteTGMessage(RefTGCfg.token,RefTGCfg.chatId,en.tgMsgId);
@@ -7396,6 +7411,8 @@ function renderSettingsPage(){
   document.getElementById('wix-field-refno').value=WixCfg.fieldRefno||'referenceNumber';
   document.getElementById('wix-field-file').value=WixCfg.fieldFile||'file';
   document.getElementById('wix-enabled').checked=WixCfg.enabled||false;
+  document.getElementById('wix-file-mandatory').checked=WixCfg.fileMandatory||false;
+  document.getElementById('wix-delete-sync').checked=WixCfg.deleteSync||false;
   renderWixCatList();
   // Dashboard map selects
   const dm=CFG.dashMap||{card1:'request_raised',card2:CFG.preparedStatus,card3:'issued',card4:''};
@@ -8443,7 +8460,7 @@ async function uploadToOneDrive(entry){
 }
 
 // ─── WIX CMS CONFIG & PUSH ────────────────────────────────
-let WixCfg={siteId:'',accountId:'',apiKey:'',collection:'Transfer Certificates',fieldName:'title',fieldRefno:'referenceNumber',fieldFile:'file',enabled:false,uploadFile:true,categories:null,proxyUrl:''};
+let WixCfg={siteId:'',accountId:'',apiKey:'',collection:'Transfer Certificates',fieldName:'title',fieldRefno:'referenceNumber',fieldFile:'file',enabled:false,uploadFile:true,categories:null,proxyUrl:'',deleteSync:false,fileMandatory:false};
 function loadWixCfg(){try{const d=localStorage.getItem('ref_wix_cfg');if(d)WixCfg=JSON.parse(d);}catch(e){}renderWixCatList();}
 // ─── WIX — PER-CATEGORY SYNC TOGGLE ────────────────────────
 // WixCfg.categories === null  -> all document types sync (default / first run)
@@ -8495,6 +8512,8 @@ function saveWixCfg(){
   WixCfg.fieldFile=ff||'file';
   if(!ff)document.getElementById('wix-field-file').value='file';
   WixCfg.enabled=document.getElementById('wix-enabled').checked;
+  WixCfg.fileMandatory=document.getElementById('wix-file-mandatory').checked;
+  WixCfg.deleteSync=document.getElementById('wix-delete-sync').checked;
   WixCfg.uploadFile=true;
   localStorage.setItem('ref_wix_cfg',JSON.stringify(WixCfg));
   const st=document.getElementById('wix-status');
@@ -8510,6 +8529,7 @@ function wixDirectPath(kind, extra){
   if(kind==='query')return '/wix-data/v2/items/query';
   if(kind==='insert')return '/wix-data/v2/items';
   if(kind==='update')return '/wix-data/v2/items/'+extra;
+  if(kind==='delete')return '/wix-data/v2/items/'+extra;
   if(kind==='upload-url')return '/site-media/v1/files/generate-upload-url';
   return '';
 }
@@ -8517,10 +8537,11 @@ function wixProxyPath(kind, extra){
   if(kind==='query')return '/wix/items/query';
   if(kind==='insert')return '/wix/items';
   if(kind==='update')return '/wix/items/'+extra;
+  if(kind==='delete')return '/wix/items/'+extra;
   if(kind==='upload-url')return '/wix/files/generate-upload-url';
   return '';
 }
-// kind: 'query' | 'insert' | 'update' | 'upload-url'
+// kind: 'query' | 'insert' | 'update' | 'delete' | 'upload-url'
 // method: HTTP method; extra: item id for 'update'
 async function wixFetch(kind, method, body, siteId, apiKey, extra){
   const proxy=(WixCfg.proxyUrl||'').replace(/\/+$/,'');
@@ -8672,6 +8693,39 @@ async function pushToWixCMS(entry, fileData){
   }
 }
 function toggleAdminAlert(cb){CFG.adminAlertEnabled=cb.checked;saveCFG();toast(cb.checked?'Admin alerts enabled.':'Admin alerts disabled.','inf');}
+
+// Deletes the matching record from Wix CMS when a Reference Register entry is deleted locally.
+// Matches by Reference Number (unique), same key used for insert/update lookups in pushToWixCMS.
+async function deleteFromWixCMS(refno){
+  if(!WixCfg.enabled||!WixCfg.deleteSync)return;
+  if(!WixCfg.siteId||!WixCfg.apiKey||!refno)return;
+  const refnoField=WixCfg.fieldRefno||'referenceNumber';
+  const collection=WixCfg.collection||'Transfer Certificates';
+  const siteId=WixCfg.siteId,apiKey=WixCfg.apiKey;
+  try{
+    const qRes=await wixFetch('query','POST',{
+      dataCollectionId:collection,
+      query:{filter:{[refnoField]:{$eq:refno}},paging:{limit:1}}
+    },siteId,apiKey);
+    const qData=await qRes.json();
+    if(!qData.dataItems||!qData.dataItems.length){
+      console.log('Wix CMS delete skipped — no matching record for:',refno);
+      return;
+    }
+    const existId=qData.dataItems[0].id;
+    const delRes=await wixFetch('delete','DELETE',null,siteId,apiKey,existId);
+    if(delRes.ok){
+      toast('🗑 Also removed from Wix CMS: '+refno);
+    }else{
+      const e=await delRes.json().catch(()=>({}));
+      console.warn('Wix CMS delete failed:',e.message||delRes.status);
+      toast('Wix CMS delete failed — removed locally only.','err');
+    }
+  }catch(e){
+    console.warn('Wix CMS delete error:',e.message);
+    toast('Wix CMS delete failed — removed locally only.','err');
+  }
+}
 
 // ─── FY MANAGEMENT ────────────────────────────────────────
 function renderFYManageList(){
@@ -8931,9 +8985,16 @@ function showIssuePopup(name,entryId,pendingStatus){
   document.getElementById('refno-popup-title').textContent='Attach Document Before Issuing';
   document.getElementById('refno-popup-numwrap').style.display='none';
   document.getElementById('refno-popup-filehint').textContent='(required to mark as Issued/Delivered)';
-  document.getElementById('refno-popup-skipbtn').textContent='Skip — Mark Issued Anyway';
-  document.getElementById('refno-popup-skipbtn').setAttribute('onclick','skipIssuePopup()');
-  document.getElementById('refno-popup-name').textContent='For: '+(name||'');
+  const skipBtn=document.getElementById('refno-popup-skipbtn');
+  const mandatory=WixCfg.enabled&&WixCfg.fileMandatory;
+  if(mandatory){
+    skipBtn.style.display='none';
+  }else{
+    skipBtn.style.display='';
+    skipBtn.textContent='Skip — Mark Issued Anyway';
+    skipBtn.setAttribute('onclick','skipIssuePopup()');
+  }
+  document.getElementById('refno-popup-name').textContent='For: '+(name||'')+(mandatory?'  ·  ⚠️ File required to continue':'');
   document.getElementById('refno-copy-msg').textContent='';
   _popupEntryId=entryId||null; _popupFileData=null; _popupFileName='';
   const fz=document.getElementById('popup-file-zone');
