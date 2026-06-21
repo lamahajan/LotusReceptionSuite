@@ -6773,6 +6773,10 @@ function generateRefNo(fy){
 let sugT=null,_stuMatches=[];
 function stuSuggest(val){
   clearTimeout(sugT);const box=document.getElementById('stu-suggest-box');
+  // Any manual typing invalidates a previous autosuggest selection — clear the
+  // stale dataset so saveEntry() uses the input's current text, not an old pick.
+  const fto=document.getElementById('f-to');
+  if(fto){fto.dataset.stuId='';fto.dataset.stuName='';}
   if(!val||val.length<2){box.innerHTML='';_stuMatches=[];return;}
   sugT=setTimeout(()=>{
     const q=val.toLowerCase();
@@ -7074,6 +7078,8 @@ function editEntry(id){
   const doEdit=()=>{
     document.getElementById('f-date').value=en.date||'';
     document.getElementById('f-to').value=en.to||'';
+    document.getElementById('f-to').dataset.stuId='';
+    document.getElementById('f-to').dataset.stuName='';
     document.getElementById('f-phone').value=en.phone||'';
     document.getElementById('f-cat').value=en.category||'';
     const disp=document.getElementById('f-cat-display-text');
@@ -8610,9 +8616,13 @@ async function pushToWixCMS(entry, fileData){
       const fileName=(entry.refno||entry.id).replace(/[/\\:*?"<>|]/g,'-')+'.'+ext;
       const b64=fileData.split(',')[1]||fileData;
       const bytes=Uint8Array.from(atob(b64),c=>c.charCodeAt(0));
+      // Organize uploads into TC/{financial-year} folders in the Wix Media Manager.
+      // Wix creates the folder path automatically if it doesn't already exist.
+      const fyFolder=(entry.fy||curFY||'').replace(/[^A-Za-z0-9-]/g,'')||'Unfiled';
+      const filePath='/TC/'+fyFolder;
 
       // Get upload URL
-      const uploadUrlRes=await wixFetch('upload-url','POST',{fileName,mimeType,sizeInBytes:String(bytes.length)},siteId,apiKey);
+      const uploadUrlRes=await wixFetch('upload-url','POST',{fileName,mimeType,sizeInBytes:String(bytes.length),filePath},siteId,apiKey);
       const uploadUrlRawText=await uploadUrlRes.text();
       let uploadUrlData;
       try{ uploadUrlData=JSON.parse(uploadUrlRawText); }
