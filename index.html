@@ -8713,7 +8713,7 @@ async function deleteFromWixCMS(refno){
       return;
     }
     const existId=qData.dataItems[0].id;
-    const delRes=await wixFetch('delete','DELETE',null,siteId,apiKey,existId);
+    const delRes=await wixFetch('delete','DELETE',{dataCollectionId:collection},siteId,apiKey,existId);
     if(delRes.ok){
       toast('🗑 Also removed from Wix CMS: '+refno);
     }else{
