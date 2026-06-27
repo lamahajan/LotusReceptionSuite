@@ -4621,7 +4621,7 @@ function nowT(){return new Date().toLocaleTimeString('en-IN',{hour:'2-digit',min
 function uid(){return Date.now().toString(36)+Math.random().toString(36).substr(2,5);}
 function e(s){return s?String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'):''}
 function fmtD(d){if(!d)return'';try{return new Date(d+'T00:00:00').toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'})}catch{return d}}
-let tT;function gpToast(m,t='ok'){const el=document.getElementById('toast');if(!el)return;el.textContent=m;el.className='show '+t;clearTimeout(tT);tT=setTimeout(()=>el.className='',3200);}
+let _gpToastT;function gpToast(m,t='ok'){const el=document.getElementById('toast');if(!el)return;el.textContent=m;el.className='show '+t;clearTimeout(_gpToastT);_gpToastT=setTimeout(()=>el.className='',3200);}
 function updBadge(){document.getElementById('tbadge').textContent=S.passes.filter(p=>p.date===todayStr()).length+' today';if(typeof updateHomeStats==='function')updateHomeStats();}
 function popBusSel(){['cpbus','sfb'].forEach(id=>{const el=document.getElementById(id);if(!el)return;const cur=el.value;el.innerHTML='<option value="">— Select —</option>'+S.buses.map(b=>`<option value="${e(b)}"${b===cur?' selected':''}>${e(b)}</option>`).join('');});}
 
@@ -6533,7 +6533,7 @@ function fmtD(d){if(!d)return'';try{return new Date(d+'T00:00:00').toLocaleDateS
 function fmtTS(iso){if(!iso)return'';try{return new Date(iso).toLocaleString('en-IN',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:true})}catch{return iso}}
 function todayStr(){return new Date().toISOString().split('T')[0];}
 function nowTS(){return new Date().toISOString();}
-function toast(m,t='ok'){const el=document.getElementById('ref-toast');if(!el)return;el.textContent=m;el.className='show '+t;clearTimeout(tT);tT=setTimeout(()=>{el.className='';},3500);}
+let _refToastT;function toast(m,t='ok'){const el=document.getElementById('ref-toast');if(!el)return;el.textContent=m;el.className='show '+t;clearTimeout(_refToastT);_refToastT=setTimeout(()=>{el.className='';},3500);}
 function cleanPhone(v){if(!v)return'';let s=String(v).replace(/\.0$/,'').replace(/[^0-9]/g,'').trim();if(!s||s==='0')return'';if(s.length===10)s='91'+s;if(s.startsWith('0')&&s.length===11)s='91'+s.slice(1);return s;}
 function getStatusInfo(val){return CFG.statuses.find(s=>s.val===val)||{val,label:String(val).toUpperCase(),cls:'st-s4'};}
 function elapsedHHMMSS(isoStr){
