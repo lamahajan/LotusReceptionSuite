@@ -1435,7 +1435,12 @@ Reason: {reason}"></textarea>
             </div>
             <div class="g2">
               <div class="field">
-                <label class="lbl">Template Name (Pass Issued)</label>
+                <label class="lbl" style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+                  <span>Template Name (Pass Issued)</span>
+                  <label style="display:inline-flex;align-items:center;gap:5px;cursor:pointer;font-weight:600;font-size:10px;color:var(--muted)" title="Enable/disable sending this message">
+                    <input type="checkbox" id="meta-wa-pass-enabled" checked style="accent-color:var(--green);width:14px;height:14px">ON
+                  </label>
+                </label>
                 <input id="meta-wa-template" class="inp" placeholder="e.g. gatepass_issued" style="font-family:var(--mono);font-size:12px">
                 <div style="font-size:11px;color:var(--muted);margin-top:3px">Leave empty to send plain text (only works within 24hr window)</div>
               </div>
@@ -1446,7 +1451,12 @@ Reason: {reason}"></textarea>
             </div>
             <div class="g2">
               <div class="field">
-                <label class="lbl">Template Name (Gate Out) <span style="font-weight:400;font-size:10px;color:var(--muted)">(optional)</span></label>
+                <label class="lbl" style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+                  <span>Template Name (Gate Out) <span style="font-weight:400;font-size:10px;color:var(--muted)">(optional)</span></span>
+                  <label style="display:inline-flex;align-items:center;gap:5px;cursor:pointer;font-weight:600;font-size:10px;color:var(--muted)" title="Enable/disable sending this message">
+                    <input type="checkbox" id="meta-wa-out-enabled" checked style="accent-color:var(--green);width:14px;height:14px">ON
+                  </label>
+                </label>
                 <input id="meta-wa-out-template" class="inp" placeholder="e.g. gatepass_exited" style="font-family:var(--mono);font-size:12px">
                 <div style="font-size:11px;color:var(--muted);margin-top:3px">Sent to parent when student exits gate. Parameters: {{1}} name &nbsp;|&nbsp; {{2}} class &nbsp;|&nbsp; {{3}} gate out time &nbsp;|&nbsp; {{4}} date</div>
               </div>
@@ -2401,7 +2411,12 @@ Reason: {reason}"></textarea>
           </div>
           <div class="g2">
             <div class="field">
-              <label class="lbl">Default Template Name <span style="font-weight:400;font-size:10px;color:var(--muted)">(used if status-specific not set)</span></label>
+              <label class="lbl" style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+                <span>Default Template Name <span style="font-weight:400;font-size:10px;color:var(--muted)">(used if status-specific not set)</span></span>
+                <label style="display:inline-flex;align-items:center;gap:5px;cursor:pointer;font-weight:600;font-size:10px;color:var(--muted)" title="Enable/disable sending this message">
+                  <input type="checkbox" id="ref-meta-wa-template-enabled" checked style="accent-color:var(--green);width:14px;height:14px">ON
+                </label>
+              </label>
               <input id="ref-meta-wa-template" class="inp" placeholder="e.g. ref_status_update" style="font-family:var(--mono);font-size:12px">
             </div>
             <div class="field">
@@ -5452,6 +5467,8 @@ function gpSaveWA(){
   var langEl=document.getElementById('meta-wa-lang');
   var metaAe=document.getElementById('meta-wa-admin-enabled');
   var metaAp=document.getElementById('meta-wa-admin-phone');
+  var passEnEl=document.getElementById('meta-wa-pass-enabled');
+  var outEnEl=document.getElementById('meta-wa-out-enabled');
   gpWACfg={
     sendMode:mode,
     tmplPass:tp?tp.value:'',
@@ -5470,7 +5487,9 @@ function gpSaveWA(){
     metaLang:(langEl?langEl.value.trim()||'en_US':'en_US'),
     metaOutLang:(document.getElementById('meta-wa-out-lang')?document.getElementById('meta-wa-out-lang').value.trim()||'en_US':'en_US'),
     metaAdminEnabled:metaAe?metaAe.checked:false,
-    metaAdminPhone:(metaAp?metaAp.value.trim().replace(/[^0-9]/g,''):'')
+    metaAdminPhone:(metaAp?metaAp.value.trim().replace(/[^0-9]/g,''):''),
+    metaPassEnabled:passEnEl?passEnEl.checked:true,
+    metaOutEnabled:outEnEl?outEnEl.checked:true
   };
   localStorage.setItem('gp_wa_cfg',JSON.stringify(gpWACfg));
   // Sync MetaWACfg
@@ -5479,7 +5498,8 @@ function gpSaveWA(){
     enabled:mode==='meta',adminEnabled:gpWACfg.metaAdminEnabled,
     templateName:gpWACfg.metaTemplate,outTemplateName:gpWACfg.metaOutTemplate,
     langCode:gpWACfg.metaLang,outLangCode:gpWACfg.metaOutLang,
-    adminPhone:gpWACfg.metaAdminPhone
+    adminPhone:gpWACfg.metaAdminPhone,
+    passEnabled:gpWACfg.metaPassEnabled!==false,outEnabled:gpWACfg.metaOutEnabled!==false
   };
   gpToast('✅ WhatsApp settings saved');
   var sub=document.getElementById('gacc-wa-sub');
@@ -5638,7 +5658,7 @@ function gpSwitchSendMode(mode){
 }
 
 // ═══ META WHATSAPP CLOUD API ═══
-var MetaWACfg={phoneNumberId:'',accessToken:'',enabled:false,adminEnabled:false,templateName:'',outTemplateName:'',langCode:'en_US',adminPhone:''};
+var MetaWACfg={phoneNumberId:'',accessToken:'',enabled:false,adminEnabled:false,templateName:'',outTemplateName:'',langCode:'en_US',adminPhone:'',passEnabled:true,outEnabled:true};
 
 function loadMetaWACfg(){
   // MetaWACfg is now embedded inside gpWACfg — no separate localStorage key
@@ -5653,7 +5673,9 @@ function loadMetaWACfg(){
     outTemplateName:gpWACfg.metaOutTemplate||'',
     langCode:gpWACfg.metaLang||'en_US',
     outLangCode:gpWACfg.metaOutLang||'en_US',
-    adminPhone:gpWACfg.metaAdminPhone||''
+    adminPhone:gpWACfg.metaAdminPhone||'',
+    passEnabled:gpWACfg.metaPassEnabled!==false,
+    outEnabled:gpWACfg.metaOutEnabled!==false
   };
   var pid=document.getElementById('meta-wa-phone-id');
   var tok=document.getElementById('meta-wa-token');
@@ -5662,6 +5684,10 @@ function loadMetaWACfg(){
   var lang=document.getElementById('meta-wa-lang');
   var ae=document.getElementById('meta-wa-admin-enabled');
   var ap=document.getElementById('meta-wa-admin-phone');
+  var passEnEl=document.getElementById('meta-wa-pass-enabled');
+  var outEnEl=document.getElementById('meta-wa-out-enabled');
+  if(passEnEl)passEnEl.checked=MetaWACfg.passEnabled;
+  if(outEnEl)outEnEl.checked=MetaWACfg.outEnabled;
   if(pid)pid.value=MetaWACfg.phoneNumberId;
   if(tok)tok.value=MetaWACfg.accessToken;
   if(tmpl)tmpl.value=MetaWACfg.templateName;
@@ -5730,7 +5756,9 @@ async function metaWASendGatepass(pass){
   var results=[];
   var stu=S.students.find(s=>s.admissionNumber===pass.admissionNumber);
   var parentPhone=(stu?stu.phone||'':'').replace(/[^0-9]/g,'');
-  if(parentPhone&&parentPhone.length>=10){
+  if(MetaWACfg.passEnabled===false){
+    results.push('Parent ⏸️ disabled');
+  } else if(parentPhone&&parentPhone.length>=10){
     try{
       await metaWASend(parentPhone,gpBuildWAMsg(pass,gpWACfg.tmplPass),pass);
       results.push('Parent ✅');
@@ -5759,6 +5787,7 @@ async function metaWASendGatepass(pass){
 // Called when gate out time is detected from Firebase sync
 async function metaWASendGateOut(pass){
   if(!MetaWACfg.enabled||!MetaWACfg.phoneNumberId||!MetaWACfg.accessToken||!MetaWACfg.outTemplateName)return;
+  if(MetaWACfg.outEnabled===false)return;
   var stu=S.students.find(s=>s.admissionNumber===pass.admissionNumber);
   var parentPhone=((stu?stu.phone||'':'')).replace(/[^0-9]/g,'');
   if(!parentPhone||parentPhone.length<10)return;
@@ -7451,10 +7480,14 @@ function renderWATemplateList(){
 function renderRefMetaTemplateList(){
   const wrap=document.getElementById('ref-meta-tmpl-list');if(!wrap)return;
   if(!CFG.metaTemplates)CFG.metaTemplates={};
+  if(!CFG.metaTemplatesEnabled)CFG.metaTemplatesEnabled={};
   wrap.innerHTML=CFG.statuses.map(s=>`<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;padding:9px 11px;background:var(--bg3);border-radius:var(--rs);border:1.5px solid var(--border)">
     <div style="font-size:12px;font-weight:700;color:var(--pink);min-width:90px;flex-shrink:0">${esc(s.label)}</div>
     <input class="inp" id="ref-meta-tmpl-${s.val}" placeholder="template_name or leave empty" value="${esc(CFG.metaTemplates[s.val]||'')}" style="font-family:var(--mono);font-size:11.5px;margin:0;flex:1">
-  </div>`).join('')+'<div style="font-size:11px;color:var(--muted);margin-top:4px">Leave empty to use default template above, or send plain text (24hr window).</div>';
+    <label style="display:inline-flex;align-items:center;gap:4px;cursor:pointer;font-weight:600;font-size:10px;color:var(--muted);flex-shrink:0" title="Enable/disable sending this message">
+      <input type="checkbox" id="ref-meta-tmpl-enabled-${s.val}" ${CFG.metaTemplatesEnabled[s.val]===false?'':'checked'} style="accent-color:var(--green);width:14px;height:14px">ON
+    </label>
+  </div>`).join('')+'<div style="font-size:11px;color:var(--muted);margin-top:4px">Leave empty to use default template above, or send plain text (24hr window). Turn OFF to stop sending that status\'s message entirely.</div>';
 }
 function saveGeneralSettings(){CFG.appName=document.getElementById('cfg-appname').value.trim()||'Reference Register';CFG.lblIssueTo=document.getElementById('cfg-lbl-issueto').value.trim()||'Issue To';CFG.lblDocType=document.getElementById('cfg-lbl-doctype').value.trim()||'Document Type';saveCFG();applyLabels();toast('Labels saved successfully.');}
 function populateNextRnFY(){
@@ -7521,16 +7554,22 @@ function saveWASettings(){
   CFG.metaLang=langEl?langEl.value.trim()||'en_US':'en_US';
   CFG.metaAdminEnabled=mae?mae.checked:false;
   CFG.metaAdminPhone=map?map.value.trim().replace(/[^0-9]/g,''):'';
+  var defTmplEnEl=document.getElementById('ref-meta-wa-template-enabled');
+  CFG.metaTemplateEnabled=defTmplEnEl?defTmplEnEl.checked:true;
   // Per-status Meta template names
   if(!CFG.metaTemplates)CFG.metaTemplates={};
-  CFG.statuses.forEach(s=>{const el=document.getElementById('ref-meta-tmpl-'+s.val);if(el)CFG.metaTemplates[s.val]=el.value.trim();});
+  if(!CFG.metaTemplatesEnabled)CFG.metaTemplatesEnabled={};
+  CFG.statuses.forEach(s=>{
+    const el=document.getElementById('ref-meta-tmpl-'+s.val);if(el)CFG.metaTemplates[s.val]=el.value.trim();
+    const enEl=document.getElementById('ref-meta-tmpl-enabled-'+s.val);CFG.metaTemplatesEnabled[s.val]=enEl?enEl.checked:true;
+  });
   saveCFG();
   // Sync runtime object
-  RefMetaWACfg={phoneNumberId:CFG.metaPhoneId,accessToken:CFG.metaToken,enabled:CFG.waSendMode==='meta',adminEnabled:CFG.metaAdminEnabled,templateName:CFG.metaTemplate,langCode:CFG.metaLang,adminPhone:CFG.metaAdminPhone};
+  RefMetaWACfg={phoneNumberId:CFG.metaPhoneId,accessToken:CFG.metaToken,enabled:CFG.waSendMode==='meta',adminEnabled:CFG.metaAdminEnabled,templateName:CFG.metaTemplate,langCode:CFG.metaLang,adminPhone:CFG.metaAdminPhone,templateEnabled:CFG.metaTemplateEnabled!==false};
   toast('WhatsApp settings saved successfully.');
 }
 // ═══ REFERENCE REGISTER — META WHATSAPP CLOUD API ═══
-var RefMetaWACfg={phoneNumberId:'',accessToken:'',enabled:false,adminEnabled:false,templateName:'',langCode:'en_US',adminPhone:''};
+var RefMetaWACfg={phoneNumberId:'',accessToken:'',enabled:false,adminEnabled:false,templateName:'',langCode:'en_US',adminPhone:'',templateEnabled:true};
 
 function loadRefMetaWACfg(){
   const mode=CFG.waSendMode||'web';
@@ -7541,7 +7580,8 @@ function loadRefMetaWACfg(){
     adminEnabled:!!CFG.metaAdminEnabled,
     templateName:CFG.metaTemplate||'',
     langCode:CFG.metaLang||'en_US',
-    adminPhone:CFG.metaAdminPhone||''
+    adminPhone:CFG.metaAdminPhone||'',
+    templateEnabled:CFG.metaTemplateEnabled!==false
   };
   const pid=document.getElementById('ref-meta-wa-phone-id');
   const tok=document.getElementById('ref-meta-wa-token');
@@ -7549,6 +7589,8 @@ function loadRefMetaWACfg(){
   const lang=document.getElementById('ref-meta-wa-lang');
   const ae=document.getElementById('ref-meta-wa-admin-enabled');
   const ap=document.getElementById('ref-meta-wa-admin-phone');
+  const tmplEnEl=document.getElementById('ref-meta-wa-template-enabled');
+  if(tmplEnEl)tmplEnEl.checked=RefMetaWACfg.templateEnabled;
   if(pid)pid.value=RefMetaWACfg.phoneNumberId;
   if(tok)tok.value=RefMetaWACfg.accessToken;
   if(tmpl)tmpl.value=RefMetaWACfg.templateName;
@@ -7588,8 +7630,19 @@ async function refMetaWASend(toPhone, messageText, en){
   if(!RefMetaWACfg.phoneNumberId||!RefMetaWACfg.accessToken)throw new Error('Ref Meta WA not configured');
   const phone=String(toPhone).replace(/[^0-9]/g,'');
   if(phone.length<10)throw new Error('Invalid phone: '+toPhone);
-  // Pick per-status template → fallback to default template
-  const tmplName=en&&en.status&&CFG.metaTemplates&&CFG.metaTemplates[en.status]?CFG.metaTemplates[en.status]:(RefMetaWACfg.templateName||'');
+  // Pick per-status template → fallback to default template (respecting ON/OFF toggles)
+  const statusEnabled=!(en&&en.status&&CFG.metaTemplatesEnabled&&CFG.metaTemplatesEnabled[en.status]===false);
+  const statusTmpl=(en&&en.status&&CFG.metaTemplates&&CFG.metaTemplates[en.status])||'';
+  let tmplName='';
+  if(statusEnabled&&statusTmpl){
+    tmplName=statusTmpl;
+  } else if(RefMetaWACfg.templateEnabled!==false){
+    tmplName=RefMetaWACfg.templateName||'';
+  }
+  if(en&&en.status&&CFG.metaTemplatesEnabled&&CFG.metaTemplatesEnabled[en.status]===false&&!statusTmpl&&RefMetaWACfg.templateEnabled===false){
+    // both status-specific and default are explicitly off — skip sending
+    throw new Error('Message disabled for this status');
+  }
   let body;
   if(tmplName&&en){
     const stLbl=(en.status?getStatusInfo(en.status).label.replace(/\p{Emoji}/gu,'').trim():en.status)||'';
