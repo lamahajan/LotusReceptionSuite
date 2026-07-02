@@ -3724,6 +3724,16 @@ Thank you 🙏</textarea>
 
           <div class="wai-field" style="margin-top:10px;padding-top:10px;border-top:1px solid #e8dcc8">
             <label style="display:flex;align-items:center;gap:9px;cursor:pointer;background:#f5f0e8;border:1.5px solid #e8dcc8;border-radius:9px;padding:10px 12px">
+              <input type="checkbox" id="wai-s-manualreply" style="accent-color:#b5883e;width:16px;height:16px;flex-shrink:0" checked>
+              <div>
+                <div style="font-size:12px;font-weight:700;color:#1a1208">💰 Active-Window Replies</div>
+                <div style="font-size:10.5px;color:#a89f92;margin-top:1px">Meta now charges for service messages too — turn off to block all manual/quick-reply sending within the open 24hr window</div>
+              </div>
+            </label>
+          </div>
+
+          <div class="wai-field" style="margin-top:10px;padding-top:10px;border-top:1px solid #e8dcc8">
+            <label style="display:flex;align-items:center;gap:9px;cursor:pointer;background:#f5f0e8;border:1.5px solid #e8dcc8;border-radius:9px;padding:10px 12px">
               <input type="checkbox" id="wai-s-autoreply" style="accent-color:#b5883e;width:16px;height:16px;flex-shrink:0">
               <div>
                 <div style="font-size:12px;font-weight:700;color:#1a1208">🤖 Auto-Reply</div>
@@ -12315,44 +12325,52 @@ var _waiPollTimer   = null;
 function _waiEsc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
 // ── Lookup student by phone number from Due List / STUDENTS data ──
-function _waiGetStudentByPhone(phone){
-  if(!phone) return null;
-  // Normalize: strip leading +, spaces, country code variants
+function _waiGetStudentsByPhone(phone){
+  if(!phone) return [];
   var normalized = String(phone).replace(/\D/g,'');
   var last10 = normalized.slice(-10);
+  var out = [];
+  var seen = {}; // dedupe by adm+source
 
-  // Check dlData (Due List) first — has adm, name, cls, mob, balance
+  function push(stu){
+    var key = stu.adm+'|'+stu.source;
+    if(seen[key]) return;
+    seen[key] = true;
+    out.push(stu);
+  }
+
   if(window.dlData && window.dlData.length){
     for(var i=0;i<window.dlData.length;i++){
       var row = window.dlData[i];
       var mob = String(row.mob||'').replace(/\D/g,'');
       if(mob.slice(-10) === last10){
-        return {name: row.name||'', cls: row.cls||'', adm: row.adm||'', balance: row.balance||0, source:'dl'};
+        push({name: row.name||'', cls: row.cls||'', adm: row.adm||'', balance: row.balance||0, source:'dl'});
       }
     }
   }
-
-  // Check EMBEDDED fallback [adm, name, cls, mob, due, recv, bal]
   if(typeof EMBEDDED !== 'undefined' && EMBEDDED.length){
     for(var j=0;j<EMBEDDED.length;j++){
       var emob = String(EMBEDDED[j][3]||'').replace(/\D/g,'');
       if(emob.slice(-10) === last10){
-        return {name: EMBEDDED[j][1]||'', cls: EMBEDDED[j][2]||'', adm: EMBEDDED[j][0]||'', balance: EMBEDDED[j][6]||0, source:'embedded'};
+        push({name: EMBEDDED[j][1]||'', cls: EMBEDDED[j][2]||'', adm: EMBEDDED[j][0]||'', balance: EMBEDDED[j][6]||0, source:'embedded'});
       }
     }
   }
-
-  // Check STUDENTS (Reference Register students)
   if(typeof STUDENTS !== 'undefined' && STUDENTS.length){
     for(var k=0;k<STUDENTS.length;k++){
       var s = STUDENTS[k];
       var smob = String(s.mob||s.mobile||s.phone||'').replace(/\D/g,'');
       if(smob.slice(-10) === last10){
-        return {name: s.name||'', cls: s.cls||s.class||'', adm: s.adm||s.id||'', balance:0, source:'ref'};
+        push({name: s.name||'', cls: s.cls||s.class||'', adm: s.adm||s.id||'', balance:0, source:'ref'});
       }
     }
   }
-  return null;
+  return out;
+}
+
+function _waiGetStudentByPhone(phone){
+  var list = _waiGetStudentsByPhone(phone);
+  return list.length ? list[0] : null;
 }
 
 // ── Format time ──
@@ -12474,20 +12492,32 @@ function _waiRenderList(){
       ? '<span class="wai-status-dot" style="background:#25d366"></span>'
       : '<span class="wai-status-dot" style="background:#94a3b8"></span>';
 
-    var stu = _waiGetStudentByPhone(t.phone);
-    var displayName = stu ? stu.name : (t.name||t.phone);
-    var initials = displayName.replace(/\+/g,'').substring(0,2).toUpperCase();
+    var stus = _waiGetStudentsByPhone(t.phone);
+    var stu = stus[0]||null;
+    var isMulti = stus.length>1;
+    var displayName = isMulti
+      ? stus.map(function(x){return x.name;}).join(' & ')
+      : (stu ? stu.name : (t.name||t.phone));
+    var initials = (stu?stu.name:displayName).replace(/\+/g,'').substring(0,2).toUpperCase();
 
     var stuInfoHtml = '';
-    if(stu){
+    if(isMulti){
+      stuInfoHtml = '<div class="wai-stu-info" style="display:flex;flex-direction:column;gap:2px;align-items:flex-start">'
+        + stus.map(function(x){
+            return '<span><span class="wai-cls-badge">'+_waiEsc(x.cls)+'</span> '+_waiEsc(x.name)+' · Adm #'+x.adm
+              +(x.balance>0 ? ' &middot; <span class="wai-bal-chip">₹'+x.balance+'</span>' : '')+'</span>';
+          }).join('')
+        + '</div>';
+    } else if(stu){
       stuInfoHtml = '<div class="wai-stu-info">'
         +'<span class="wai-cls-badge">'+_waiEsc(stu.cls)+'</span>'
         +' Adm #'+stu.adm
         +(stu.balance>0 ? ' &middot; <span class="wai-bal-chip">₹'+stu.balance+'</span>' : '')
         +'</div>';
     }
+    var telHref = String(t.phone||'').replace(/\D/g,'');
     var previewLine = stu
-      ? '<div class="wai-tprev"><span style="color:var(--ws);opacity:.7;font-size:10.5px">'+_waiEsc(t.phone)+'</span> · '+preview+'</div>'
+      ? '<div class="wai-tprev"><a href="tel:'+telHref+'" onclick="event.stopPropagation()" style="color:var(--ws);opacity:.7;font-size:10.5px;text-decoration:none">'+_waiEsc(t.phone)+'</a> · '+preview+'</div>'
       : '<div class="wai-tprev">'+preview+'</div>';
 
     return '<div class="wai-thread" onclick="_waiOpenChat(\''+t.phone+'\')">'+
@@ -12622,18 +12652,26 @@ window._waiOpenChat = function(phone){
   _waiSaveMsgs();
   _waiUpdateCounts();
 
-  // Set header — show student/child name if found
-  var stu = _waiGetStudentByPhone(phone);
-  var displayName = stu ? stu.name : (thread.name||thread.phone);
-  var initials = displayName.replace(/\+/g,'').substring(0,2).toUpperCase();
+  // Set header — show student/child name if found (handle siblings sharing a number)
+  var stus = _waiGetStudentsByPhone(phone);
+  var stu = stus[0]||null;
+  var isMulti = stus.length>1;
+  var displayName = isMulti ? stus.map(function(x){return x.name;}).join(' & ') : (stu ? stu.name : (thread.name||thread.phone));
+  var initials = (stu?stu.name:displayName).replace(/\+/g,'').substring(0,2).toUpperCase();
   var cavEl = document.getElementById('wai-cav'); if(cavEl) cavEl.textContent = initials;
   var cnEl  = document.getElementById('wai-cname'); if(cnEl) cnEl.textContent = displayName;
   var cpEl  = document.getElementById('wai-cphone');
   if(cpEl){
-    if(stu){
-      cpEl.innerHTML = '🎓 '+_waiEsc(stu.cls)+' · Adm #'+stu.adm+' · 📱 '+thread.phone+(stu.balance>0?' · <span style="background:#fef2f2;color:#dc2626;border:1px solid #fca5a5;border-radius:6px;padding:1px 6px;font-size:9px;font-weight:800">₹'+stu.balance+' due</span>':'');
+    var telHref = String(thread.phone||'').replace(/\D/g,'');
+    var telLink = '<a href="tel:'+telHref+'" onclick="event.stopPropagation()" style="color:inherit;text-decoration:none">'+thread.phone+'</a>';
+    if(isMulti){
+      cpEl.innerHTML = stus.map(function(x){
+        return '🎓 '+_waiEsc(x.cls)+' · Adm #'+x.adm+(x.balance>0?' · <span style="background:#fef2f2;color:#dc2626;border:1px solid #fca5a5;border-radius:6px;padding:1px 6px;font-size:9px;font-weight:800">₹'+x.balance+' due</span>':'');
+      }).join(' &nbsp;|&nbsp; ') + ' · 📱 ' + telLink;
+    } else if(stu){
+      cpEl.innerHTML = '🎓 '+_waiEsc(stu.cls)+' · Adm #'+stu.adm+' · 📱 '+telLink+(stu.balance>0?' · <span style="background:#fef2f2;color:#dc2626;border:1px solid #fca5a5;border-radius:6px;padding:1px 6px;font-size:9px;font-weight:800">₹'+stu.balance+' due</span>':'');
     } else {
-      cpEl.textContent = thread.phone;
+      cpEl.innerHTML = telLink;
     }
   }
   var lastMsg = thread.msgs[thread.msgs.length-1];
@@ -12665,16 +12703,23 @@ window._waiOpenChat = function(phone){
 
   // Check 24hr window
   var isOpen = _waiIsOpen(thread.msgs);
+  var manualOn = _waiCfg.manualReply !== false; // default true
+  var canReply = isOpen && manualOn;
   var closedBar = document.getElementById('wai-closed-bar');
   var replyBar  = document.getElementById('wai-reply-bar');
   var sendBtn   = document.getElementById('wai-send-btn');
   var inpEl     = document.getElementById('wai-inp');
-  if(closedBar) closedBar.style.display = isOpen ? 'none' : 'block';
-  if(replyBar)  replyBar.style.display  = isOpen ? 'flex' : 'none';
+  if(closedBar){
+    closedBar.style.display = canReply ? 'none' : 'block';
+    closedBar.textContent = !isOpen
+      ? '⏰ 24-hour window closed — this chat is read-only'
+      : '💰 Active-window replies are turned off in Settings';
+  }
+  if(replyBar)  replyBar.style.display  = canReply ? 'flex' : 'none';
   var qrBar = document.getElementById('wai-qr-bar');
-  if(qrBar) qrBar.style.display = isOpen ? 'flex' : 'none';
-  if(sendBtn)   sendBtn.disabled = !isOpen;
-  if(inpEl)     inpEl.disabled   = !isOpen;
+  if(qrBar) qrBar.style.display = canReply ? 'flex' : 'none';
+  if(sendBtn)   sendBtn.disabled = !canReply;
+  if(inpEl)     inpEl.disabled   = !canReply;
 
   // Show chat pane
   var listPane = document.getElementById('wai-list-pane');
@@ -12700,6 +12745,10 @@ window.waiQR = function(text){
 };
 window.waiSend = async function(){
   if(!_waiActivePhone) return;
+  if(_waiCfg.manualReply===false){
+    alert('Active-window replies are turned off in WA Inbox Settings.');
+    return;
+  }
   var inpEl = document.getElementById('wai-inp');
   if(!inpEl) return;
   var text = inpEl.value.trim();
@@ -12879,6 +12928,8 @@ window.waiOpenSettings = function(){
   f('wai-s-pw',      localStorage.getItem('wai_inbox_pw')||'');
   var arEl = document.getElementById('wai-s-autoreply');
   if(arEl) arEl.checked = !!_waiCfg.autoReply; // default OFF unless explicitly enabled
+  var mrEl = document.getElementById('wai-s-manualreply');
+  if(mrEl) mrEl.checked = _waiCfg.manualReply !== false; // default ON
   _waiUpdateCodePreview();
   var modal = document.getElementById('wai-settings-modal');
   if(modal) modal.classList.add('open');
@@ -12903,6 +12954,8 @@ window.waiSaveSettings = function(){
   _waiCfg.interval     = g('wai-s-interval');
   var arEl = document.getElementById('wai-s-autoreply');
   _waiCfg.autoReply    = arEl ? arEl.checked : false;
+  var mrEl = document.getElementById('wai-s-manualreply');
+  _waiCfg.manualReply  = mrEl ? mrEl.checked : true;
   // Save password
   var pw = g('wai-s-pw');
   if(pw) localStorage.setItem('wai_inbox_pw', pw);
