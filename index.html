@@ -3517,6 +3517,8 @@ Thank you 🙏</textarea>
               <input id="dl-txn-fb-url" class="dl-inp" type="text" placeholder="https://your-txn-project-rtdb.firebaseio.com"/>
               <label class="dl-lbl">Transaction Firebase Secret</label>
               <input id="dl-txn-fb-secret" class="dl-inp" type="password" placeholder="database secret" style="margin-bottom:10px"/>
+              <label class="dl-lbl">App Token <span style="font-size:10px;color:#6b7280;font-weight:500">(matches worker's APP_TOKEN — stays on this device only)</span></label>
+              <input id="dl-app-token" class="dl-inp" type="password" placeholder="shared secret for worker requests" style="margin-bottom:10px"/>
               <button onclick="dlRzpSaveConfig()" style="width:100%;background:#16a34a;color:#fff;border:none;border-radius:9px;padding:10px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">💾 Save Razorpay Config</button>
               <div id="dl-rzp-status" style="font-size:11px;color:#166534;margin-top:7px;min-height:16px;font-weight:600"></div>
             </div>
@@ -11053,11 +11055,11 @@ function dlCreateQRsAndSend(students,phoneId,token,tmplName,proxyUrl){
     // Delete old QR for this student (if any) before creating new one
     // Check Firebase via proxy for any existing QR with same adm
     var deletePromise = proxyUrl
-      ? fetch(proxyUrl+'/qr-by-adm/'+encodeURIComponent(adm))
+      ? fetch(proxyUrl+'/qr-by-adm/'+encodeURIComponent(adm), { headers: dlApiHeaders() })
           .then(function(r){ return r.json(); })
           .then(function(d){
             if(d.found && d.qr_id){
-              return fetch(proxyUrl+'/delete-qr/'+d.qr_id, { method:'DELETE' }).catch(function(){});
+              return fetch(proxyUrl+'/delete-qr/'+d.qr_id, { method:'DELETE', headers: dlApiHeaders() }).catch(function(){});
             }
           })
           .catch(function(){})
@@ -11066,7 +11068,7 @@ function dlCreateQRsAndSend(students,phoneId,token,tmplName,proxyUrl){
     deletePromise.then(function(){
       return fetch(proxyUrl+'/create-qr',{
         method:'POST',
-        headers:{'Content-Type':'application/json'},
+        headers: dlApiHeaders({'Content-Type':'application/json'}),
         body:JSON.stringify({
           adm: adm,
           name: (s.name||s.adm||'Student'),
@@ -11133,11 +11135,9 @@ function dlSendBatch(students,phoneId,token,tmplName,idx,sent,failed,qrMap,proxy
   if(qrInfo && qrInfo.qr_id){
     suffix+='&qr_id='+encodeURIComponent(qrInfo.qr_id);
     suffix+='&proxy='+encodeURIComponent(proxyUrl||'');
-    // Pass TXN Firebase details so redirect page can poll for confirmation
-    var txnFbUrl = (localStorage.getItem('dl_txn_fb_url')||'').replace(/\/+$/,'');
-    var txnFbSec = localStorage.getItem('dl_txn_fb_secret')||'';
-    if(txnFbUrl) suffix+='&txn_fb='+encodeURIComponent(txnFbUrl);
-    if(txnFbSec) suffix+='&txn_fb_secret='+encodeURIComponent(txnFbSec);
+    // NOTE: Firebase URL + secret are intentionally NOT passed here anymore.
+    // The redirect page polls payment status via the worker's /payment-status
+    // endpoint instead, which never exposes the database secret to parents.
   }
 
   // ── Build parameters based on template name ──
@@ -11439,8 +11439,17 @@ var DL_RZP_PROXY_KEY    = 'dl_rzp_proxy_url';
 var DL_RZP_REDIRECT_KEY = 'dl_rzp_redirect_url';
 var DL_TXN_FB_URL_KEY   = 'dl_txn_fb_url';
 var DL_TXN_FB_SEC_KEY   = 'dl_txn_fb_secret';
+var DL_APP_TOKEN_KEY    = 'dl_app_token';      // shared secret sent to worker as X-App-Token
 var DL_TXN_KEY          = 'dl_transactions';   // captured txns cache
 var DL_PENDING_KEY      = 'dl_pending_qrs';    // pending qr_ids list
+
+// ── Headers helper: attach the app token to every worker request ──
+window.dlApiHeaders = function(extra){
+  var h = Object.assign({}, extra||{});
+  var tok = localStorage.getItem(DL_APP_TOKEN_KEY)||'';
+  if(tok) h['X-App-Token'] = tok;
+  return h;
+};
 
 // ── Save / Load Razorpay config ──
 window.dlRzpSaveConfig = function(){
@@ -11448,10 +11457,12 @@ window.dlRzpSaveConfig = function(){
   var r = (document.getElementById('dl-rzp-redirect-url')||{}).value||'';
   var tfb = (document.getElementById('dl-txn-fb-url')||{}).value||'';
   var tsc = (document.getElementById('dl-txn-fb-secret')||{}).value||'';
+  var atk = (document.getElementById('dl-app-token')||{}).value||'';
   localStorage.setItem(DL_RZP_PROXY_KEY, p.trim().replace(/\/+$/,''));
   localStorage.setItem(DL_RZP_REDIRECT_KEY, r.trim().replace(/\/+$/,''));
   if(tfb) localStorage.setItem(DL_TXN_FB_URL_KEY, tfb.trim().replace(/\/+$/,''));
   if(tsc) localStorage.setItem(DL_TXN_FB_SEC_KEY, tsc.trim());
+  if(atk) localStorage.setItem(DL_APP_TOKEN_KEY, atk.trim());
   var st = document.getElementById('dl-rzp-status');
   if(st){ st.textContent='✅ Saved!'; setTimeout(function(){ st.textContent=''; },2000); }
 };
@@ -11464,10 +11475,12 @@ window.dlRzpSaveConfig = function(){
     var rEl = document.getElementById('dl-rzp-redirect-url');
     var tfbEl = document.getElementById('dl-txn-fb-url');
     var tscEl = document.getElementById('dl-txn-fb-secret');
+    var atkEl = document.getElementById('dl-app-token');
     if(pEl)   pEl.value   = localStorage.getItem(DL_RZP_PROXY_KEY)||'';
     if(rEl)   rEl.value   = localStorage.getItem(DL_RZP_REDIRECT_KEY)||'';
     if(tfbEl) tfbEl.value = localStorage.getItem(DL_TXN_FB_URL_KEY)||'';
     if(tscEl) tscEl.value = localStorage.getItem(DL_TXN_FB_SEC_KEY)||'';
+    if(atkEl) atkEl.value = localStorage.getItem(DL_APP_TOKEN_KEY)||'';
   };
 })();
 
@@ -11600,9 +11613,9 @@ function dlAutoCloseQr(qrId){
   var proxyUrl = (localStorage.getItem(DL_RZP_PROXY_KEY)||'').replace(/\/+$/,'');
   if(!proxyUrl || !qrId) return;
   // 1. Close QR on Razorpay (stop further payments)
-  fetch(proxyUrl+'/close-qr/'+qrId, { method:'POST' }).catch(function(){});
+  fetch(proxyUrl+'/close-qr/'+qrId, { method:'POST', headers: dlApiHeaders() }).catch(function(){});
   // 2. Delete from MAIN Firebase qr_map (clean up — next month fresh QR will be created)
-  fetch(proxyUrl+'/delete-qr/'+qrId, { method:'DELETE' }).catch(function(){});
+  fetch(proxyUrl+'/delete-qr/'+qrId, { method:'DELETE', headers: dlApiHeaders() }).catch(function(){});
 }
 
 function dlTxnFbStartPolling(){
