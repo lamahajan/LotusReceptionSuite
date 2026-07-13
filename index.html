@@ -11040,7 +11040,7 @@ window.dlSendWhatsApp=function(){
 // ── Create QR codes for all students, then start sending ──
 function dlCreateQRsAndSend(students,phoneId,token,tmplName,proxyUrl){
   var sub=document.getElementById('dl-wa-prog-sub');
-  var qrMap={}; // adm → {qr_id, upi_url}
+  var qrMap={}; // adm → {qr_id, short_url}
   var pending=students.length;
 
   students.forEach(function(s){
@@ -11081,7 +11081,7 @@ function dlCreateQRsAndSend(students,phoneId,token,tmplName,proxyUrl){
     .then(function(r){ return r.json(); })
     .then(function(data){
       if(data.qr_id){
-        qrMap[adm]={ qr_id: data.qr_id, image_url: data.image_url };
+        qrMap[adm]={ qr_id: data.qr_id, short_url: data.short_url };
         // Track for future cleanup
         if(!window._dlPendingQrMap) window._dlPendingQrMap = {};
         window._dlPendingQrMap[adm] = data.qr_id;
@@ -11128,16 +11128,18 @@ function dlSendBatch(students,phoneId,token,tmplName,idx,sent,failed,qrMap,proxy
   var adm=String(s.adm||s.name);
   var redirectBase=(localStorage.getItem('dl_rzp_redirect_url')||'').replace(/\/+$/,'');
   var qrInfo=qrMap[adm]||null;
-  var suffix='?adm='+encodeURIComponent(s.adm||s.name)
-    +'&name='+encodeURIComponent(s.name||'')
-    +'&am='+encodeURIComponent(Math.round(Number(s.balance)))
-    +'&class='+encodeURIComponent(s.cls||'');
+  var suffix;
   if(qrInfo && qrInfo.qr_id){
-    suffix+='&qr_id='+encodeURIComponent(qrInfo.qr_id);
-    suffix+='&proxy='+encodeURIComponent(proxyUrl||'');
-    // NOTE: Firebase URL + secret are intentionally NOT passed here anymore.
-    // The redirect page polls payment status via the worker's /payment-status
-    // endpoint instead, which never exposes the database secret to parents.
+    // Only the payment-link id goes in the URL. The fee-pay page fetches
+    // the student name/amount/class itself from the worker (which reads
+    // the amount that was locked server-side when the link was created).
+    // This means editing the URL bar can no longer change what gets charged.
+    suffix='?qr_id='+encodeURIComponent(qrInfo.qr_id)+'&proxy='+encodeURIComponent(proxyUrl||'');
+  } else {
+    // No payment link could be created (Razorpay not configured, or the
+    // create-qr call failed) — do NOT fall back to a link with the amount
+    // in the URL. That fallback was tamperable and untracked.
+    suffix='?error=link_unavailable';
   }
 
   // ── Build parameters based on template name ──
