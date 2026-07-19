@@ -351,8 +351,8 @@ body{color:var(--text);font-family:var(--sans);min-height:100vh}
 #screen-rec .ba {background:var(--amber-l);border:1.5px solid var(--amber);color:var(--amber)}.ba:hover{background:var(--amber);color:#fff}
 #screen-rec .bfull {width:100%;margin-top:6px;padding:13px;font-size:15px;border-radius:var(--r)}
 /* TOAST */
-#toast {position:fixed;bottom:calc(62px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%) translateY(80px);background:var(--bg2);border:1.5px solid var(--border2);border-radius:var(--r);padding:10px 18px;font-size:13px;font-weight:600;z-index:400;transition:transform .3s;white-space:nowrap;pointer-events:none;box-shadow:var(--sha-lg)}
-#toast.show {transform:translateX(-50%) translateY(0)}
+#toast {position:fixed;bottom:calc(70px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%) translateY(110px);background:var(--bg2);border:1.5px solid var(--border2);border-radius:var(--r);padding:10px 18px;font-size:13px;font-weight:600;z-index:400;transition:transform .3s,opacity .3s;white-space:nowrap;pointer-events:none;box-shadow:var(--sha-lg);opacity:0}
+#toast.show {transform:translateX(-50%) translateY(0);opacity:1}
 #toast.ok {border-color:var(--green);color:var(--green)}
 #toast.err {border-color:var(--red);color:var(--red)}
 #toast.inf {border-color:var(--blue);color:var(--blue)}
@@ -919,12 +919,12 @@ body.dark .fq-mtitle{color:#f4ede0}
 #screen-feeqr .fq-fab:hover{background:#8a6428;transform:translateY(-2px)}
 #screen-feeqr .fq-fab:disabled{background:#a89f92;cursor:not-allowed;transform:none;box-shadow:none}
 /* Toast (if not already) */
-#fq-toast{position:fixed;bottom:72px;left:50%;transform:translateX(-50%) translateY(80px);background:#fff;border:1.5px solid #cfc8b8;border-radius:14px;padding:10px 18px;font-size:13px;font-weight:600;z-index:600;transition:transform .3s;white-space:nowrap;pointer-events:none;box-shadow:0 12px 36px rgba(100,80,40,.15)}
-#fq-toast.show{transform:translateX(-50%) translateY(0)}
+#fq-toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(110px);background:#fff;border:1.5px solid #cfc8b8;border-radius:14px;padding:10px 18px;font-size:13px;font-weight:600;z-index:600;transition:transform .3s,opacity .3s;white-space:nowrap;pointer-events:none;box-shadow:0 12px 36px rgba(100,80,40,.15);opacity:0}
+#fq-toast.show{transform:translateX(-50%) translateY(0);opacity:1}
 #fq-toast.ok{border-color:#2d9e6b;color:#2d9e6b}
 #fq-toast.err{border-color:#d04040;color:#d04040}
 #fq-toast.inf{border-color:#b5883e;color:#b5883e}
-@media(min-width:769px){#fq-toast{bottom:20px}}
+@media(min-width:769px){#fq-toast{bottom:28px}}
 @media print{
   @page{size:A4 portrait;margin:8mm}
   body,html{overflow:visible!important;height:auto!important}
@@ -1235,7 +1235,7 @@ body.dark .fq-mtitle{color:#f4ede0}
           </div>
           <div id="gp-stu-fetch-status" style="font-size:11px;color:var(--sub);margin-top:6px;min-height:14px"></div>
           <div id="gp-stu-sync-timer" style="font-size:11px;color:var(--muted);margin-top:2px;min-height:14px;font-family:'Outfit',sans-serif"></div>
-          <div style="font-size:11px;color:var(--muted);margin-top:4px">Students sync every 30s. Changes push instantly. Force Fetch se aaj ki cache ignore ho jaati hai.</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:4px">Students sync every 30s. Changes push instantly. Force Fetch ignores today's cache and pulls fresh data.</div>
         </div>
       </div>
 
@@ -1499,6 +1499,26 @@ Reason: {reason}"></textarea>
             Students picked up <b style="color:var(--purple)">4+</b> times in the last <b style="color:var(--purple)">6</b> active school days will appear in Quick Pass.
           </div>
           <button class="btn bp bfull" onclick="gpSaveQPThresh()">💾 Save Quick Pass Settings</button>
+          <!-- Sibling Pass Suggestion -->
+          <div style="background:var(--bg3);border:1.5px solid var(--border);border-radius:var(--rs);padding:11px 13px;margin-top:12px">
+            <label style="display:flex;align-items:center;gap:9px;cursor:pointer">
+              <input type="checkbox" id="gp-sibling-enabled" style="accent-color:var(--blue);width:16px;height:16px" onchange="gpSaveSiblingEnabled()" checked>
+              <div>
+                <div style="font-size:13px;font-weight:700;color:var(--text)">👨‍👩‍👧‍👦 Suggest sibling pass</div>
+                <div style="font-size:11px;color:var(--muted);margin-top:1px">After issuing a pass, suggest cutting a pass for siblings too (matched by same parent phone number and father's name)</div>
+              </div>
+            </label>
+          </div>
+          <!-- Photo Mandatory -->
+          <div style="background:var(--bg3);border:1.5px solid var(--border);border-radius:var(--rs);padding:11px 13px;margin-top:10px">
+            <label style="display:flex;align-items:center;gap:9px;cursor:pointer">
+              <input type="checkbox" id="gp-photo-mandatory" style="accent-color:var(--amber);width:16px;height:16px" onchange="gpSavePhotoMandatory()">
+              <div>
+                <div style="font-size:13px;font-weight:700;color:var(--text)">📸 Make picker photo mandatory</div>
+                <div style="font-size:11px;color:var(--muted);margin-top:1px">Block issuing a gate pass unless a picker photo has been captured or uploaded</div>
+              </div>
+            </label>
+          </div>
         </div>
       </div>
 
@@ -1837,7 +1857,7 @@ Reason: {reason}"></textarea>
 
             <div style="font-size:12px;font-weight:700;color:var(--blue);margin-bottom:6px">Step 2 — Enable ROPC (done by IT Admin)</div>
             <div style="font-size:11.5px;color:var(--sub);line-height:1.8;margin-bottom:10px">
-              1. <a href="https://portal.azure.com" target="_blank" style="color:var(--blue)">portal.azure.com</a> pe jao → <b>Azure Active Directory</b><br>
+              1. Go to <a href="https://portal.azure.com" target="_blank" style="color:var(--blue)">portal.azure.com</a> → <b>Azure Active Directory</b><br>
               2. <b>App Registrations</b> → <b>All Applications</b><br>
               3. Search for: <code style="background:var(--bg4);padding:1px 5px;border-radius:3px">Microsoft Office</code> (App ID: d3590ed6...)<br>
               4. Go to <b>Authentication</b> tab<br>
@@ -1938,6 +1958,18 @@ Reason: {reason}"></textarea>
 </div>
 
 </div><!-- /main-wrap -->
+
+<!-- SIBLING PASS SUGGESTION MODAL -->
+<div id="gp-sib-modal" style="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:250;display:none;align-items:center;justify-content:center;padding:16px">
+  <div style="background:var(--bg2);border-radius:var(--rl);padding:22px;width:100%;max-width:420px;box-shadow:var(--sha-lg);border:1.5px solid var(--blue)">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+      <span style="font-size:24px">👨‍👩‍👧‍👦</span>
+      <div style="font-size:15px;font-weight:800;color:var(--text)">Sibling detected — same number</div>
+    </div>
+    <div style="font-size:12px;color:var(--sub);margin-bottom:14px">These students share the same parent phone number and father's name — cut their pass too?</div>
+    <div id="gp-sib-list" style="display:flex;flex-direction:column;gap:8px"></div>
+  </div>
+</div>
 
 <!-- GATEPASS WA MODAL -->
 <div id="gp-wa-modal" style="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;display:none;align-items:center;justify-content:center;padding:16px">
@@ -4239,7 +4271,7 @@ function setSS(st){
 function startSync(){
   setSS('ing');
   // Once-per-day full fetch: if app opened for first time today → force fresh Firebase fetch
-  // Yeh ensure karta hai ki doosre device ke deletions/changes reflect hon
+  // This ensures deletions/changes made on another device get reflected here
   const _today=new Date().toISOString().slice(0,10);
   const _lastFullFetch=localStorage.getItem('gp_last_full_fetch')||'';
   if(_lastFullFetch!==_today){
@@ -4474,6 +4506,7 @@ async function issuePass(){
   if(_issuingPass){gpToast('⏳ Please wait…','inf');return;}
   if(!cpSel){gpToast('⚠️ Select a student first','err');return;}
   const by=document.getElementById('cpby').value.trim();if(!by){gpToast('⚠️ Enter picker name','err');return;}
+  if(localStorage.getItem('gp_photo_mandatory')==='1'&&!photo){gpToast('⚠️ Photo is required before issuing a pass','err');return;}
   const existing=S.passes.find(p=>p.admissionNumber===cpSel.admissionNumber&&p.date===todayStr());
   if(existing){gpToast(`🚫 Pass already issued for ${cpSel.name} today (${existing.time})`,'err');return;}
   _issuingPass=true;
@@ -4481,6 +4514,22 @@ async function issuePass(){
   if(_issueBtn){_issueBtn.disabled=true;_issueBtn.textContent='⏳ Issuing…';}
   try{
   const pass={id:uid(),date:todayStr(),time:nowT(),gateOutTime:null,studentName:cpSel.name,admissionNumber:cpSel.admissionNumber,class:cpSel.class||'',fatherName:cpSel.fatherName||'',motherName:cpSel.motherName||'',pickedUpBy:by,relation:document.getElementById('cprel').value,reason:document.getElementById('cpreason').value.trim(),busNumber:document.getElementById('cpbus').value||cpSel.busNumber||'',pickerPhoto:photo};
+  const stu=S.students.find(s=>s.admissionNumber===pass.admissionNumber);
+  clrSel();['cpby','cpreason'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('cprel').value='';document.getElementById('cpbus').value='';clrPhoto();
+  await _gpFinalizePass(pass,stu,false); // false = fresh chain, not a sibling cascade
+  }finally{
+    _issuingPass=false;
+    const _issueBtn=document.querySelector('[onclick="issuePass()"]');
+    if(_issueBtn){_issueBtn.disabled=false;_issueBtn.textContent='✂️ Issue Gate Pass';}
+  }
+}
+
+// ═══ ★ SHARED PASS FINALIZER ═══
+// Everything that happens once a pass object is ready to go live: save, print,
+// Telegram log, OneDrive, WhatsApp, and the sibling-suggestion check. Used by
+// both the manual "Issue Gate Pass" button and the sibling quick-cut flow.
+async function _gpFinalizePass(pass,stu,isCascade){
   // Cache photo locally before push strips it
   if(pass.pickerPhoto&&pass.pickerPhoto!=='__has_photo')_photoCache.set(pass.id,pass.pickerPhoto);
   S.passes.unshift(pass);
@@ -4494,11 +4543,9 @@ async function issuePass(){
   if(TGCfg.enabled) sendToTelegramLog(pass);
   // OneDrive photo upload — only if photo exists
   if(GPODCfg.enabled && pass.pickerPhoto) uploadGatePassPhotoToOneDrive(pass);
-  clrSel();['cpby','cpreason'].forEach(id=>document.getElementById(id).value='');
-  document.getElementById('cprel').value='';document.getElementById('cpbus').value='';clrPhoto();updBadge();
-  updReasonSugs();renderQGSidebar();
+  updBadge();updReasonSugs();renderQGSidebar();
+  checkSiblingPending(pass,stu,isCascade); // ★ sibling same-phone+father popup (cascades to further siblings)
   // WhatsApp — parent fires IMMEDIATELY (direct whatsapp://), admin gets tap button after delay
-  const stu=S.students.find(s=>s.admissionNumber===pass.admissionNumber);
   const parentPhone=stu?stu.phone||'':'';
   const cleanPhone=p=>p?p.replace(/[^0-9]/g,''):'';
   const pPhone=cleanPhone(parentPhone);
@@ -4521,11 +4568,96 @@ async function issuePass(){
       }
     }
   }
-  }finally{
-    _issuingPass=false;
-    const _issueBtn=document.querySelector('[onclick="issuePass()"]');
-    if(_issueBtn){_issueBtn.disabled=false;_issueBtn.textContent='✂️ Issue Gate Pass';}
+}
+
+// ═══ ★ SIBLING SAME-PHONE + SAME-FATHER-NAME PASS SUGGESTION ═══
+// When a pass is issued, look for other students who match on BOTH the parent
+// phone number AND father's name, and who don't already have a pass today.
+// Suggest cutting their pass too — tapping "Cut Pass" issues it immediately
+// (same picker + photo carried over) and opens print, no extra form-filling.
+let _lastIssuedPass=null,_sibPendingAdms=[],_sibDismissed=new Set();
+function cleanPh10(p){return (p||'').replace(/[^0-9]/g,'').slice(-10);}
+function normName(n){return (n||'').trim().toLowerCase().replace(/\s+/g,' ');}
+function checkSiblingPending(pass,stu,isCascade){
+  if(!isCascade)_sibDismissed=new Set(); // fresh chain: forget dismissals from an earlier, unrelated pass
+  if(localStorage.getItem('gp_sibling_enabled')==='0'){closeSibModal();return;} // feature turned off in Settings
+  const myPhone=cleanPh10(stu&&stu.phone);
+  const myFather=normName(stu&&stu.fatherName);
+  if(!myPhone||myPhone.length<10||!myFather){closeSibModal();return;} // nothing reliable to match on
+  const today=todayStr();
+  const siblings=S.students.filter(s=>
+    s.admissionNumber!==pass.admissionNumber &&
+    !_sibDismissed.has(s.admissionNumber) &&
+    cleanPh10(s.phone)===myPhone &&
+    normName(s.fatherName)===myFather
+  );
+  const pending=siblings.filter(s=>!S.passes.find(p=>p.admissionNumber===s.admissionNumber&&p.date===today));
+  if(!pending.length){closeSibModal();return;} // all siblings already handled today
+  _lastIssuedPass=pass; // remember picked-by / relation / photo to carry over
+  _sibPendingAdms=pending.map(s=>s.admissionNumber);
+  renderSibList();
+  document.getElementById('gp-sib-modal').style.display='flex';
+}
+function renderSibList(){
+  if(!_sibPendingAdms.length){closeSibModal();return;}
+  const list=document.getElementById('gp-sib-list');
+  list.innerHTML=_sibPendingAdms.map(adm=>{
+    const s=S.students.find(x=>x.admissionNumber===adm);
+    if(!s)return '';
+    return `<div style="background:var(--bg2);border:1.5px solid var(--border2);border-radius:var(--rs);padding:10px 12px">
+      <div style="margin-bottom:9px"><b style="color:var(--text);font-size:14px">${e(s.name)}</b><br><span style="font-size:11px;color:var(--muted)">Adm: ${e(s.admissionNumber)} · Class: ${e(s.class||'—')}</span></div>
+      <div style="display:flex;gap:8px">
+        <button onclick="cancelSibling('${e(s.admissionNumber)}')" class="btn bgh" style="flex:1;font-size:12.5px;padding:9px 6px">Cancel</button>
+        <button onclick="pickSiblingCutPass('${e(s.admissionNumber)}',this)" class="btn bp" style="flex:1;font-size:12.5px;padding:9px 6px">✂️ Cut Pass</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+function cancelSibling(adm){
+  _sibDismissed.add(adm);
+  _sibPendingAdms=_sibPendingAdms.filter(a=>a!==adm);
+  renderSibList();
+}
+function closeSibModal(){document.getElementById('gp-sib-modal').style.display='none';_lastIssuedPass=null;_sibPendingAdms=[];}
+// Directly issues the pass for a suggested sibling — same picker, relation & photo
+// as the pass that was just cut. No form to fill in, prints immediately like normal.
+async function pickSiblingCutPass(adm,btn){
+  const s=S.students.find(x=>x.admissionNumber===adm);
+  if(!s){gpToast('Student not found','err');return;}
+  const existing=S.passes.find(p=>p.admissionNumber===adm&&p.date===todayStr());
+  if(existing){gpToast(`🚫 Pass already issued for ${s.name} today`,'err');_sibPendingAdms=_sibPendingAdms.filter(a=>a!==adm);renderSibList();return;}
+  const prev=_lastIssuedPass;
+  const by=prev?prev.pickedUpBy||'':'';
+  const sibPhoto=prev&&prev.pickerPhoto&&prev.pickerPhoto!=='__has_photo'?prev.pickerPhoto:null;
+  if(!by||(localStorage.getItem('gp_photo_mandatory')==='1'&&!sibPhoto)){
+    // Can't auto-issue safely (missing picker name, or photo mandatory but none to carry over) — fall back to manual form-fill
+    gpToast('⚠️ Please fill this pass in manually','inf');
+    pickSiblingManualFill(adm);
+    return;
   }
+  if(btn){btn.disabled=true;btn.textContent='⏳ Issuing…';}
+  _sibPendingAdms=_sibPendingAdms.filter(a=>a!==adm);
+  const pass={id:uid(),date:todayStr(),time:nowT(),gateOutTime:null,studentName:s.name,admissionNumber:s.admissionNumber,class:s.class||'',fatherName:s.fatherName||'',motherName:s.motherName||'',pickedUpBy:by,relation:(prev&&prev.relation)||'',reason:(prev&&prev.reason)||'',busNumber:s.busNumber||'',pickerPhoto:sibPhoto};
+  renderSibList(); // remove this row from the popup right away (finalize may re-add further siblings)
+  await _gpFinalizePass(pass,s,true); // true = cascade, keep dismissed-list from this chain
+}
+// Fallback: prefill the Cut Pass form instead of auto-issuing (used only if we
+// don't have enough carried-over info — e.g. photo mandatory but none captured).
+function pickSiblingManualFill(adm){
+  const prev=_lastIssuedPass;
+  closeSibModal();
+  goTo('rec');
+  pickStu(adm);
+  if(prev){
+    document.getElementById('cpby').value=prev.pickedUpBy||'';
+    if(prev.relation)document.getElementById('cprel').value=prev.relation;
+    if(prev.pickerPhoto&&prev.pickerPhoto!=='__has_photo'){
+      photo=prev.pickerPhoto;
+      document.getElementById('phimg').src=photo;
+      document.getElementById('phprev').style.display='inline-block';
+    }
+  }
+  document.getElementById('cpq').scrollIntoView({behavior:'smooth',block:'center'});
 }
 
 // ═══ ★ QUICK GATEPASS SIDEBAR ═══
@@ -4896,7 +5028,21 @@ function drPreview(){
 async function execDR(){const from=document.getElementById('dr-from').value,to=document.getElementById('dr-to').value;if(!from||!to)return;const hits=S.passes.filter(p=>p.date>=from&&p.date<=to);if(!hits.length){gpToast('No records in range','inf');return;}const exited=hits.filter(p=>p.gateOutTime).length;if(!confirm(`Permanently delete ${hits.length} record${hits.length>1?'s':''} from ${fmtD(from)} to ${fmtD(to)}?\n(${exited} exited + ${hits.length-exited} pending)\n\nThis CANNOT be undone.`))return;hits.forEach(p=>{if(p._hasPhoto||p.pickerPhoto)_deletePhotoFromFB(p.id);_deleteGateOutFromFB(p.id);});S.passes=S.passes.filter(p=>!(p.date>=from&&p.date<=to));await push('passes');gpToast(`🗑 ${hits.length} records deleted`,'err');closeDR();updBadge();}
 
 // ═══ PASSWORD ═══
-function recCheckPW(){const v=document.getElementById('pw-inp').value;if(v===PASS){document.getElementById('pw-gate').style.display='none';document.getElementById('set-ct').style.display='block';document.getElementById('pw-err').textContent='';loadCfgF();gpLoadStuCfg();gpLoadWACfg();loadMetaWACfg();gpLoadQPThresh();gpLoadPrintCfg();renderBuses();renderStu();gpUpdateSettingsSubs();var fb=document.getElementById('gacc-fb');if(fb&&!fb.classList.contains('open'))fb.classList.add('open');}else{document.getElementById('pw-err').textContent='❌ Wrong password';document.getElementById('pw-inp').value='';}}
+function recCheckPW(){const v=document.getElementById('pw-inp').value;if(v===PASS){document.getElementById('pw-gate').style.display='none';document.getElementById('set-ct').style.display='block';document.getElementById('pw-err').textContent='';loadCfgF();gpLoadStuCfg();gpLoadWACfg();loadMetaWACfg();gpLoadQPThresh();gpLoadPrintCfg();gpLoadMiscToggles();renderBuses();renderStu();gpUpdateSettingsSubs();var fb=document.getElementById('gacc-fb');if(fb&&!fb.classList.contains('open'))fb.classList.add('open');}else{document.getElementById('pw-err').textContent='❌ Wrong password';document.getElementById('pw-inp').value='';}}
+function gpLoadMiscToggles(){
+  const sibEl=document.getElementById('gp-sibling-enabled');if(sibEl)sibEl.checked=localStorage.getItem('gp_sibling_enabled')!=='0';
+  const phEl=document.getElementById('gp-photo-mandatory');if(phEl)phEl.checked=localStorage.getItem('gp_photo_mandatory')==='1';
+}
+function gpSaveSiblingEnabled(){
+  const v=document.getElementById('gp-sibling-enabled').checked;
+  try{localStorage.setItem('gp_sibling_enabled',v?'1':'0');}catch(e){}
+  gpToast(v?'✅ Sibling pass suggestion enabled':'Sibling pass suggestion disabled','inf');
+}
+function gpSavePhotoMandatory(){
+  const v=document.getElementById('gp-photo-mandatory').checked;
+  try{localStorage.setItem('gp_photo_mandatory',v?'1':'0');}catch(e){}
+  gpToast(v?'✅ Picker photo is now mandatory':'Picker photo is now optional','inf');
+}
 // ═══ GATEPASS STUDENT DB SHARED SYNC ═══
 var gpStuCfg={url:'',code:'',secret:''};
 var gpStuIv=null;
@@ -4920,7 +5066,7 @@ function _gpStuStopTimer(){
   var el=document.getElementById('gp-stu-sync-timer');if(el)el.textContent='';
 }
 
-// ── Daily Auto-Refresh: subah app open hone pe purani student list clear ho aur fresh fetch ho ──
+// ── Daily Auto-Refresh: when the app is opened in the morning, clear the old student list and do a fresh fetch ──
 (function gpDailyReset(){
   var today=new Date().toISOString().slice(0,10); // "YYYY-MM-DD"
   var lastDay=localStorage.getItem('gp_stu_last_fetch_date')||'';
@@ -4997,7 +5143,7 @@ async function gpStuFetchShared(){
   if(!gpStuCfg.url||!gpStuCfg.code)return;
   try{
     var authQ=gpStuCfg.secret?('?auth='+encodeURIComponent(gpStuCfg.secret)):'';
-    // ── Date change detection: naye din pe force fetch ──
+    // ── Date change detection: force a fetch when a new day starts ──
     const _stuToday=new Date().toISOString().slice(0,10);
     const _stuLastDate=localStorage.getItem('gp_stu_last_date')||'';
     const _isNewDay=(_stuLastDate!==_stuToday);
@@ -7641,11 +7787,11 @@ function copyWixCode(){
 // 1. Create a new Page in Wix Editor (e.g. "Download Documents")
 // 2. Turn ON Dev Mode (from top bar)
 // 3. Add these elements to the page:
-//    - TextInput  → ID: searchInput   (placeholder: "Apna naam ya Admission No.")
+//    - TextInput  → ID: searchInput   (placeholder: "Your name or Admission No.")
 //    - Button     → ID: searchBtn     (text: "Search")
 //    - Text       → ID: statusText    (initial: "Search your document")
 //    - Button     → ID: downloadBtn   (text: "⬇️ Download") — hide by default
-//    - Repeater   → ID: resultsRepeater (optional — multiple results ke liye)
+//    - Repeater   → ID: resultsRepeater (optional — for showing multiple results)
 // 4. Paste this code in Pages > [PageName] > Page Code
 // 5. Create a Collection named "Documents" in Wix CMS
 //    Fields: name (Text), admNo (Text), refNo (Text), docType (Text),
@@ -8459,7 +8605,7 @@ function addFYFromSettings(){
   localStorage.setItem('ref_extra_fys',JSON.stringify(extras));
   document.getElementById('fy-add-input').value='';
   renderFYSelect();renderFYManageList();
-  toast('FY '+getFYLabel(key)+' add ho gayi');
+  toast('FY '+getFYLabel(key)+' added');
 }
 async function deleteFY(fy){
   const entries=R.entries.filter(e=>e.fy===fy);
@@ -9748,6 +9894,7 @@ const SETTINGS_EXPORT_KEYS=[
   // Gatepass
   'gp_url','gp_code','gp_secret','gp_tg_cfg','gp_ptg_cfg','gp_wa_cfg','gp_meta_wa_cfg','gp_print_cfg',
   'gp_signature','gp_stu_url','gp_stu_code','gp_stu_secret','gp_od_cfg','gp_qp_thresh','gp_qp_window','gp_force_refresh',
+  'gp_sibling_enabled','gp_photo_mandatory',
   // Reference Register
   'ref_fb_url','ref_fb_code','ref_fb_secret','ref_fb_stu_url','ref_fb_stu_code','ref_fb_stu_secret','ref_tg_cfg',
   'ref_cfg','ref_fs_cfg','ref_od_cfg','ref_wix_cfg','ref_extra_fys',
@@ -9764,7 +9911,7 @@ const SETTINGS_EXPORT_KEYS=[
 
 // ═══ CLEAR LOCAL STORAGE (App-wise + Combined) ═══
 const APP_STORAGE_KEYS = {
-  gatepass: ['gp_url','gp_code','gp_secret','gp_local','gp_local_mod','gp_wa_cfg','gp_meta_wa_cfg','gp_tg_cfg','gp_force_refresh','gp_qp_thresh','gp_qp_window','gp_signature','gp_stu_url','gp_stu_code','gp_stu_secret','gp_stu_last_fetch_date','gp_od_cfg','gp_ptg_cfg'],
+  gatepass: ['gp_url','gp_code','gp_secret','gp_local','gp_local_mod','gp_wa_cfg','gp_meta_wa_cfg','gp_tg_cfg','gp_force_refresh','gp_qp_thresh','gp_qp_window','gp_signature','gp_stu_url','gp_stu_code','gp_stu_secret','gp_stu_last_fetch_date','gp_od_cfg','gp_ptg_cfg','gp_sibling_enabled','gp_photo_mandatory'],
   register: ['ref_cfg','ref_data','ref_fb_url','ref_fb_code','ref_fb_secret','ref_fb_stu_url','ref_fb_stu_code','ref_fb_stu_secret','ref_fs_cfg','ref_od_cfg','ref_tg_cfg','ref_wix_cfg','ref_students','ref_extra_fys'],
   feeqr:    ['feeqr_fb','feeqr_settings','feeqr_settings_pw','feeqr_students','feeqr_wa_enabled'],
   theme:    ['lis_theme','lis_sb'],
@@ -10501,7 +10648,7 @@ document.head.insertAdjacentHTML('beforeend','<style>#screen-due.active{display:
       // Firebase is configured — do not set empty, fetch is pending
       var _fbUrl=localStorage.getItem('dl_fb_url')||'';
       if(!_fbUrl){ dlUseEmbedded(); }
-      // else: dlData=[] rahega, Firebase DOMContentLoaded pe fetch karega
+      // else: dlData stays [], and it gets fetched from Firebase on DOMContentLoaded
     }
   } catch(e){
     var _fbUrl2=localStorage.getItem('dl_fb_url')||'';
@@ -11458,10 +11605,10 @@ function dlFbStartPolling(){
 document.addEventListener('DOMContentLoaded', function(){
   dlFbStartPolling();
   // Trigger an immediate fetch — do not wait for polling
-  // Isse data localStorage mein aa jaata hai screen open hone se pehle
+  // This way the data is already in localStorage before the screen opens
   var _cfg = dlFbGetCfg();
   if(_cfg.url){
-    dlFbFetchNow(true); // silent=true, background mein
+    dlFbFetchNow(true); // silent=true, runs in the background
   }
 });
 
