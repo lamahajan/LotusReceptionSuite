@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
-<meta name="apple-mobile-web-app-title" content="SchoolSuite"/>
+<meta name="apple-mobile-web-app-title" content="ReceptionSuite"/>
 <meta name="mobile-web-app-capable" content="yes"/>
 <meta name="theme-color" content="#b5883e"/>
 <meta name="description" content="Lotus International School — Gate Pass, Register & Fee QR"/>
@@ -1010,7 +1010,7 @@ body.dark .fq-mtitle{color:#f4ede0}
     <div id="screen-home" class="screen active">
       <div class="home-hero">
         <div class="home-eyebrow">🪷 Lotus International School</div>
-        <div class="home-h1">School Suite</div>
+        <div class="home-h1">Reception Suite</div>
         <div class="home-sub" id="home-date-txt"></div>
         <button class="pwa-install-btn" onclick="triggerPWAInstall()" style="display:none;margin-top:12px;align-items:center;gap:7px;background:#b5883e;color:#fff;border:none;border-radius:9px;padding:9px 16px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--sans)">📲 Install App</button>
       </div>
@@ -3716,7 +3716,7 @@ Thank you 🙏</textarea>
       <div style="font-size:13px;font-weight:800;color:#fff;margin-bottom:4px">📲 Install as App</div>
       <div style="font-size:11px;color:rgba(255,255,255,.8);margin-bottom:12px;line-height:1.5">Install on your phone's home screen for offline use — works like a native app, no Play Store needed.</div>
       <button class="pwa-install-btn" onclick="triggerPWAInstall()" style="display:none;align-items:center;gap:8px;background:#fff;color:#8a6428;border:none;border-radius:9px;padding:10px 18px;font-size:13px;font-weight:800;cursor:pointer;font-family:var(--sans)">
-        ⊕ Install Lotus School Suite
+        ⊕ Install ReceptionSuite
       </button>
       <div style="font-size:10px;color:rgba(255,255,255,.65);margin-top:8px">📱 iOS: Share → Add to Home Screen &nbsp;|&nbsp; 🤖 Android: ⋮ → Add to Home Screen</div>
     </div>
@@ -3787,7 +3787,7 @@ Thank you 🙏</textarea>
     <div style="background:var(--surf);border:1.5px solid var(--bdr);border-radius:var(--r);padding:16px 18px;margin-bottom:14px;box-shadow:var(--sha)">
       <div style="font-size:13px;font-weight:800;color:var(--txt);margin-bottom:8px">🏫 About</div>
       <div style="font-size:12px;color:var(--sub);line-height:1.7">
-        <b>Lotus International School — School Suite</b><br>
+        <b>Lotus International School — Reception Suite</b><br>
         Gatepass · Reference Register · Fee QR<br>
         <span style="font-size:11px;color:var(--mut)">All data stored locally and synced via Firebase.</span>
       </div>
@@ -3941,7 +3941,7 @@ function goTo(name){
     var bn=document.getElementById('bn-'+n);
     if(bn){bn.className='bn-btn';if(n===name)bn.classList.add('active');}
   });
-  var mn=document.getElementById('mt-screen-name');if(mn)mn.textContent=SCREEN_NAMES[name]||'School Suite';
+  var mn=document.getElementById('mt-screen-name');if(mn)mn.textContent=SCREEN_NAMES[name]||'Reception Suite';
   if(name==='home')updateHomeStats();
 }
 function openMobileDrawer(){document.getElementById('mobile-drawer').classList.add('open');}
