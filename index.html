@@ -24,7 +24,7 @@ window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();window._pwa
 window.addEventListener('appinstalled',()=>{window._pwaInstallPrompt=null;document.querySelectorAll('.pwa-install-btn').forEach(b=>{b.textContent='✅ App Installed!';b.style.opacity='0.6';b.style.cursor='default';b.onclick=null;});if(typeof toast==='function')toast('✅ App installed successfully!');});
 function triggerPWAInstall(){if(window._pwaInstallPrompt){window._pwaInstallPrompt.prompt();}else{alert('To install:\n📱 iOS: Tap Share → Add to Home Screen\n🤖 Android: Tap ⋮ menu → Add to Home Screen\n💻 Desktop: Click ⊕ in address bar');}}
 </script>
-<title> - Lotus International School</title>
+<title>Lotus International School</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
