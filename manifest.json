@@ -1,6 +1,6 @@
 {
-  "name": "Lotus School Suite",
-  "short_name": "SchoolSuite",
+  "name": "Reception Suite",
+  "short_name": "Reception",
   "description": "Gate Pass, Register & Fee QR",
   "start_url": "./",
   "scope": "./",
