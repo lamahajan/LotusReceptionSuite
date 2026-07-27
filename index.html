@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
-<meta name="apple-mobile-web-app-title" content="ReceptionSuite"/>
+<meta name="apple-mobile-web-app-title" content="SchoolSuite"/>
 <meta name="mobile-web-app-capable" content="yes"/>
 <meta name="theme-color" content="#b5883e"/>
 <meta name="description" content="Lotus International School — Gate Pass, Register & Fee QR"/>
@@ -13,18 +13,12 @@
 <link rel="icon" type="image/png" href="icon-192.png"/>
 <link rel="apple-touch-icon" href="icon-192.png"/>
 <script>
-// ── Service Worker (static file) ──
+// ── Service Worker (static file) — custom install banner/buttons removed; native browser install UI still works ──
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('sw.js', {scope:'./'}).catch(()=>{});
 }
-
-// ── Install prompt capture ──
-window._pwaInstallPrompt=null;
-window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();window._pwaInstallPrompt=e;document.querySelectorAll('.pwa-install-btn').forEach(b=>b.style.display='flex');});
-window.addEventListener('appinstalled',()=>{window._pwaInstallPrompt=null;document.querySelectorAll('.pwa-install-btn').forEach(b=>{b.textContent='✅ App Installed!';b.style.opacity='0.6';b.style.cursor='default';b.onclick=null;});if(typeof toast==='function')toast('✅ App installed successfully!');});
-function triggerPWAInstall(){if(window._pwaInstallPrompt){window._pwaInstallPrompt.prompt();}else{alert('To install:\n📱 iOS: Tap Share → Add to Home Screen\n🤖 Android: Tap ⋮ menu → Add to Home Screen\n💻 Desktop: Click ⊕ in address bar');}}
 </script>
-<title>Lotus International School</title>
+<title>Reception Suite - Lotus International School</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -1010,9 +1004,9 @@ body.dark .fq-mtitle{color:#f4ede0}
     <div id="screen-home" class="screen active">
       <div class="home-hero">
         <div class="home-eyebrow">🪷 Lotus International School</div>
-        <div class="home-h1">Reception Suite</div>
+        <div class="home-h1">School Suite</div>
         <div class="home-sub" id="home-date-txt"></div>
-        <button class="pwa-install-btn" onclick="triggerPWAInstall()" style="display:none;margin-top:12px;align-items:center;gap:7px;background:#b5883e;color:#fff;border:none;border-radius:9px;padding:9px 16px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--sans)">📲 Install App</button>
+
       </div>
       <div class="home-body">
         <div class="home-cards">
@@ -3711,16 +3705,6 @@ Thank you 🙏</textarea>
     <div style="font-size:22px;font-weight:900;color:var(--txt);margin-bottom:4px">⚙️ Settings</div>
     <div style="font-size:13px;color:var(--sub);margin-bottom:24px">Configure all modules from one place</div>
 
-    <!-- PWA Install -->
-    <div style="background:linear-gradient(135deg,#b5883e,#8a6428);border-radius:var(--r);padding:16px 18px;margin-bottom:14px;box-shadow:0 4px 16px rgba(181,136,62,.3)">
-      <div style="font-size:13px;font-weight:800;color:#fff;margin-bottom:4px">📲 Install as App</div>
-      <div style="font-size:11px;color:rgba(255,255,255,.8);margin-bottom:12px;line-height:1.5">Install on your phone's home screen for offline use — works like a native app, no Play Store needed.</div>
-      <button class="pwa-install-btn" onclick="triggerPWAInstall()" style="display:none;align-items:center;gap:8px;background:#fff;color:#8a6428;border:none;border-radius:9px;padding:10px 18px;font-size:13px;font-weight:800;cursor:pointer;font-family:var(--sans)">
-        ⊕ Install ReceptionSuite
-      </button>
-      <div style="font-size:10px;color:rgba(255,255,255,.65);margin-top:8px">📱 iOS: Share → Add to Home Screen &nbsp;|&nbsp; 🤖 Android: ⋮ → Add to Home Screen</div>
-    </div>
-
     <!-- Theme -->
     <div style="background:var(--surf);border:1.5px solid var(--bdr);border-radius:var(--r);padding:16px 18px;margin-bottom:14px;box-shadow:var(--sha)">
       <div style="font-size:13px;font-weight:800;color:var(--txt);margin-bottom:12px">🎨 Appearance</div>
@@ -3787,7 +3771,7 @@ Thank you 🙏</textarea>
     <div style="background:var(--surf);border:1.5px solid var(--bdr);border-radius:var(--r);padding:16px 18px;margin-bottom:14px;box-shadow:var(--sha)">
       <div style="font-size:13px;font-weight:800;color:var(--txt);margin-bottom:8px">🏫 About</div>
       <div style="font-size:12px;color:var(--sub);line-height:1.7">
-        <b>Lotus International School — Reception Suite</b><br>
+        <b>Lotus International School — School Suite</b><br>
         Gatepass · Reference Register · Fee QR<br>
         <span style="font-size:11px;color:var(--mut)">All data stored locally and synced via Firebase.</span>
       </div>
@@ -3941,7 +3925,7 @@ function goTo(name){
     var bn=document.getElementById('bn-'+n);
     if(bn){bn.className='bn-btn';if(n===name)bn.classList.add('active');}
   });
-  var mn=document.getElementById('mt-screen-name');if(mn)mn.textContent=SCREEN_NAMES[name]||'Reception Suite';
+  var mn=document.getElementById('mt-screen-name');if(mn)mn.textContent=SCREEN_NAMES[name]||'School Suite';
   if(name==='home')updateHomeStats();
 }
 function openMobileDrawer(){document.getElementById('mobile-drawer').classList.add('open');}
