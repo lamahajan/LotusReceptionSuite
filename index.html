@@ -1194,7 +1194,6 @@ body.dark .fq-mtitle{color:#f4ede0}
         <div class="gset-body">
           <div class="field"><label class="lbl">Database URL</label><input id="cfg-url" class="inp" placeholder="https://…firebaseio.com"></div>
           <div class="field"><label class="lbl">Sync Code</label><input id="cfg-code" class="inp" placeholder="e.g. LOTUS2025"></div>
-          <div class="field"><label class="lbl">Database Secret <span style="font-size:10px;color:var(--sub);font-weight:500">(from Firebase Console)</span></label><input id="cfg-secret" class="inp" type="password" placeholder="paste the real database secret here"></div>
           <div id="cfg-status" style="font-size:12px;min-height:14px;margin-bottom:8px"></div>
           <div style="display:flex;gap:8px;flex-wrap:wrap">
             <button class="btn bp flex1" onclick="saveCfg()" id="cfg-save-btn">💾 Save &amp; Connect</button>
@@ -1221,10 +1220,9 @@ body.dark .fq-mtitle{color:#f4ede0}
           <span class="gset-chev">▼</span>
         </button>
         <div class="gset-body">
-          <div class="info" style="margin-bottom:10px">Sync students with Reference Register. Use the <b>same URL, Sync Code &amp; Secret</b> as Reference Register → Settings → Student DB.</div>
+          <div class="info" style="margin-bottom:10px">Sync students with Reference Register. Use the <b>same URL &amp; Sync Code</b> as Reference Register → Settings → Student DB.</div>
           <div class="field"><label class="lbl">Database URL</label><input id="gp-stu-url" class="inp" placeholder="https://…firebaseio.com"></div>
           <div class="field"><label class="lbl">Sync Code</label><input id="gp-stu-code" class="inp" placeholder="e.g. LOTUS_STU"></div>
-          <div class="field"><label class="lbl">Database Secret</label><input id="gp-stu-secret" class="inp" type="password" placeholder="same secret as Reference Register"></div>
           <div id="gp-stu-status" style="font-size:12px;min-height:14px;margin-bottom:8px;color:var(--sub)"></div>
           <div style="display:flex;gap:8px;flex-wrap:wrap">
             <button class="btn bp flex1" onclick="gpSaveStuCfg()">💾 Save &amp; Sync</button>
@@ -2752,7 +2750,6 @@ Reason: {reason}"></textarea>
         <div style="font-weight:700;font-size:12px;color:var(--sub);margin-bottom:8px">Register DB</div>
         <div class="field"><label class="lbl">Database URL</label><input id="fb-url" class="inp" placeholder="https://your-rtdb.firebaseio.com"></div>
         <div class="field"><label class="lbl">Sync Code</label><input id="fb-code" class="inp" placeholder="e.g. SCHOOL_REF_2025"></div>
-        <div class="field"><label class="lbl">Database Secret <span style="font-size:10px;color:var(--sub);font-weight:500">(from Firebase Console → Project Settings → Service Accounts)</span></label><input id="fb-secret" class="inp" type="password" placeholder="paste the real database secret here"></div>
         <div id="fb-status" style="font-size:12px;min-height:16px;margin-bottom:10px"></div>
         <div class="row" style="gap:8px;margin-bottom:18px">
           <button class="btn bpink flex1" onclick="saveFBCfg()">💾 Save &amp; Connect</button>
@@ -2762,7 +2759,6 @@ Reason: {reason}"></textarea>
         <div style="font-weight:700;font-size:12px;color:var(--sub);margin-bottom:8px;margin-top:4px">Student DB</div>
         <div class="field"><label class="lbl">Student DB URL</label><input id="fb-stu-url" class="inp" placeholder="https://your-students-rtdb.firebaseio.com"></div>
         <div class="field"><label class="lbl">Student DB Code</label><input id="fb-stu-code" class="inp" placeholder="e.g. SCHOOL_STUDENTS_2025"></div>
-        <div class="field"><label class="lbl">Student DB Secret <span style="font-size:10px;color:var(--sub);font-weight:500">(from Firebase Console)</span></label><input id="fb-stu-secret" class="inp" type="password" placeholder="paste the real database secret here"></div>
         <div id="fb-stu-status" style="font-size:12px;min-height:16px;margin-bottom:10px"></div>
         <div class="row" style="gap:8px;margin-bottom:8px">
           <button class="btn bpink flex1" onclick="saveFBStuCfg()">💾 Save &amp; Connect</button>
@@ -3082,8 +3078,7 @@ Reason: {reason}"></textarea>
             <button onclick="fqAutoFillFromGatepass()" class="fq-btn fq-btn-outline" style="margin-bottom:10px;font-size:12px;width:100%;justify-content:center">⚡ Auto-fill from Gatepass Student DB</button>
             <div class="fq-grid2" style="margin-bottom:10px">
               <div style="grid-column:1/-1"><label class="fq-lbl">Firebase RTDB URL</label><input class="fq-inp" id="fq-fb-url" placeholder="https://your-project-default-rtdb.firebaseio.com" style="font-family:'Outfit',sans-serif;font-size:12px"/></div>
-              <div><label class="fq-lbl">DB Path <span style="font-weight:400;font-size:10px">(e.g. SYNC_CODE or SYNC_CODE/students)</span></label><input class="fq-inp" id="fq-fb-path" placeholder="e.g. LOTUS_STU" style="font-family:'Outfit',sans-serif"/></div>
-              <div><label class="fq-lbl">Access Code / Secret</label><input class="fq-inp" id="fq-fb-secret" placeholder="optional" type="password"/></div>
+              <div style="grid-column:1/-1"><label class="fq-lbl">DB Path <span style="font-weight:400;font-size:10px">(e.g. SYNC_CODE or SYNC_CODE/students)</span></label><input class="fq-inp" id="fq-fb-path" placeholder="e.g. LOTUS_STU" style="font-family:'Outfit',sans-serif"/></div>
             </div>
             <div id="fq-fb-test-result" style="font-size:12px;min-height:16px;margin-bottom:10px"></div>
             <div style="display:flex;gap:8px;flex-wrap:wrap">
@@ -3536,8 +3531,6 @@ Thank you 🙏</textarea>
               <input id="dl-fb-url" class="dl-inp" type="text" placeholder="https://your-db.firebaseio.com"/>
               <label class="dl-lbl">Sync Code <span style="font-size:10px;color:#9a3412;font-weight:500">(optional data folder)</span></label>
               <input id="dl-fb-synccode" class="dl-inp" type="text" placeholder="e.g. LOTUS_DUE — leave blank if not needed"/>
-              <label class="dl-lbl">Database Secret</label>
-              <input id="dl-fb-code" class="dl-inp" type="password" placeholder="from Firebase Console → Service Accounts"/>
               <label class="dl-lbl">⏱ Auto-Pull Interval</label>
               <select id="dl-fb-interval" style="width:100%;background:#f5f0e8;border:1.5px solid #e8dcc8;border-radius:9px;padding:9px 10px;font-size:12px;font-weight:700;color:#1a1035;outline:none;cursor:pointer;font-family:inherit;margin-bottom:10px" onchange="dlFbApplyInterval()">
                 <option value="0">🚫 Off</option>
@@ -3575,8 +3568,6 @@ Thank you 🙏</textarea>
               <input id="dl-txn-fb-url" class="dl-inp" type="text" placeholder="https://your-txn-project-rtdb.firebaseio.com"/>
               <label class="dl-lbl">Sync Code <span style="font-size:10px;color:#6b7280;font-weight:500">(optional data folder)</span></label>
               <input id="dl-txn-fb-synccode" class="dl-inp" type="text" placeholder="leave blank if not needed"/>
-              <label class="dl-lbl">Transaction Firebase Secret</label>
-              <input id="dl-txn-fb-secret" class="dl-inp" type="password" placeholder="database secret" style="margin-bottom:10px"/>
               <label class="dl-lbl">App Token <span style="font-size:10px;color:#6b7280;font-weight:500">(matches worker's APP_TOKEN — stays on this device only)</span></label>
               <input id="dl-app-token" class="dl-inp" type="password" placeholder="shared secret for worker requests" style="margin-bottom:10px"/>
               <button onclick="dlRzpSaveConfig()" style="width:100%;background:#16a34a;color:#fff;border:none;border-radius:9px;padding:10px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">💾 Save Razorpay Config</button>
@@ -11392,7 +11383,7 @@ window.dlCloseProgress=function(){
 // ── Due List Firebase Sync ──
 var DL_FB_URL_KEY = 'dl_fb_url';
 var DL_FB_PATH_KEY = 'dl_fb_path';    // optional data folder/namespace — like Reference Register's Sync Code
-var DL_FB_CODE_KEY = 'dl_fb_code';    // real Firebase database secret, sent as ?auth=
+var DL_FB_CODE_KEY = 'dl_fb_code';    // legacy: database secret key, UI field removed — always empty now
 var DL_FB_INTERVAL_KEY = 'dl_fb_interval';
 var _dlFbListener = null;
 
