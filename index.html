@@ -4211,16 +4211,25 @@ async function push(k){
   const val=Array.isArray(S[k])&&S[k].length===0?{'__empty':true}:(k==='passes'?_stripP(S[k]):S[k]);
   try{
     if(k==='passes'){
-      await fetch(`${cfg.url}/${cfg.code}/passes.json${gpAuthQ()}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(val)});
-      await fetch(`${cfg.url}/${cfg.code}/lastMod.json${gpAuthQ()}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(S.lastMod)});
+      const r1=await fetch(`${cfg.url}/${cfg.code}/passes.json${gpAuthQ()}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(val)});
+      if(!r1.ok){const t=await r1.text().catch(()=>'');throw new Error('passes PUT '+r1.status+' '+t);}
+      const r2=await fetch(`${cfg.url}/${cfg.code}/lastMod.json${gpAuthQ()}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(S.lastMod)});
+      if(!r2.ok){const t=await r2.text().catch(()=>'');throw new Error('lastMod PUT '+r2.status+' '+t);}
     } else if(k==='buses'){
-      await fetch(`${cfg.url}/${cfg.code}/buses.json${gpAuthQ()}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(val)});
-      await fetch(`${cfg.url}/${cfg.code}/lastMod.json${gpAuthQ()}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(S.lastMod)});
+      const r1=await fetch(`${cfg.url}/${cfg.code}/buses.json${gpAuthQ()}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(val)});
+      if(!r1.ok){const t=await r1.text().catch(()=>'');throw new Error('buses PUT '+r1.status+' '+t);}
+      const r2=await fetch(`${cfg.url}/${cfg.code}/lastMod.json${gpAuthQ()}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(S.lastMod)});
+      if(!r2.ok){const t=await r2.text().catch(()=>'');throw new Error('lastMod PUT '+r2.status+' '+t);}
     } else {
-      await fetch(`${cfg.url}/${cfg.code}.json${gpAuthQ()}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({[k]:val,lastMod:S.lastMod})});
+      const r1=await fetch(`${cfg.url}/${cfg.code}.json${gpAuthQ()}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({[k]:val,lastMod:S.lastMod})});
+      if(!r1.ok){const t=await r1.text().catch(()=>'');throw new Error('PATCH '+r1.status+' '+t);}
     }
     _pendingPushKeys.delete(k);setSS('ok');
-  }catch{_pendingPushKeys.add(k);setSS('err');}
+  }catch(err){
+    console.error('[Gatepass push FAILED]',k,err);
+    gpToast('⚠️ Sync fail ('+k+'): '+(err&&err.message?err.message:'network error'),'err');
+    _pendingPushKeys.add(k);setSS('err');
+  }
 }
 // syncGpStudentsToRef removed — GP ↔ Ref sync happens only via Firebase
 function setSS(st){
