@@ -3995,6 +3995,12 @@ let gpForceRefreshOnFocus=localStorage.getItem('gp_force_refresh')!=='0';// defa
 let cfg={url:'',code:'',secret:''},syncIv=null;
 let _issuingPass=false; // guard against double-tap on issue button
 function gpAuthQ(){ return cfg.secret ? ('?auth='+encodeURIComponent(cfg.secret)) : ''; }
+// Firebase writes can return 401/403 without throwing (fetch only rejects on network failure) —
+// without this check, a rejected write still shows the green "Synced" status. This makes failed
+// writes actually surface as errors so a wrong/missing Database Secret is visible immediately.
+async function _fbOk(p){const r=await p;if(!r.ok){const e=new Error('Firebase '+r.status+' — check Database Secret / rules');e.status=r.status;throw e;}return r;}
+let _fbLastErrShown=0;
+function _fbAlertOnce(msg){const now=Date.now();if(now-_fbLastErrShown>15000){_fbLastErrShown=now;if(typeof gpToast==='function')gpToast('🔴 '+msg,'err');}}
 let _pendingPushKeys=new Set(); // keys that failed to push — retry on next fetchAll
 let camStream=null,photo=null,cpSel=null,isDark=false;
 let qpSel=null;
@@ -4211,16 +4217,16 @@ async function push(k){
   const val=Array.isArray(S[k])&&S[k].length===0?{'__empty':true}:(k==='passes'?_stripP(S[k]):S[k]);
   try{
     if(k==='passes'){
-      await fetch(`${cfg.url}/${cfg.code}/passes.json${gpAuthQ()}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(val)});
-      await fetch(`${cfg.url}/${cfg.code}/lastMod.json${gpAuthQ()}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(S.lastMod)});
+      await _fbOk(fetch(`${cfg.url}/${cfg.code}/passes.json${gpAuthQ()}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(val)}));
+      await _fbOk(fetch(`${cfg.url}/${cfg.code}/lastMod.json${gpAuthQ()}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(S.lastMod)}));
     } else if(k==='buses'){
-      await fetch(`${cfg.url}/${cfg.code}/buses.json${gpAuthQ()}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(val)});
-      await fetch(`${cfg.url}/${cfg.code}/lastMod.json${gpAuthQ()}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(S.lastMod)});
+      await _fbOk(fetch(`${cfg.url}/${cfg.code}/buses.json${gpAuthQ()}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(val)}));
+      await _fbOk(fetch(`${cfg.url}/${cfg.code}/lastMod.json${gpAuthQ()}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(S.lastMod)}));
     } else {
-      await fetch(`${cfg.url}/${cfg.code}.json${gpAuthQ()}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({[k]:val,lastMod:S.lastMod})});
+      await _fbOk(fetch(`${cfg.url}/${cfg.code}.json${gpAuthQ()}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({[k]:val,lastMod:S.lastMod})}));
     }
     _pendingPushKeys.delete(k);setSS('ok');
-  }catch{_pendingPushKeys.add(k);setSS('err');}
+  }catch(e){_pendingPushKeys.add(k);setSS('err');_fbAlertOnce('Gatepass sync failed — '+(e&&e.message?e.message:'push rejected by Firebase'));}
 }
 // syncGpStudentsToRef removed — GP ↔ Ref sync happens only via Firebase
 function setSS(st){
@@ -5161,9 +5167,9 @@ async function gpStuPushShared(){
   var lm=Date.now();
   var authQ=gpStuCfg.secret?('?auth='+encodeURIComponent(gpStuCfg.secret)):'';
   try{
-    await fetch(gpStuCfg.url+'/'+gpStuCfg.code+'.json'+authQ,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({students:sVal,lastMod:lm})});
+    await _fbOk(fetch(gpStuCfg.url+'/'+gpStuCfg.code+'.json'+authQ,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({students:sVal,lastMod:lm})}));
     gpStuLocalMod=lm; // update local mod — prevent immediate re-fetch
-  }catch(e){}
+  }catch(e){_fbAlertOnce('Gatepass Student DB sync failed — '+(e&&e.message?e.message:'push rejected by Firebase'));}
 }
 
 // ═══ GATEPASS WHATSAPP ═══
@@ -7493,9 +7499,9 @@ async function fbPushPublic(){
     .map(en=>({refno:en.refno||'',name:en.to||'',category:en.category||'',date:en.date||'',fy:en.fy||'',readyAt:en.statusChangedAt||en.createdAt||''}));
   try{
     const authQ=fbCfg.secret?('?auth='+encodeURIComponent(fbCfg.secret)):'';
-    await fetch(`${fbCfg.url}/public_board.json${authQ}`,{method:'PUT',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({tc_list:pubTCs.length?pubTCs:{__empty:true},all_ready:pubAll.length?pubAll:{__empty:true},lastUpdated:Date.now()})});
-  }catch(e){}
+    await _fbOk(fetch(`${fbCfg.url}/public_board.json${authQ}`,{method:'PUT',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({tc_list:pubTCs.length?pubTCs:{__empty:true},all_ready:pubAll.length?pubAll:{__empty:true},lastUpdated:Date.now()})}));
+  }catch(e){_fbAlertOnce('Public board push failed — '+(e&&e.message?e.message:'rejected by Firebase'));}
 }
 
 // ─── FIREBASE — REGISTER ─────────────────────────────────
@@ -7515,7 +7521,7 @@ async function fbPush(){
   R.lastMod=Date.now();fbLocalMod=R.lastMod;saveLocal();if(!fbCfg.url||!fbCfg.code)return;
   const eVal=R.entries.length===0?{'__empty':true}:R.entries;
   const authQ=fbCfg.secret?('?auth='+encodeURIComponent(fbCfg.secret)):'';
-  try{await fetch(`${fbCfg.url}/${fbCfg.code}.json${authQ}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({entries:eVal,nextSeq:R.nextSeq,overrideSeq:R.overrideSeq||{},reclaimedSeqs:R.reclaimedSeqs||{},lastMod:R.lastMod})});}catch(e){}
+  try{await _fbOk(fetch(`${fbCfg.url}/${fbCfg.code}.json${authQ}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({entries:eVal,nextSeq:R.nextSeq,overrideSeq:R.overrideSeq||{},reclaimedSeqs:R.reclaimedSeqs||{},lastMod:R.lastMod})}));}catch(e){_fbAlertOnce('Reference Register sync failed — '+(e&&e.message?e.message:'push rejected by Firebase'));}
 }
 function loadFBCfg(){document.getElementById('fb-url').value=localStorage.getItem('ref_fb_url')||'';document.getElementById('fb-code').value=localStorage.getItem('ref_fb_code')||'';var se=document.getElementById('fb-secret');if(se)se.value=localStorage.getItem('ref_fb_secret')||'';}
 async function testFBCfg(){const url=document.getElementById('fb-url').value.trim().replace(/\/$/,'');const code=document.getElementById('fb-code').value.trim();const secret=(document.getElementById('fb-secret')||{}).value?.trim()||'';if(!url||!code){fbSt('Fill both fields','var(--red)');return;}fbSt('Testing…','var(--amber)');const authQ=secret?('?auth='+encodeURIComponent(secret)):'';try{const r=await fetch(`${url}/${code}/ping.json${authQ}`,{method:'PUT',body:JSON.stringify(1)});if(!r.ok)throw 0;fbSt('Connected!','var(--green)');}catch{fbSt('Connection failed','var(--red)');}}
@@ -7575,7 +7581,7 @@ async function fbStuPush(){
   }));
   const sVal=normalized.length===0?{'__empty':true}:normalized;
   const authQ=fbStuCfg.secret?('?auth='+encodeURIComponent(fbStuCfg.secret)):'';
-  try{await fetch(`${fbStuCfg.url}/${fbStuCfg.code}.json${authQ}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({students:sVal,lastMod})});}catch(e){}
+  try{await _fbOk(fetch(`${fbStuCfg.url}/${fbStuCfg.code}.json${authQ}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({students:sVal,lastMod})}));}catch(e){_fbAlertOnce('Student DB sync failed — '+(e&&e.message?e.message:'push rejected by Firebase'));}
 }
 function loadFBStuCfg(){document.getElementById('fb-stu-url').value=localStorage.getItem('ref_fb_stu_url')||'';document.getElementById('fb-stu-code').value=localStorage.getItem('ref_fb_stu_code')||'';var se=document.getElementById('fb-stu-secret');if(se)se.value=localStorage.getItem('ref_fb_stu_secret')||'';}
 async function testFBStuCfg(){const url=document.getElementById('fb-stu-url').value.trim().replace(/\/$/,'');const code=document.getElementById('fb-stu-code').value.trim();const secret=(document.getElementById('fb-stu-secret')||{}).value?.trim()||'';if(!url||!code){fbStuSt('Fill both fields','var(--red)');return;}fbStuSt('Testing…','var(--amber)');const authQ=secret?('?auth='+encodeURIComponent(secret)):'';try{const r=await fetch(`${url}/${code}/ping.json${authQ}`,{method:'PUT',body:JSON.stringify(1)});if(!r.ok)throw 0;fbStuSt('Connected!','var(--green)');}catch{fbStuSt('Failed','var(--red)');}}
