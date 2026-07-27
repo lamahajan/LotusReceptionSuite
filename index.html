@@ -10,13 +10,16 @@
 <meta name="theme-color" content="#b5883e"/>
 <meta name="description" content="Lotus International School — Gate Pass, Register & Fee QR"/>
 <link id="pwa-manifest" rel="manifest"/>
+<link id="pwa-favicon" rel="icon" type="image/png"/>
 <script>
 // ── Inline PWA Manifest ──
 (function(){
-  const icon='data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="22" fill="%23b5883e"/><text x="50" y="72" font-size="58" text-anchor="middle">🪷</text></svg>');
-  const manifest={name:'Lotus School Suite',short_name:'SchoolSuite',description:'Gate Pass, Register & Fee QR',start_url:'./'+window.location.search,display:'standalone',background_color:'#f2f0fa',theme_color:'#b5883e',orientation:'portrait',icons:[{src:icon,sizes:'192x192',type:'image/svg+xml',purpose:'any maskable'},{src:icon,sizes:'512x512',type:'image/svg+xml',purpose:'any maskable'}]};
+  const icon='https://raw.githubusercontent.com/lamahajan/eGateSys/main/icon-512.png';
+  const manifest={name:'Lotus School Suite',short_name:'SchoolSuite',description:'Gate Pass, Register & Fee QR',start_url:'./'+window.location.search,display:'standalone',background_color:'#f2f0fa',theme_color:'#b5883e',orientation:'portrait',icons:[{src:icon,sizes:'192x192',type:'image/png',purpose:'any maskable'},{src:icon,sizes:'512x512',type:'image/png',purpose:'any maskable'}]};
   const blob=new Blob([JSON.stringify(manifest)],{type:'application/manifest+json'});
   document.getElementById('pwa-manifest').href=URL.createObjectURL(blob);
+  const fav=document.getElementById('pwa-favicon');
+  if(fav){ fav.href=icon; fav.type='image/png'; }
 })();
 
 // ── Service Worker (offline cache) ──
@@ -33,11 +36,6 @@ self.addEventListener('fetch',e=>{if(e.request.method!=='GET')return;e.respondWi
   navigator.serviceWorker.register(swURL,{scope:'./'}).catch(()=>{});
 }
 
-// ── Install prompt capture ──
-window._pwaInstallPrompt=null;
-window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();window._pwaInstallPrompt=e;document.querySelectorAll('.pwa-install-btn').forEach(b=>b.style.display='flex');});
-window.addEventListener('appinstalled',()=>{window._pwaInstallPrompt=null;document.querySelectorAll('.pwa-install-btn').forEach(b=>{b.textContent='✅ App Installed!';b.style.opacity='0.6';b.style.cursor='default';b.onclick=null;});if(typeof toast==='function')toast('✅ App installed successfully!');});
-function triggerPWAInstall(){if(window._pwaInstallPrompt){window._pwaInstallPrompt.prompt();}else{alert('To install:\n📱 iOS: Tap Share → Add to Home Screen\n🤖 Android: Tap ⋮ menu → Add to Home Screen\n💻 Desktop: Click ⊕ in address bar');}}
 </script>
 <title>Reception Suite - Lotus International School</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
@@ -1027,7 +1025,6 @@ body.dark .fq-mtitle{color:#f4ede0}
         <div class="home-eyebrow">🪷 Lotus International School</div>
         <div class="home-h1">School Suite</div>
         <div class="home-sub" id="home-date-txt"></div>
-        <button class="pwa-install-btn" onclick="triggerPWAInstall()" style="display:none;margin-top:12px;align-items:center;gap:7px;background:#b5883e;color:#fff;border:none;border-radius:9px;padding:9px 16px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--sans)">📲 Install App</button>
       </div>
       <div class="home-body">
         <div class="home-cards">
@@ -3725,16 +3722,6 @@ Thank you 🙏</textarea>
   <div style="max-width:640px;margin:0 auto;padding:20px 16px 40px">
     <div style="font-size:22px;font-weight:900;color:var(--txt);margin-bottom:4px">⚙️ Settings</div>
     <div style="font-size:13px;color:var(--sub);margin-bottom:24px">Configure all modules from one place</div>
-
-    <!-- PWA Install -->
-    <div style="background:linear-gradient(135deg,#b5883e,#8a6428);border-radius:var(--r);padding:16px 18px;margin-bottom:14px;box-shadow:0 4px 16px rgba(181,136,62,.3)">
-      <div style="font-size:13px;font-weight:800;color:#fff;margin-bottom:4px">📲 Install as App</div>
-      <div style="font-size:11px;color:rgba(255,255,255,.8);margin-bottom:12px;line-height:1.5">Install on your phone's home screen for offline use — works like a native app, no Play Store needed.</div>
-      <button class="pwa-install-btn" onclick="triggerPWAInstall()" style="display:none;align-items:center;gap:8px;background:#fff;color:#8a6428;border:none;border-radius:9px;padding:10px 18px;font-size:13px;font-weight:800;cursor:pointer;font-family:var(--sans)">
-        ⊕ Install Lotus School Suite
-      </button>
-      <div style="font-size:10px;color:rgba(255,255,255,.65);margin-top:8px">📱 iOS: Share → Add to Home Screen &nbsp;|&nbsp; 🤖 Android: ⋮ → Add to Home Screen</div>
-    </div>
 
     <!-- Theme -->
     <div style="background:var(--surf);border:1.5px solid var(--bdr);border-radius:var(--r);padding:16px 18px;margin-bottom:14px;box-shadow:var(--sha)">
@@ -9865,27 +9852,6 @@ self.addEventListener('fetch',e=>{
   const swUrl=URL.createObjectURL(blob);
   navigator.serviceWorker.register(swUrl,{scope:'/'}).catch(()=>{});
 }
-
-// ── Install Prompt ──
-let _pwaPrompt=null;
-window.addEventListener('beforeinstallprompt',e=>{
-  e.preventDefault();_pwaPrompt=e;
-  const bar=document.getElementById('pwa-install-bar');
-  if(bar)bar.style.display='flex';
-});
-function pwaDismiss(){
-  const bar=document.getElementById('pwa-install-bar');
-  if(bar)bar.style.display='none';
-}
-function pwaInstall(){
-  if(!_pwaPrompt)return;
-  _pwaPrompt.prompt();
-  _pwaPrompt.userChoice.then(r=>{
-    if(r.outcome==='accepted')pwaDismiss();
-    _pwaPrompt=null;
-  });
-}
-window.addEventListener('appinstalled',()=>pwaDismiss());
 </script>
 
 <!-- ═══ SETTINGS EXPORT / IMPORT ═══ -->
@@ -10050,19 +10016,6 @@ function importAllSettings(input){
   </div>
 </div>
 
-<!-- PWA Install Banner -->
-<div id="pwa-install-bar" style="display:none;position:fixed;bottom:62px;left:8px;right:8px;z-index:9999;
-  background:#1a1712;color:#fff;border-radius:14px;padding:12px 14px;
-  align-items:center;gap:10px;box-shadow:0 8px 28px rgba(0,0,0,.35);
-  font-family:'Plus Jakarta Sans',sans-serif;font-size:13px">
-  <span style="font-size:22px">🪷</span>
-  <div style="flex:1">
-    <div style="font-weight:800;font-size:13px">Install School Suite</div>
-    <div style="font-size:11px;opacity:.7;margin-top:1px">Add to home screen — works offline</div>
-  </div>
-  <button onclick="pwaInstall()" style="background:#b5883e;color:#fff;border:none;border-radius:9px;padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;font-family:inherit">Install</button>
-  <button onclick="pwaDismiss()" style="background:rgba(255,255,255,.12);color:#fff;border:none;border-radius:9px;width:30px;height:30px;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center">✕</button>
-</div>
 
 <!-- ═══════════════════════════════════════════════
      DUE LIST MODULE JS
