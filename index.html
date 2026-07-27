@@ -1713,6 +1713,9 @@ Reason: {reason}"></textarea>
           <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
             <button class="btn bgh" style="font-size:11px;padding:6px 11px;color:var(--red);border-color:var(--red)" onclick="delAllPasses()">🗑 Delete ALL Pass Records</button>
           </div>
+          <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
+            <button class="btn bgh" style="font-size:11px;padding:6px 11px;color:var(--green);border-color:var(--green)" onclick="gpForcePushAllData()">⬆️ Push Local Data to Firebase</button>
+          </div>
         </div>
       </div>
 
@@ -3753,6 +3756,13 @@ Thank you 🙏</textarea>
         <button onclick="fqForceFetch()" style="flex:1;min-width:130px;background:var(--blue-l);border:1.5px solid var(--blue);color:var(--blue-d);border-radius:9px;padding:9px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--sans);transition:all .15s" onmouseover="this.style.background='var(--blue)';this.style.color='#fff'" onmouseout="this.style.background='var(--blue-l)';this.style.color='var(--blue-d)'">💳 Fee QR Student Fetch</button>
       </div>
       <div id="global-force-fetch-status" style="font-size:11px;color:var(--sub);margin-bottom:14px;min-height:14px"></div>
+
+      <!-- Push Local → Firebase Row -->
+      <div style="font-size:11px;font-weight:800;color:var(--sub);text-transform:uppercase;letter-spacing:.7px;margin-bottom:7px">⬆️ Push Local Data to Firebase</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+        <button onclick="gpForcePushAllData()" style="flex:1;min-width:130px;background:var(--green-l);border:1.5px solid var(--green);color:var(--green-d);border-radius:9px;padding:9px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--sans);transition:all .15s" onmouseover="this.style.background='var(--green)';this.style.color='#fff'" onmouseout="this.style.background='var(--green-l)';this.style.color='var(--green-d)'">🚪 Push Gatepass Data</button>
+      </div>
+      <div style="font-size:10px;color:var(--mut);margin-bottom:14px;line-height:1.5">⚠️ Overwrites Firebase with this device's current local data (passes, buses, students). Use when another device deleted things but they still show here.</div>
 
       <!-- Clear LocalStorage Row -->
       <div style="font-size:11px;font-weight:800;color:var(--sub);text-transform:uppercase;letter-spacing:.7px;margin-bottom:7px">🧹 Clear Local Storage</div>
@@ -6014,12 +6024,13 @@ async function gpForcePushAllData(){
   const hasGP=cfg.url&&cfg.code;
   const hasStu=gpStuCfg.url&&gpStuCfg.code;
   if(!hasGP&&!hasStu){gpToast('⚠️ No Firebase DB connected','err');return;}
-  const st=document.getElementById('gp-fp-status');
   const parts=[];
   if(hasGP)parts.push('Passes: '+S.passes.length+', Buses: '+S.buses.length);
   if(hasStu)parts.push('Students: '+S.students.length);
   if(!confirm('Full Firebase sync karega:\n'+parts.join('\n')+'\n\nContinue?'))return;
-  st.textContent='🔥 Syncing all data…';st.style.color='var(--amber)';
+  const stEl=document.getElementById('gp-fp-status');
+  const setSt=(txt,color)=>{if(stEl){stEl.textContent=txt;stEl.style.color=color;}};
+  setSt('🔥 Syncing all data…','var(--amber)');
   try{
     if(hasGP){
       await fetch(`${cfg.url}/${cfg.code}/passes.json${gpAuthQ()}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(S.passes.length===0?{'__empty':true}:S.passes)});
@@ -6030,9 +6041,9 @@ async function gpForcePushAllData(){
       await fetch(`${gpStuCfg.url}/${gpStuCfg.code}.json${stuAuthQ}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:'null'});
       await fetch(`${gpStuCfg.url}/${gpStuCfg.code}.json${stuAuthQ}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({students:S.students.length===0?{'__empty':true}:S.students,lastMod:Date.now()})});
     }
-    st.textContent='✅ All data synced to Firebase!';st.style.color='var(--green)';
+    setSt('✅ All data synced to Firebase!','var(--green)');
     gpToast('✅ Full Firebase sync complete');
-  }catch(e){st.textContent='❌ Failed: '+e.message;st.style.color='var(--red)';}
+  }catch(e){setSt('❌ Failed: '+e.message,'var(--red)');}
 }
 
 
