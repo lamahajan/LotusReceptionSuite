@@ -1511,13 +1511,13 @@ Reason: {reason}"></textarea>
           </div>
           <!-- Photo Mandatory -->
           <div style="background:var(--bg3);border:1.5px solid var(--border);border-radius:var(--rs);padding:11px 13px;margin-top:10px">
-            <label style="display:flex;align-items:center;gap:9px;cursor:pointer">
-              <input type="checkbox" id="gp-photo-mandatory" style="accent-color:var(--amber);width:16px;height:16px" onchange="gpSavePhotoMandatory()">
-              <div>
-                <div style="font-size:13px;font-weight:700;color:var(--text)">📸 Make picker photo mandatory</div>
-                <div style="font-size:11px;color:var(--muted);margin-top:1px">Block issuing a gate pass unless a picker photo has been captured or uploaded</div>
-              </div>
-            </label>
+            <div style="font-size:13px;font-weight:700;color:var(--text)">📸 Picker photo requirement</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:1px;margin-bottom:9px">Choose when a picker photo must be captured/uploaded before a gate pass can be issued</div>
+            <select id="gp-photo-mandatory" class="sel" onchange="gpSavePhotoMandatory()">
+              <option value="0">Optional — never required</option>
+              <option value="1">Mandatory for everyone</option>
+              <option value="2">Mandatory for everyone, except Father / Mother</option>
+            </select>
           </div>
         </div>
       </div>
@@ -4153,9 +4153,17 @@ async function fetchAll(){
     const d=await r.json();
     if(d){
       const sm=d.lastMod||0;
+      // ── Sync remote delete-tombstones into our local set ──────────────────
+      // Catches deletions made by OTHER devices while this one was off/offline,
+      // so this device won't accidentally resurrect them on its own next push.
+      if(d.deletedIds&&typeof d.deletedIds==='object'){
+        Object.keys(d.deletedIds).forEach(id=>_gpDeletedIds.add(id));
+        try{const arr=[..._gpDeletedIds];localStorage.setItem('gp_deleted_ids',JSON.stringify(arr.length>500?arr.slice(-500):arr));}catch(e){}
+      }
       const toArr=v=>Array.isArray(v)?v:(v&&v.__empty)?[]:(v!=null&&typeof v==='object'?Object.values(v).filter(x=>x!=null):null);
-      const ps=toArr(d.passes);
+      let ps=toArr(d.passes);
       if(ps!==null){
+        ps=ps.filter(p=>!p||!p.id||!_gpDeletedIds.has(p.id)); // defense-in-depth
         // ── Step A: merge gateout node FIRST (apply Gate app's gateOutTimes) ──
         // Must be done before TG detection, otherwise gateOutTime will be null
         if(d.gateout&&typeof d.gateout==='object'){
@@ -4242,8 +4250,41 @@ async function push(k){
   const val=Array.isArray(S[k])&&S[k].length===0?{'__empty':true}:(k==='passes'?_stripP(S[k]):S[k]);
   try{
     if(k==='passes'){
-      await fetch(`${cfg.url}/${cfg.code}/passes.json${gpAuthQ()}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(val)});
+      // ── Merge-before-write ──────────────────────────────────────────────
+      // A plain PUT here used to blindly replace the WHOLE /passes node with
+      // this device's local array. If another device/tab had issued a pass
+      // in the meantime (before our next 6s poll picked it up), that pass
+      // existed only on the server — and this PUT would wipe it out, making
+      // it look like "one pass replaces another". Fix: pull the freshest
+      // server copy right before writing, union it with our local copy by
+      // id (local copy wins on conflict — it's the edit in progress), drop
+      // anything we've explicitly deleted on this device, then write the
+      // merged result. This makes concurrent cuts from multiple devices
+      // additive instead of destructive.
+      let _remoteP=[],_remoteDel={};
+      try{
+        const rr=await fetch(`${cfg.url}/${cfg.code}/passes.json${gpAuthQ()}`);
+        if(rr.ok){
+          const rd=await rr.json();
+          _remoteP=Array.isArray(rd)?rd:(rd&&typeof rd==='object'&&!rd.__empty?Object.values(rd).filter(x=>x!=null):[]);
+        }
+      }catch(e){}
+      try{
+        // Remote tombstone list — catches deletions made by devices that were
+        // offline/absent when we built our own local _gpDeletedIds set.
+        const dr=await fetch(`${cfg.url}/${cfg.code}/deletedIds.json${gpAuthQ()}`);
+        if(dr.ok){const dd=await dr.json();if(dd&&typeof dd==='object')_remoteDel=dd;}
+      }catch(e){}
+      const _isDeleted=id=>_gpDeletedIds.has(id)||!!_remoteDel[id];
+      const _byId=new Map();
+      _remoteP.forEach(p=>{if(p&&p.id&&!_isDeleted(p.id))_byId.set(p.id,p);});
+      S.passes.forEach(p=>{if(p&&p.id&&!_isDeleted(p.id))_byId.set(p.id,p);}); // local wins on conflict
+      const _merged=[..._byId.values()].sort((a,b)=>(b.date+b.time).localeCompare(a.date+a.time));
+      S.passes=_merged;
+      const _mergedVal=_merged.length===0?{'__empty':true}:_stripP(_merged);
+      await fetch(`${cfg.url}/${cfg.code}/passes.json${gpAuthQ()}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(_mergedVal)});
       await fetch(`${cfg.url}/${cfg.code}/lastMod.json${gpAuthQ()}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(S.lastMod)});
+      saveLocal();
     } else if(k==='buses'){
       await fetch(`${cfg.url}/${cfg.code}/buses.json${gpAuthQ()}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(val)});
       await fetch(`${cfg.url}/${cfg.code}/lastMod.json${gpAuthQ()}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(S.lastMod)});
@@ -4292,6 +4333,27 @@ function renderAll(){popBusSel();updBadge();const a=document.querySelector('.tb.
 function todayStr(){return new Date().toISOString().split('T')[0];}
 function nowT(){return new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:true}).replace(/\b(am|pm)\b/gi,function(m){return m.toUpperCase();});}
 function uid(){return Date.now().toString(36)+Math.random().toString(36).substr(2,5);}
+// ── DELETE TOMBSTONES ── remembers ids explicitly deleted on this device so a
+// merge-with-remote push (see push()) never resurrects them.
+let _gpDeletedIds=new Set();
+try{_gpDeletedIds=new Set(JSON.parse(localStorage.getItem('gp_deleted_ids')||'[]'));}catch(e){}
+function _gpMarkDeleted(ids){
+  (ids||[]).forEach(id=>{if(id)_gpDeletedIds.add(id);});
+  try{
+    // keep the tombstone list from growing forever — cap at last 500
+    const arr=[..._gpDeletedIds];
+    localStorage.setItem('gp_deleted_ids',JSON.stringify(arr.length>500?arr.slice(-500):arr));
+  }catch(e){}
+  _gpPushDeletedTombstones(ids); // also tell Firebase — so a device that was OFFLINE when the
+  // delete happened still learns about it (from /deletedIds) before it can revive the pass
+}
+async function _gpPushDeletedTombstones(ids){
+  if(!cfg.url||!cfg.code||!ids||!ids.length)return;
+  const patch={};ids.forEach(id=>{if(id)patch[id]=true;});
+  try{await fetch(`${cfg.url}/${cfg.code}/deletedIds.json${gpAuthQ()}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(patch)});}
+  catch(e){} // best-effort — if this fails, the next successful push's remote fetch will still
+  // pick up whatever tombstones DID make it to Firebase from other calls
+}
 function e(s){return s?String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'):''}
 function fmtD(d){if(!d)return'';try{return new Date(d+'T00:00:00').toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'})}catch{return d}}
 let _gpToastT;function gpToast(m,t='ok'){const el=document.getElementById('toast');if(!el)return;el.textContent=m;el.className='show '+t;clearTimeout(_gpToastT);_gpToastT=setTimeout(()=>el.className='',3200);}
@@ -4506,7 +4568,7 @@ async function issuePass(){
   if(_issuingPass){gpToast('⏳ Please wait…','inf');return;}
   if(!cpSel){gpToast('⚠️ Select a student first','err');return;}
   const by=document.getElementById('cpby').value.trim();if(!by){gpToast('⚠️ Enter picker name','err');return;}
-  if(localStorage.getItem('gp_photo_mandatory')==='1'&&!photo){gpToast('⚠️ Photo is required before issuing a pass','err');return;}
+  if(gpPhotoRequired(document.getElementById('cprel').value)&&!photo){gpToast('⚠️ Photo is required before issuing a pass','err');return;}
   const existing=S.passes.find(p=>p.admissionNumber===cpSel.admissionNumber&&p.date===todayStr());
   if(existing){gpToast(`🚫 Pass already issued for ${cpSel.name} today (${existing.time})`,'err');return;}
   _issuingPass=true;
@@ -4629,7 +4691,7 @@ async function pickSiblingCutPass(adm,btn){
   const prev=_lastIssuedPass;
   const by=prev?prev.pickedUpBy||'':'';
   const sibPhoto=prev&&prev.pickerPhoto&&prev.pickerPhoto!=='__has_photo'?prev.pickerPhoto:null;
-  if(!by||(localStorage.getItem('gp_photo_mandatory')==='1'&&!sibPhoto)){
+  if(!by||(gpPhotoRequired(prev&&prev.relation)&&!sibPhoto)){
     // Can't auto-issue safely (missing picker name, or photo mandatory but none to carry over) — fall back to manual form-fill
     gpToast('⚠️ Please fill this pass in manually','inf');
     pickSiblingManualFill(adm);
@@ -4973,6 +5035,7 @@ async function delPass(id){
   if(pass&&TGCfg.enabled&&pass.tgMsgId) deleteTGMessage(TGCfg.token,TGCfg.chatId,pass.tgMsgId);
   if(pass&&(pass._hasPhoto||pass.pickerPhoto)) _deletePhotoFromFB(id);
   _deleteGateOutFromFB(id);
+  _gpMarkDeleted([id]);
   S.passes=S.passes.filter(p=>p.id!==id);
   await push('passes');
   gpToast('🗑 Pass deleted','err');
@@ -5001,6 +5064,7 @@ async function execDel(){
   if(!confirm(msg))return;
   const toDelete=S.passes.filter(function(p){return ids.indexOf(p.id)!==-1;});
   toDelete.forEach(function(p){if(p._hasPhoto||p.pickerPhoto)_deletePhotoFromFB(p.id);_deleteGateOutFromFB(p.id);});
+  _gpMarkDeleted(ids);
   S.passes=S.passes.filter(function(p){return ids.indexOf(p.id)===-1;});
   await push('passes');
   gpToast(ids.length+' record'+(ids.length>1?'s':'')+' deleted','err');
@@ -5025,13 +5089,13 @@ function drPreview(){
   Object.entries(byDate).sort((a,b)=>b[0].localeCompare(a[0])).forEach(([date,recs])=>{html+=`<div style="font-size:11px;font-weight:700;color:var(--sub);text-transform:uppercase;margin:8px 0 4px">${fmtD(date)} — ${recs.length} record${recs.length>1?'s':''}</div>`;recs.forEach(p=>{html+=`<div style="font-size:12px;padding:4px 6px;border-radius:5px;margin-bottom:3px;background:var(--bg4);display:flex;justify-content:space-between"><span style="font-weight:600">${e(p.studentName)}</span><span style="font-family:var(--mono);font-size:10px;color:${p.gateOutTime?'var(--green)':'var(--amber)'}">${p.gateOutTime?'EXITED':'PENDING'}</span></div>`;});});
   html+=`</div>`;prev.innerHTML=html;btn.textContent=`🗑 Delete ${hits.length} Record${hits.length>1?'s':''} (${fmtD(from)} → ${fmtD(to)})`;btn.style.display='flex';
 }
-async function execDR(){const from=document.getElementById('dr-from').value,to=document.getElementById('dr-to').value;if(!from||!to)return;const hits=S.passes.filter(p=>p.date>=from&&p.date<=to);if(!hits.length){gpToast('No records in range','inf');return;}const exited=hits.filter(p=>p.gateOutTime).length;if(!confirm(`Permanently delete ${hits.length} record${hits.length>1?'s':''} from ${fmtD(from)} to ${fmtD(to)}?\n(${exited} exited + ${hits.length-exited} pending)\n\nThis CANNOT be undone.`))return;hits.forEach(p=>{if(p._hasPhoto||p.pickerPhoto)_deletePhotoFromFB(p.id);_deleteGateOutFromFB(p.id);});S.passes=S.passes.filter(p=>!(p.date>=from&&p.date<=to));await push('passes');gpToast(`🗑 ${hits.length} records deleted`,'err');closeDR();updBadge();}
+async function execDR(){const from=document.getElementById('dr-from').value,to=document.getElementById('dr-to').value;if(!from||!to)return;const hits=S.passes.filter(p=>p.date>=from&&p.date<=to);if(!hits.length){gpToast('No records in range','inf');return;}const exited=hits.filter(p=>p.gateOutTime).length;if(!confirm(`Permanently delete ${hits.length} record${hits.length>1?'s':''} from ${fmtD(from)} to ${fmtD(to)}?\n(${exited} exited + ${hits.length-exited} pending)\n\nThis CANNOT be undone.`))return;hits.forEach(p=>{if(p._hasPhoto||p.pickerPhoto)_deletePhotoFromFB(p.id);_deleteGateOutFromFB(p.id);});_gpMarkDeleted(hits.map(p=>p.id));S.passes=S.passes.filter(p=>!(p.date>=from&&p.date<=to));await push('passes');gpToast(`🗑 ${hits.length} records deleted`,'err');closeDR();updBadge();}
 
 // ═══ PASSWORD ═══
 function recCheckPW(){const v=document.getElementById('pw-inp').value;if(v===PASS){document.getElementById('pw-gate').style.display='none';document.getElementById('set-ct').style.display='block';document.getElementById('pw-err').textContent='';loadCfgF();gpLoadStuCfg();gpLoadWACfg();loadMetaWACfg();gpLoadQPThresh();gpLoadPrintCfg();gpLoadMiscToggles();renderBuses();renderStu();gpUpdateSettingsSubs();var fb=document.getElementById('gacc-fb');if(fb&&!fb.classList.contains('open'))fb.classList.add('open');}else{document.getElementById('pw-err').textContent='❌ Wrong password';document.getElementById('pw-inp').value='';}}
 function gpLoadMiscToggles(){
   const sibEl=document.getElementById('gp-sibling-enabled');if(sibEl)sibEl.checked=localStorage.getItem('gp_sibling_enabled')!=='0';
-  const phEl=document.getElementById('gp-photo-mandatory');if(phEl)phEl.checked=localStorage.getItem('gp_photo_mandatory')==='1';
+  const phEl=document.getElementById('gp-photo-mandatory');if(phEl)phEl.value=localStorage.getItem('gp_photo_mandatory')||'0';
 }
 function gpSaveSiblingEnabled(){
   const v=document.getElementById('gp-sibling-enabled').checked;
@@ -5039,9 +5103,21 @@ function gpSaveSiblingEnabled(){
   gpToast(v?'✅ Sibling pass suggestion enabled':'Sibling pass suggestion disabled','inf');
 }
 function gpSavePhotoMandatory(){
-  const v=document.getElementById('gp-photo-mandatory').checked;
-  try{localStorage.setItem('gp_photo_mandatory',v?'1':'0');}catch(e){}
-  gpToast(v?'✅ Picker photo is now mandatory':'Picker photo is now optional','inf');
+  const v=document.getElementById('gp-photo-mandatory').value;
+  try{localStorage.setItem('gp_photo_mandatory',v);}catch(e){}
+  const msgs={'0':'Picker photo is now optional','1':'✅ Picker photo is now mandatory for everyone','2':'✅ Picker photo is now mandatory — except for Father / Mother'};
+  gpToast(msgs[v]||'Saved','inf');
+}
+// Central check — used everywhere a pass is about to be issued. `relation` is
+// the picker's relation to the student (e.g. "Father", "Mother", "Uncle"...).
+function gpPhotoRequired(relation){
+  const mode=localStorage.getItem('gp_photo_mandatory')||'0';
+  if(mode==='1')return true;
+  if(mode==='2'){
+    const r=(relation||'').trim().toLowerCase();
+    return r!=='father'&&r!=='mother';
+  }
+  return false;
 }
 // ═══ GATEPASS STUDENT DB SHARED SYNC ═══
 var gpStuCfg={url:'',code:'',secret:''};
