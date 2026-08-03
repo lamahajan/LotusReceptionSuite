@@ -351,8 +351,8 @@ body{color:var(--text);font-family:var(--sans);min-height:100vh}
 #screen-rec .ba {background:var(--amber-l);border:1.5px solid var(--amber);color:var(--amber)}.ba:hover{background:var(--amber);color:#fff}
 #screen-rec .bfull {width:100%;margin-top:6px;padding:13px;font-size:15px;border-radius:var(--r)}
 /* TOAST */
-#toast {position:fixed;bottom:calc(70px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%) translateY(110px);background:var(--bg2);border:1.5px solid var(--border2);border-radius:var(--r);padding:10px 18px;font-size:13px;font-weight:600;z-index:400;transition:transform .3s,opacity .3s;white-space:nowrap;pointer-events:none;box-shadow:var(--sha-lg);opacity:0}
-#toast.show {transform:translateX(-50%) translateY(0);opacity:1}
+#toast {position:fixed;bottom:calc(62px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%) translateY(80px);background:var(--bg2);border:1.5px solid var(--border2);border-radius:var(--r);padding:10px 18px;font-size:13px;font-weight:600;z-index:400;transition:transform .3s;white-space:nowrap;pointer-events:none;box-shadow:var(--sha-lg)}
+#toast.show {transform:translateX(-50%) translateY(0)}
 #toast.ok {border-color:var(--green);color:var(--green)}
 #toast.err {border-color:var(--red);color:var(--red)}
 #toast.inf {border-color:var(--blue);color:var(--blue)}
@@ -919,12 +919,12 @@ body.dark .fq-mtitle{color:#f4ede0}
 #screen-feeqr .fq-fab:hover{background:#8a6428;transform:translateY(-2px)}
 #screen-feeqr .fq-fab:disabled{background:#a89f92;cursor:not-allowed;transform:none;box-shadow:none}
 /* Toast (if not already) */
-#fq-toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(110px);background:#fff;border:1.5px solid #cfc8b8;border-radius:14px;padding:10px 18px;font-size:13px;font-weight:600;z-index:600;transition:transform .3s,opacity .3s;white-space:nowrap;pointer-events:none;box-shadow:0 12px 36px rgba(100,80,40,.15);opacity:0}
-#fq-toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+#fq-toast{position:fixed;bottom:72px;left:50%;transform:translateX(-50%) translateY(80px);background:#fff;border:1.5px solid #cfc8b8;border-radius:14px;padding:10px 18px;font-size:13px;font-weight:600;z-index:600;transition:transform .3s;white-space:nowrap;pointer-events:none;box-shadow:0 12px 36px rgba(100,80,40,.15)}
+#fq-toast.show{transform:translateX(-50%) translateY(0)}
 #fq-toast.ok{border-color:#2d9e6b;color:#2d9e6b}
 #fq-toast.err{border-color:#d04040;color:#d04040}
 #fq-toast.inf{border-color:#b5883e;color:#b5883e}
-@media(min-width:769px){#fq-toast{bottom:28px}}
+@media(min-width:769px){#fq-toast{bottom:20px}}
 @media print{
   @page{size:A4 portrait;margin:8mm}
   body,html{overflow:visible!important;height:auto!important}
@@ -1196,7 +1196,6 @@ body.dark .fq-mtitle{color:#f4ede0}
         <div class="gset-body">
           <div class="field"><label class="lbl">Database URL</label><input id="cfg-url" class="inp" placeholder="https://…firebaseio.com"></div>
           <div class="field"><label class="lbl">Sync Code</label><input id="cfg-code" class="inp" placeholder="e.g. LOTUS2025"></div>
-          <div class="field"><label class="lbl">Database Secret <span style="font-size:10px;color:var(--sub);font-weight:500">(from Firebase Console)</span></label><input id="cfg-secret" class="inp" type="password" placeholder="paste the real database secret here"></div>
           <div id="cfg-status" style="font-size:12px;min-height:14px;margin-bottom:8px"></div>
           <div style="display:flex;gap:8px;flex-wrap:wrap">
             <button class="btn bp flex1" onclick="saveCfg()" id="cfg-save-btn">💾 Save &amp; Connect</button>
@@ -1223,10 +1222,9 @@ body.dark .fq-mtitle{color:#f4ede0}
           <span class="gset-chev">▼</span>
         </button>
         <div class="gset-body">
-          <div class="info" style="margin-bottom:10px">Sync students with Reference Register. Use the <b>same URL, Sync Code &amp; Secret</b> as Reference Register → Settings → Student DB.</div>
+          <div class="info" style="margin-bottom:10px">Sync students with Reference Register. Use the <b>same URL &amp; Sync Code</b> as Reference Register → Settings → Student DB.</div>
           <div class="field"><label class="lbl">Database URL</label><input id="gp-stu-url" class="inp" placeholder="https://…firebaseio.com"></div>
           <div class="field"><label class="lbl">Sync Code</label><input id="gp-stu-code" class="inp" placeholder="e.g. LOTUS_STU"></div>
-          <div class="field"><label class="lbl">Database Secret</label><input id="gp-stu-secret" class="inp" type="password" placeholder="same secret as Reference Register"></div>
           <div id="gp-stu-status" style="font-size:12px;min-height:14px;margin-bottom:8px;color:var(--sub)"></div>
           <div style="display:flex;gap:8px;flex-wrap:wrap">
             <button class="btn bp flex1" onclick="gpSaveStuCfg()">💾 Save &amp; Sync</button>
@@ -1235,7 +1233,7 @@ body.dark .fq-mtitle{color:#f4ede0}
           </div>
           <div id="gp-stu-fetch-status" style="font-size:11px;color:var(--sub);margin-top:6px;min-height:14px"></div>
           <div id="gp-stu-sync-timer" style="font-size:11px;color:var(--muted);margin-top:2px;min-height:14px;font-family:'Outfit',sans-serif"></div>
-          <div style="font-size:11px;color:var(--muted);margin-top:4px">Students sync every 30s. Changes push instantly. Force Fetch ignores today's cache and pulls fresh data.</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:4px">Students sync every 30s. Changes push instantly. Force Fetch se aaj ki cache ignore ho jaati hai.</div>
         </div>
       </div>
 
@@ -1499,26 +1497,6 @@ Reason: {reason}"></textarea>
             Students picked up <b style="color:var(--purple)">4+</b> times in the last <b style="color:var(--purple)">6</b> active school days will appear in Quick Pass.
           </div>
           <button class="btn bp bfull" onclick="gpSaveQPThresh()">💾 Save Quick Pass Settings</button>
-          <!-- Sibling Pass Suggestion -->
-          <div style="background:var(--bg3);border:1.5px solid var(--border);border-radius:var(--rs);padding:11px 13px;margin-top:12px">
-            <label style="display:flex;align-items:center;gap:9px;cursor:pointer">
-              <input type="checkbox" id="gp-sibling-enabled" style="accent-color:var(--blue);width:16px;height:16px" onchange="gpSaveSiblingEnabled()" checked>
-              <div>
-                <div style="font-size:13px;font-weight:700;color:var(--text)">👨‍👩‍👧‍👦 Suggest sibling pass</div>
-                <div style="font-size:11px;color:var(--muted);margin-top:1px">After issuing a pass, suggest cutting a pass for siblings too (matched by same parent phone number and father's name)</div>
-              </div>
-            </label>
-          </div>
-          <!-- Photo Mandatory -->
-          <div style="background:var(--bg3);border:1.5px solid var(--border);border-radius:var(--rs);padding:11px 13px;margin-top:10px">
-            <div style="font-size:13px;font-weight:700;color:var(--text)">📸 Picker photo requirement</div>
-            <div style="font-size:11px;color:var(--muted);margin-top:1px;margin-bottom:9px">Choose when a picker photo must be captured/uploaded before a gate pass can be issued</div>
-            <select id="gp-photo-mandatory" class="sel" onchange="gpSavePhotoMandatory()">
-              <option value="0">Optional — never required</option>
-              <option value="1">Mandatory for everyone</option>
-              <option value="2">Mandatory for everyone, except Father / Mother</option>
-            </select>
-          </div>
         </div>
       </div>
 
@@ -1857,7 +1835,7 @@ Reason: {reason}"></textarea>
 
             <div style="font-size:12px;font-weight:700;color:var(--blue);margin-bottom:6px">Step 2 — Enable ROPC (done by IT Admin)</div>
             <div style="font-size:11.5px;color:var(--sub);line-height:1.8;margin-bottom:10px">
-              1. Go to <a href="https://portal.azure.com" target="_blank" style="color:var(--blue)">portal.azure.com</a> → <b>Azure Active Directory</b><br>
+              1. <a href="https://portal.azure.com" target="_blank" style="color:var(--blue)">portal.azure.com</a> pe jao → <b>Azure Active Directory</b><br>
               2. <b>App Registrations</b> → <b>All Applications</b><br>
               3. Search for: <code style="background:var(--bg4);padding:1px 5px;border-radius:3px">Microsoft Office</code> (App ID: d3590ed6...)<br>
               4. Go to <b>Authentication</b> tab<br>
@@ -1958,18 +1936,6 @@ Reason: {reason}"></textarea>
 </div>
 
 </div><!-- /main-wrap -->
-
-<!-- SIBLING PASS SUGGESTION MODAL -->
-<div id="gp-sib-modal" style="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:250;display:none;align-items:center;justify-content:center;padding:16px">
-  <div style="background:var(--bg2);border-radius:var(--rl);padding:22px;width:100%;max-width:420px;box-shadow:var(--sha-lg);border:1.5px solid var(--blue)">
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
-      <span style="font-size:24px">👨‍👩‍👧‍👦</span>
-      <div style="font-size:15px;font-weight:800;color:var(--text)">Sibling detected — same number</div>
-    </div>
-    <div style="font-size:12px;color:var(--sub);margin-bottom:14px">These students share the same parent phone number and father's name — cut their pass too?</div>
-    <div id="gp-sib-list" style="display:flex;flex-direction:column;gap:8px"></div>
-  </div>
-</div>
 
 <!-- GATEPASS WA MODAL -->
 <div id="gp-wa-modal" style="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;display:none;align-items:center;justify-content:center;padding:16px">
@@ -2754,7 +2720,6 @@ Reason: {reason}"></textarea>
         <div style="font-weight:700;font-size:12px;color:var(--sub);margin-bottom:8px">Register DB</div>
         <div class="field"><label class="lbl">Database URL</label><input id="fb-url" class="inp" placeholder="https://your-rtdb.firebaseio.com"></div>
         <div class="field"><label class="lbl">Sync Code</label><input id="fb-code" class="inp" placeholder="e.g. SCHOOL_REF_2025"></div>
-        <div class="field"><label class="lbl">Database Secret <span style="font-size:10px;color:var(--sub);font-weight:500">(from Firebase Console → Project Settings → Service Accounts)</span></label><input id="fb-secret" class="inp" type="password" placeholder="paste the real database secret here"></div>
         <div id="fb-status" style="font-size:12px;min-height:16px;margin-bottom:10px"></div>
         <div class="row" style="gap:8px;margin-bottom:18px">
           <button class="btn bpink flex1" onclick="saveFBCfg()">💾 Save &amp; Connect</button>
@@ -2764,7 +2729,6 @@ Reason: {reason}"></textarea>
         <div style="font-weight:700;font-size:12px;color:var(--sub);margin-bottom:8px;margin-top:4px">Student DB</div>
         <div class="field"><label class="lbl">Student DB URL</label><input id="fb-stu-url" class="inp" placeholder="https://your-students-rtdb.firebaseio.com"></div>
         <div class="field"><label class="lbl">Student DB Code</label><input id="fb-stu-code" class="inp" placeholder="e.g. SCHOOL_STUDENTS_2025"></div>
-        <div class="field"><label class="lbl">Student DB Secret <span style="font-size:10px;color:var(--sub);font-weight:500">(from Firebase Console)</span></label><input id="fb-stu-secret" class="inp" type="password" placeholder="paste the real database secret here"></div>
         <div id="fb-stu-status" style="font-size:12px;min-height:16px;margin-bottom:10px"></div>
         <div class="row" style="gap:8px;margin-bottom:8px">
           <button class="btn bpink flex1" onclick="saveFBStuCfg()">💾 Save &amp; Connect</button>
@@ -3254,25 +3218,6 @@ Thank you 🙏</textarea>
     ══════════════════════════════════════════ -->
     <div id="screen-due" class="screen">
 
-  <style>
-    @media (max-width: 480px){
-      #dl-tb-due .dl-tab-txt, #dl-tb-txn .dl-tab-txt{ display:none; }
-      #dl-tb-due, #dl-tb-txn{ padding:5px 8px !important; }
-      #dl-sort{
-        color:transparent !important;
-        width:30px !important;
-        min-width:30px !important;
-        padding:5px 4px !important;
-        overflow:hidden;
-        text-overflow:clip;
-        white-space:nowrap;
-        background-image:none !important;
-        -webkit-appearance:none;
-        appearance:none;
-      }
-      #dl-sort-wrap .dl-sort-icon{ display:flex !important; }
-    }
-  </style>
   <!-- HEADER -->
   <div style="background:#fff;border-bottom:1px solid #e2e8f0;padding:0 14px;height:54px;display:flex;align-items:center;gap:10px;flex-shrink:0;z-index:9">
     <span style="font-size:20px;flex-shrink:0">💸</span>
@@ -3298,11 +3243,11 @@ Thank you 🙏</textarea>
     <div style="display:flex;background:#f0fdf4;border:1.5px solid #86efac;border-radius:9px;padding:2px;gap:1px;flex-shrink:0">
       <button id="dl-tb-due" onclick="dlGoTab('due',this)"
         style="background:#16a34a;color:#fff;border:none;border-radius:7px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:4px;white-space:nowrap;transition:all .15s;font-family:'Plus Jakarta Sans',sans-serif">
-        💸 <span class="dl-tab-txt">Due List</span> <span id="dl-cnt-due" style="font-family:'Outfit',sans-serif;background:rgba(255,255,255,.25);border-radius:10px;padding:0 5px">0</span>
+        💸 Due List <span id="dl-cnt-due" style="font-family:'Outfit',sans-serif;background:rgba(255,255,255,.25);border-radius:10px;padding:0 5px">0</span>
       </button>
       <button id="dl-tb-txn" onclick="dlGoTab('txn',this)"
         style="background:transparent;color:#4ade80;border:none;border-radius:7px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:4px;white-space:nowrap;transition:all .15s;font-family:'Plus Jakarta Sans',sans-serif">
-        📋 <span class="dl-tab-txt">Transactions</span>
+        📋 Transactions
       </button>
     </div>
     <!-- Search for Due List (hidden when Transactions tab active) -->
@@ -3311,15 +3256,12 @@ Thank you 🙏</textarea>
       <input id="dl-search" type="text" placeholder="Search name or admission…" oninput="dlRender()" style="flex:1;background:none;border:none;font-size:11px;outline:none;font-family:var(--sans);color:#0f172a;min-width:0">
     </div>
     <!-- Sort (hidden when Transactions tab active) -->
-    <span id="dl-sort-wrap" style="position:relative;flex-shrink:0;display:inline-flex;align-items:center">
-      <select id="dl-sort" onchange="dlRender()" style="background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:8px;padding:5px 7px;font-size:11px;outline:none;font-family:var(--sans);color:#374151;flex-shrink:0">
-        <option value="class">Class ↕</option>
-        <option value="balance-desc">Balance ↓</option>
-        <option value="balance-asc">Balance ↑</option>
-        <option value="name">A–Z</option>
-      </select>
-      <span class="dl-sort-icon" style="display:none;position:absolute;left:0;right:0;top:0;bottom:0;align-items:center;justify-content:center;pointer-events:none;font-size:12px">↕️</span>
-    </span>
+    <select id="dl-sort" onchange="dlRender()" style="background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:8px;padding:5px 7px;font-size:11px;outline:none;font-family:var(--sans);color:#374151;flex-shrink:0">
+      <option value="class">Class ↕</option>
+      <option value="balance-desc">Balance ↓</option>
+      <option value="balance-asc">Balance ↑</option>
+      <option value="name">A–Z</option>
+    </select>
     <!-- Transactions toolbar: search + clear all (hidden when Due List tab active) -->
     <div id="dl-txn-toolbar" style="display:none;flex:1;align-items:center;gap:7px">
       <div style="flex:1;display:flex;align-items:center;background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:9px;padding:5px 10px;gap:5px">
@@ -3536,10 +3478,8 @@ Thank you 🙏</textarea>
               </div>
               <label class="dl-lbl" style="margin-top:0">Database URL</label>
               <input id="dl-fb-url" class="dl-inp" type="text" placeholder="https://your-db.firebaseio.com"/>
-              <label class="dl-lbl">Sync Code <span style="font-size:10px;color:#9a3412;font-weight:500">(optional data folder)</span></label>
-              <input id="dl-fb-synccode" class="dl-inp" type="text" placeholder="e.g. LOTUS_DUE — leave blank if not needed"/>
-              <label class="dl-lbl">Database Secret</label>
-              <input id="dl-fb-code" class="dl-inp" type="password" placeholder="from Firebase Console → Service Accounts"/>
+              <label class="dl-lbl">Auth Code (optional)</label>
+              <input id="dl-fb-code" class="dl-inp" type="text" placeholder="Leave blank if database is public"/>
               <label class="dl-lbl">⏱ Auto-Pull Interval</label>
               <select id="dl-fb-interval" style="width:100%;background:#f5f0e8;border:1.5px solid #e8dcc8;border-radius:9px;padding:9px 10px;font-size:12px;font-weight:700;color:#1a1035;outline:none;cursor:pointer;font-family:inherit;margin-bottom:10px" onchange="dlFbApplyInterval()">
                 <option value="0">🚫 Off</option>
@@ -3575,12 +3515,8 @@ Thank you 🙏</textarea>
               <input id="dl-rzp-redirect-url" class="dl-inp" type="text" placeholder="https://yourname.github.io/redirect.html" style="margin-bottom:10px"/>
               <label class="dl-lbl" style="margin-top:8px">Transaction Firebase URL <span style="font-size:10px;color:#6b7280;font-weight:500">(separate DB for payments)</span></label>
               <input id="dl-txn-fb-url" class="dl-inp" type="text" placeholder="https://your-txn-project-rtdb.firebaseio.com"/>
-              <label class="dl-lbl">Sync Code <span style="font-size:10px;color:#6b7280;font-weight:500">(optional data folder)</span></label>
-              <input id="dl-txn-fb-synccode" class="dl-inp" type="text" placeholder="leave blank if not needed"/>
               <label class="dl-lbl">Transaction Firebase Secret</label>
               <input id="dl-txn-fb-secret" class="dl-inp" type="password" placeholder="database secret" style="margin-bottom:10px"/>
-              <label class="dl-lbl">App Token <span style="font-size:10px;color:#6b7280;font-weight:500">(matches worker's APP_TOKEN — stays on this device only)</span></label>
-              <input id="dl-app-token" class="dl-inp" type="password" placeholder="shared secret for worker requests" style="margin-bottom:10px"/>
               <button onclick="dlRzpSaveConfig()" style="width:100%;background:#16a34a;color:#fff;border:none;border-radius:9px;padding:10px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">💾 Save Razorpay Config</button>
               <div id="dl-rzp-status" style="font-size:11px;color:#166534;margin-top:7px;min-height:16px;font-weight:600"></div>
             </div>
@@ -4023,9 +3959,8 @@ window.S=S;
 // localMod persisted — app reopen won't re-fetch if Firebase hasn't changed
 let localMod=parseInt(localStorage.getItem('gp_local_mod')||'0',10)||0;
 let gpForceRefreshOnFocus=localStorage.getItem('gp_force_refresh')!=='0';// default ON
-let cfg={url:'',code:'',secret:''},syncIv=null;
+let cfg={url:'',code:''},syncIv=null;
 let _issuingPass=false; // guard against double-tap on issue button
-function gpAuthQ(){ return cfg.secret ? ('?auth='+encodeURIComponent(cfg.secret)) : ''; }
 let _pendingPushKeys=new Set(); // keys that failed to push — retry on next fetchAll
 let camStream=null,photo=null,cpSel=null,isDark=false;
 let qpSel=null;
@@ -4036,8 +3971,8 @@ function _recInit(){
   initTheme();
   document.getElementById('hdate').textContent=new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'});
   loadLocalData();
-  const u=localStorage.getItem('gp_url'),c=localStorage.getItem('gp_code'),sec=localStorage.getItem('gp_secret');
-  if(u&&c){cfg={url:u.replace(/\/$/,''),code:c,secret:sec||''};startSync();}
+  const u=localStorage.getItem('gp_url'),c=localStorage.getItem('gp_code');
+  if(u&&c){cfg={url:u.replace(/\/$/,''),code:c};startSync();}
   else{setSS('off');}
   renderQGSidebar();
   updReasonSugs();
@@ -4069,25 +4004,25 @@ const _photoCache={
 async function _deletePhotoFromFB(passId){
   if(!cfg.url||!cfg.code||!passId)return;
   try{
-    await fetch(`${cfg.url}/${cfg.code}/photos/${passId}.json${gpAuthQ()}`,{method:'DELETE'});
+    await fetch(`${cfg.url}/${cfg.code}/photos/${passId}.json`,{method:'DELETE'});
     localStorage.removeItem('gp_photo_'+passId);
   }catch(e){}
 }
 async function _deleteGateOutFromFB(passId){
   if(!cfg.url||!cfg.code||!passId)return;
-  try{await fetch(`${cfg.url}/${cfg.code}/gateout/${passId}.json${gpAuthQ()}`,{method:'DELETE'});}catch(e){}
+  try{await fetch(`${cfg.url}/${cfg.code}/gateout/${passId}.json`,{method:'DELETE'});}catch(e){}
 }
 // Push a single photo to Firebase separately (keeps main passes array small)
 async function _pushPhotoToFB(passId, photoData){
   if(!cfg.url||!cfg.code||!passId||!photoData)return;
-  try{await fetch(`${cfg.url}/${cfg.code}/photos/${passId}.json${gpAuthQ()}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(photoData)});}
+  try{await fetch(`${cfg.url}/${cfg.code}/photos/${passId}.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(photoData)});}
   catch(e){}
 }
 // Fetch a single photo from Firebase and cache it locally
 async function _fetchPhotoFromFB(passId){
   if(!cfg.url||!cfg.code||!passId)return null;
   try{
-    const r=await fetch(`${cfg.url}/${cfg.code}/photos/${passId}.json${gpAuthQ()}`);
+    const r=await fetch(`${cfg.url}/${cfg.code}/photos/${passId}.json`);
     if(!r.ok)return null;
     const d=await r.json();
     if(d&&typeof d==='string'&&d.length>10){_photoCache.set(passId,d);return d;}
@@ -4129,7 +4064,7 @@ async function fetchAll(){
   try{
     // ── STEP 1: Cheap lastMod check (~50 bytes) ──────────────────────────────
     // Firebase stores lastMod as a child node — fetch only that first
-    const lmr=await fetch(`${cfg.url}/${cfg.code}/lastMod.json${gpAuthQ()}`);
+    const lmr=await fetch(`${cfg.url}/${cfg.code}/lastMod.json`);
     if(lmr.ok){
       const remMod=(await lmr.json())||0;
       if(remMod===localMod){setSS('ok');return;} // nothing changed — skip full fetch
@@ -4148,22 +4083,14 @@ async function fetchAll(){
       // remMod > localMod: Firebase is newer, proceed with full fetch
     }
     // ── STEP 2: Full fetch only when something changed ────────────────────────
-    const r=await fetch(`${cfg.url}/${cfg.code}.json${gpAuthQ()}`);
+    const r=await fetch(`${cfg.url}/${cfg.code}.json`);
     if(!r.ok)throw 0;
     const d=await r.json();
     if(d){
       const sm=d.lastMod||0;
-      // ── Sync remote delete-tombstones into our local set ──────────────────
-      // Catches deletions made by OTHER devices while this one was off/offline,
-      // so this device won't accidentally resurrect them on its own next push.
-      if(d.deletedIds&&typeof d.deletedIds==='object'){
-        Object.keys(d.deletedIds).forEach(id=>_gpDeletedIds.add(id));
-        try{const arr=[..._gpDeletedIds];localStorage.setItem('gp_deleted_ids',JSON.stringify(arr.length>500?arr.slice(-500):arr));}catch(e){}
-      }
       const toArr=v=>Array.isArray(v)?v:(v&&v.__empty)?[]:(v!=null&&typeof v==='object'?Object.values(v).filter(x=>x!=null):null);
-      let ps=toArr(d.passes);
+      const ps=toArr(d.passes);
       if(ps!==null){
-        ps=ps.filter(p=>!p||!p.id||!_gpDeletedIds.has(p.id)); // defense-in-depth
         // ── Step A: merge gateout node FIRST (apply Gate app's gateOutTimes) ──
         // Must be done before TG detection, otherwise gateOutTime will be null
         if(d.gateout&&typeof d.gateout==='object'){
@@ -4250,46 +4177,13 @@ async function push(k){
   const val=Array.isArray(S[k])&&S[k].length===0?{'__empty':true}:(k==='passes'?_stripP(S[k]):S[k]);
   try{
     if(k==='passes'){
-      // ── Merge-before-write ──────────────────────────────────────────────
-      // A plain PUT here used to blindly replace the WHOLE /passes node with
-      // this device's local array. If another device/tab had issued a pass
-      // in the meantime (before our next 6s poll picked it up), that pass
-      // existed only on the server — and this PUT would wipe it out, making
-      // it look like "one pass replaces another". Fix: pull the freshest
-      // server copy right before writing, union it with our local copy by
-      // id (local copy wins on conflict — it's the edit in progress), drop
-      // anything we've explicitly deleted on this device, then write the
-      // merged result. This makes concurrent cuts from multiple devices
-      // additive instead of destructive.
-      let _remoteP=[],_remoteDel={};
-      try{
-        const rr=await fetch(`${cfg.url}/${cfg.code}/passes.json${gpAuthQ()}`);
-        if(rr.ok){
-          const rd=await rr.json();
-          _remoteP=Array.isArray(rd)?rd:(rd&&typeof rd==='object'&&!rd.__empty?Object.values(rd).filter(x=>x!=null):[]);
-        }
-      }catch(e){}
-      try{
-        // Remote tombstone list — catches deletions made by devices that were
-        // offline/absent when we built our own local _gpDeletedIds set.
-        const dr=await fetch(`${cfg.url}/${cfg.code}/deletedIds.json${gpAuthQ()}`);
-        if(dr.ok){const dd=await dr.json();if(dd&&typeof dd==='object')_remoteDel=dd;}
-      }catch(e){}
-      const _isDeleted=id=>_gpDeletedIds.has(id)||!!_remoteDel[id];
-      const _byId=new Map();
-      _remoteP.forEach(p=>{if(p&&p.id&&!_isDeleted(p.id))_byId.set(p.id,p);});
-      S.passes.forEach(p=>{if(p&&p.id&&!_isDeleted(p.id))_byId.set(p.id,p);}); // local wins on conflict
-      const _merged=[..._byId.values()].sort((a,b)=>(b.date+b.time).localeCompare(a.date+a.time));
-      S.passes=_merged;
-      const _mergedVal=_merged.length===0?{'__empty':true}:_stripP(_merged);
-      await fetch(`${cfg.url}/${cfg.code}/passes.json${gpAuthQ()}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(_mergedVal)});
-      await fetch(`${cfg.url}/${cfg.code}/lastMod.json${gpAuthQ()}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(S.lastMod)});
-      saveLocal();
+      await fetch(`${cfg.url}/${cfg.code}/passes.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(val)});
+      await fetch(`${cfg.url}/${cfg.code}/lastMod.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(S.lastMod)});
     } else if(k==='buses'){
-      await fetch(`${cfg.url}/${cfg.code}/buses.json${gpAuthQ()}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(val)});
-      await fetch(`${cfg.url}/${cfg.code}/lastMod.json${gpAuthQ()}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(S.lastMod)});
+      await fetch(`${cfg.url}/${cfg.code}/buses.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(val)});
+      await fetch(`${cfg.url}/${cfg.code}/lastMod.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(S.lastMod)});
     } else {
-      await fetch(`${cfg.url}/${cfg.code}.json${gpAuthQ()}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({[k]:val,lastMod:S.lastMod})});
+      await fetch(`${cfg.url}/${cfg.code}.json`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({[k]:val,lastMod:S.lastMod})});
     }
     _pendingPushKeys.delete(k);setSS('ok');
   }catch{_pendingPushKeys.add(k);setSS('err');}
@@ -4312,7 +4206,7 @@ function setSS(st){
 function startSync(){
   setSS('ing');
   // Once-per-day full fetch: if app opened for first time today → force fresh Firebase fetch
-  // This ensures deletions/changes made on another device get reflected here
+  // Yeh ensure karta hai ki doosre device ke deletions/changes reflect hon
   const _today=new Date().toISOString().slice(0,10);
   const _lastFullFetch=localStorage.getItem('gp_last_full_fetch')||'';
   if(_lastFullFetch!==_today){
@@ -4333,27 +4227,6 @@ function renderAll(){popBusSel();updBadge();const a=document.querySelector('.tb.
 function todayStr(){return new Date().toISOString().split('T')[0];}
 function nowT(){return new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:true}).replace(/\b(am|pm)\b/gi,function(m){return m.toUpperCase();});}
 function uid(){return Date.now().toString(36)+Math.random().toString(36).substr(2,5);}
-// ── DELETE TOMBSTONES ── remembers ids explicitly deleted on this device so a
-// merge-with-remote push (see push()) never resurrects them.
-let _gpDeletedIds=new Set();
-try{_gpDeletedIds=new Set(JSON.parse(localStorage.getItem('gp_deleted_ids')||'[]'));}catch(e){}
-function _gpMarkDeleted(ids){
-  (ids||[]).forEach(id=>{if(id)_gpDeletedIds.add(id);});
-  try{
-    // keep the tombstone list from growing forever — cap at last 500
-    const arr=[..._gpDeletedIds];
-    localStorage.setItem('gp_deleted_ids',JSON.stringify(arr.length>500?arr.slice(-500):arr));
-  }catch(e){}
-  _gpPushDeletedTombstones(ids); // also tell Firebase — so a device that was OFFLINE when the
-  // delete happened still learns about it (from /deletedIds) before it can revive the pass
-}
-async function _gpPushDeletedTombstones(ids){
-  if(!cfg.url||!cfg.code||!ids||!ids.length)return;
-  const patch={};ids.forEach(id=>{if(id)patch[id]=true;});
-  try{await fetch(`${cfg.url}/${cfg.code}/deletedIds.json${gpAuthQ()}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(patch)});}
-  catch(e){} // best-effort — if this fails, the next successful push's remote fetch will still
-  // pick up whatever tombstones DID make it to Firebase from other calls
-}
 function e(s){return s?String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'):''}
 function fmtD(d){if(!d)return'';try{return new Date(d+'T00:00:00').toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'})}catch{return d}}
 let _gpToastT;function gpToast(m,t='ok'){const el=document.getElementById('toast');if(!el)return;el.textContent=m;el.className='show '+t;clearTimeout(_gpToastT);_gpToastT=setTimeout(()=>el.className='',3200);}
@@ -4568,7 +4441,6 @@ async function issuePass(){
   if(_issuingPass){gpToast('⏳ Please wait…','inf');return;}
   if(!cpSel){gpToast('⚠️ Select a student first','err');return;}
   const by=document.getElementById('cpby').value.trim();if(!by){gpToast('⚠️ Enter picker name','err');return;}
-  if(gpPhotoRequired(document.getElementById('cprel').value)&&!photo){gpToast('⚠️ Photo is required before issuing a pass','err');return;}
   const existing=S.passes.find(p=>p.admissionNumber===cpSel.admissionNumber&&p.date===todayStr());
   if(existing){gpToast(`🚫 Pass already issued for ${cpSel.name} today (${existing.time})`,'err');return;}
   _issuingPass=true;
@@ -4576,22 +4448,6 @@ async function issuePass(){
   if(_issueBtn){_issueBtn.disabled=true;_issueBtn.textContent='⏳ Issuing…';}
   try{
   const pass={id:uid(),date:todayStr(),time:nowT(),gateOutTime:null,studentName:cpSel.name,admissionNumber:cpSel.admissionNumber,class:cpSel.class||'',fatherName:cpSel.fatherName||'',motherName:cpSel.motherName||'',pickedUpBy:by,relation:document.getElementById('cprel').value,reason:document.getElementById('cpreason').value.trim(),busNumber:document.getElementById('cpbus').value||cpSel.busNumber||'',pickerPhoto:photo};
-  const stu=S.students.find(s=>s.admissionNumber===pass.admissionNumber);
-  clrSel();['cpby','cpreason'].forEach(id=>document.getElementById(id).value='');
-  document.getElementById('cprel').value='';document.getElementById('cpbus').value='';clrPhoto();
-  await _gpFinalizePass(pass,stu,false); // false = fresh chain, not a sibling cascade
-  }finally{
-    _issuingPass=false;
-    const _issueBtn=document.querySelector('[onclick="issuePass()"]');
-    if(_issueBtn){_issueBtn.disabled=false;_issueBtn.textContent='✂️ Issue Gate Pass';}
-  }
-}
-
-// ═══ ★ SHARED PASS FINALIZER ═══
-// Everything that happens once a pass object is ready to go live: save, print,
-// Telegram log, OneDrive, WhatsApp, and the sibling-suggestion check. Used by
-// both the manual "Issue Gate Pass" button and the sibling quick-cut flow.
-async function _gpFinalizePass(pass,stu,isCascade){
   // Cache photo locally before push strips it
   if(pass.pickerPhoto&&pass.pickerPhoto!=='__has_photo')_photoCache.set(pass.id,pass.pickerPhoto);
   S.passes.unshift(pass);
@@ -4605,9 +4461,11 @@ async function _gpFinalizePass(pass,stu,isCascade){
   if(TGCfg.enabled) sendToTelegramLog(pass);
   // OneDrive photo upload — only if photo exists
   if(GPODCfg.enabled && pass.pickerPhoto) uploadGatePassPhotoToOneDrive(pass);
-  updBadge();updReasonSugs();renderQGSidebar();
-  checkSiblingPending(pass,stu,isCascade); // ★ sibling same-phone+father popup (cascades to further siblings)
+  clrSel();['cpby','cpreason'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('cprel').value='';document.getElementById('cpbus').value='';clrPhoto();updBadge();
+  updReasonSugs();renderQGSidebar();
   // WhatsApp — parent fires IMMEDIATELY (direct whatsapp://), admin gets tap button after delay
+  const stu=S.students.find(s=>s.admissionNumber===pass.admissionNumber);
   const parentPhone=stu?stu.phone||'':'';
   const cleanPhone=p=>p?p.replace(/[^0-9]/g,''):'';
   const pPhone=cleanPhone(parentPhone);
@@ -4630,96 +4488,11 @@ async function _gpFinalizePass(pass,stu,isCascade){
       }
     }
   }
-}
-
-// ═══ ★ SIBLING SAME-PHONE + SAME-FATHER-NAME PASS SUGGESTION ═══
-// When a pass is issued, look for other students who match on BOTH the parent
-// phone number AND father's name, and who don't already have a pass today.
-// Suggest cutting their pass too — tapping "Cut Pass" issues it immediately
-// (same picker + photo carried over) and opens print, no extra form-filling.
-let _lastIssuedPass=null,_sibPendingAdms=[],_sibDismissed=new Set();
-function cleanPh10(p){return (p||'').replace(/[^0-9]/g,'').slice(-10);}
-function normName(n){return (n||'').trim().toLowerCase().replace(/\s+/g,' ');}
-function checkSiblingPending(pass,stu,isCascade){
-  if(!isCascade)_sibDismissed=new Set(); // fresh chain: forget dismissals from an earlier, unrelated pass
-  if(localStorage.getItem('gp_sibling_enabled')==='0'){closeSibModal();return;} // feature turned off in Settings
-  const myPhone=cleanPh10(stu&&stu.phone);
-  const myFather=normName(stu&&stu.fatherName);
-  if(!myPhone||myPhone.length<10||!myFather){closeSibModal();return;} // nothing reliable to match on
-  const today=todayStr();
-  const siblings=S.students.filter(s=>
-    s.admissionNumber!==pass.admissionNumber &&
-    !_sibDismissed.has(s.admissionNumber) &&
-    cleanPh10(s.phone)===myPhone &&
-    normName(s.fatherName)===myFather
-  );
-  const pending=siblings.filter(s=>!S.passes.find(p=>p.admissionNumber===s.admissionNumber&&p.date===today));
-  if(!pending.length){closeSibModal();return;} // all siblings already handled today
-  _lastIssuedPass=pass; // remember picked-by / relation / photo to carry over
-  _sibPendingAdms=pending.map(s=>s.admissionNumber);
-  renderSibList();
-  document.getElementById('gp-sib-modal').style.display='flex';
-}
-function renderSibList(){
-  if(!_sibPendingAdms.length){closeSibModal();return;}
-  const list=document.getElementById('gp-sib-list');
-  list.innerHTML=_sibPendingAdms.map(adm=>{
-    const s=S.students.find(x=>x.admissionNumber===adm);
-    if(!s)return '';
-    return `<div style="background:var(--bg2);border:1.5px solid var(--border2);border-radius:var(--rs);padding:10px 12px">
-      <div style="margin-bottom:9px"><b style="color:var(--text);font-size:14px">${e(s.name)}</b><br><span style="font-size:11px;color:var(--muted)">Adm: ${e(s.admissionNumber)} · Class: ${e(s.class||'—')}</span></div>
-      <div style="display:flex;gap:8px">
-        <button onclick="cancelSibling('${e(s.admissionNumber)}')" class="btn bgh" style="flex:1;font-size:12.5px;padding:9px 6px">Cancel</button>
-        <button onclick="pickSiblingCutPass('${e(s.admissionNumber)}',this)" class="btn bp" style="flex:1;font-size:12.5px;padding:9px 6px">✂️ Cut Pass</button>
-      </div>
-    </div>`;
-  }).join('');
-}
-function cancelSibling(adm){
-  _sibDismissed.add(adm);
-  _sibPendingAdms=_sibPendingAdms.filter(a=>a!==adm);
-  renderSibList();
-}
-function closeSibModal(){document.getElementById('gp-sib-modal').style.display='none';_lastIssuedPass=null;_sibPendingAdms=[];}
-// Directly issues the pass for a suggested sibling — same picker, relation & photo
-// as the pass that was just cut. No form to fill in, prints immediately like normal.
-async function pickSiblingCutPass(adm,btn){
-  const s=S.students.find(x=>x.admissionNumber===adm);
-  if(!s){gpToast('Student not found','err');return;}
-  const existing=S.passes.find(p=>p.admissionNumber===adm&&p.date===todayStr());
-  if(existing){gpToast(`🚫 Pass already issued for ${s.name} today`,'err');_sibPendingAdms=_sibPendingAdms.filter(a=>a!==adm);renderSibList();return;}
-  const prev=_lastIssuedPass;
-  const by=prev?prev.pickedUpBy||'':'';
-  const sibPhoto=prev&&prev.pickerPhoto&&prev.pickerPhoto!=='__has_photo'?prev.pickerPhoto:null;
-  if(!by||(gpPhotoRequired(prev&&prev.relation)&&!sibPhoto)){
-    // Can't auto-issue safely (missing picker name, or photo mandatory but none to carry over) — fall back to manual form-fill
-    gpToast('⚠️ Please fill this pass in manually','inf');
-    pickSiblingManualFill(adm);
-    return;
+  }finally{
+    _issuingPass=false;
+    const _issueBtn=document.querySelector('[onclick="issuePass()"]');
+    if(_issueBtn){_issueBtn.disabled=false;_issueBtn.textContent='✂️ Issue Gate Pass';}
   }
-  if(btn){btn.disabled=true;btn.textContent='⏳ Issuing…';}
-  _sibPendingAdms=_sibPendingAdms.filter(a=>a!==adm);
-  const pass={id:uid(),date:todayStr(),time:nowT(),gateOutTime:null,studentName:s.name,admissionNumber:s.admissionNumber,class:s.class||'',fatherName:s.fatherName||'',motherName:s.motherName||'',pickedUpBy:by,relation:(prev&&prev.relation)||'',reason:(prev&&prev.reason)||'',busNumber:s.busNumber||'',pickerPhoto:sibPhoto};
-  renderSibList(); // remove this row from the popup right away (finalize may re-add further siblings)
-  await _gpFinalizePass(pass,s,true); // true = cascade, keep dismissed-list from this chain
-}
-// Fallback: prefill the Cut Pass form instead of auto-issuing (used only if we
-// don't have enough carried-over info — e.g. photo mandatory but none captured).
-function pickSiblingManualFill(adm){
-  const prev=_lastIssuedPass;
-  closeSibModal();
-  goTo('rec');
-  pickStu(adm);
-  if(prev){
-    document.getElementById('cpby').value=prev.pickedUpBy||'';
-    if(prev.relation)document.getElementById('cprel').value=prev.relation;
-    if(prev.pickerPhoto&&prev.pickerPhoto!=='__has_photo'){
-      photo=prev.pickerPhoto;
-      document.getElementById('phimg').src=photo;
-      document.getElementById('phprev').style.display='inline-block';
-    }
-  }
-  document.getElementById('cpq').scrollIntoView({behavior:'smooth',block:'center'});
 }
 
 // ═══ ★ QUICK GATEPASS SIDEBAR ═══
@@ -5035,7 +4808,6 @@ async function delPass(id){
   if(pass&&TGCfg.enabled&&pass.tgMsgId) deleteTGMessage(TGCfg.token,TGCfg.chatId,pass.tgMsgId);
   if(pass&&(pass._hasPhoto||pass.pickerPhoto)) _deletePhotoFromFB(id);
   _deleteGateOutFromFB(id);
-  _gpMarkDeleted([id]);
   S.passes=S.passes.filter(p=>p.id!==id);
   await push('passes');
   gpToast('🗑 Pass deleted','err');
@@ -5064,7 +4836,6 @@ async function execDel(){
   if(!confirm(msg))return;
   const toDelete=S.passes.filter(function(p){return ids.indexOf(p.id)!==-1;});
   toDelete.forEach(function(p){if(p._hasPhoto||p.pickerPhoto)_deletePhotoFromFB(p.id);_deleteGateOutFromFB(p.id);});
-  _gpMarkDeleted(ids);
   S.passes=S.passes.filter(function(p){return ids.indexOf(p.id)===-1;});
   await push('passes');
   gpToast(ids.length+' record'+(ids.length>1?'s':'')+' deleted','err');
@@ -5089,38 +4860,12 @@ function drPreview(){
   Object.entries(byDate).sort((a,b)=>b[0].localeCompare(a[0])).forEach(([date,recs])=>{html+=`<div style="font-size:11px;font-weight:700;color:var(--sub);text-transform:uppercase;margin:8px 0 4px">${fmtD(date)} — ${recs.length} record${recs.length>1?'s':''}</div>`;recs.forEach(p=>{html+=`<div style="font-size:12px;padding:4px 6px;border-radius:5px;margin-bottom:3px;background:var(--bg4);display:flex;justify-content:space-between"><span style="font-weight:600">${e(p.studentName)}</span><span style="font-family:var(--mono);font-size:10px;color:${p.gateOutTime?'var(--green)':'var(--amber)'}">${p.gateOutTime?'EXITED':'PENDING'}</span></div>`;});});
   html+=`</div>`;prev.innerHTML=html;btn.textContent=`🗑 Delete ${hits.length} Record${hits.length>1?'s':''} (${fmtD(from)} → ${fmtD(to)})`;btn.style.display='flex';
 }
-async function execDR(){const from=document.getElementById('dr-from').value,to=document.getElementById('dr-to').value;if(!from||!to)return;const hits=S.passes.filter(p=>p.date>=from&&p.date<=to);if(!hits.length){gpToast('No records in range','inf');return;}const exited=hits.filter(p=>p.gateOutTime).length;if(!confirm(`Permanently delete ${hits.length} record${hits.length>1?'s':''} from ${fmtD(from)} to ${fmtD(to)}?\n(${exited} exited + ${hits.length-exited} pending)\n\nThis CANNOT be undone.`))return;hits.forEach(p=>{if(p._hasPhoto||p.pickerPhoto)_deletePhotoFromFB(p.id);_deleteGateOutFromFB(p.id);});_gpMarkDeleted(hits.map(p=>p.id));S.passes=S.passes.filter(p=>!(p.date>=from&&p.date<=to));await push('passes');gpToast(`🗑 ${hits.length} records deleted`,'err');closeDR();updBadge();}
+async function execDR(){const from=document.getElementById('dr-from').value,to=document.getElementById('dr-to').value;if(!from||!to)return;const hits=S.passes.filter(p=>p.date>=from&&p.date<=to);if(!hits.length){gpToast('No records in range','inf');return;}const exited=hits.filter(p=>p.gateOutTime).length;if(!confirm(`Permanently delete ${hits.length} record${hits.length>1?'s':''} from ${fmtD(from)} to ${fmtD(to)}?\n(${exited} exited + ${hits.length-exited} pending)\n\nThis CANNOT be undone.`))return;hits.forEach(p=>{if(p._hasPhoto||p.pickerPhoto)_deletePhotoFromFB(p.id);_deleteGateOutFromFB(p.id);});S.passes=S.passes.filter(p=>!(p.date>=from&&p.date<=to));await push('passes');gpToast(`🗑 ${hits.length} records deleted`,'err');closeDR();updBadge();}
 
 // ═══ PASSWORD ═══
-function recCheckPW(){const v=document.getElementById('pw-inp').value;if(v===PASS){document.getElementById('pw-gate').style.display='none';document.getElementById('set-ct').style.display='block';document.getElementById('pw-err').textContent='';loadCfgF();gpLoadStuCfg();gpLoadWACfg();loadMetaWACfg();gpLoadQPThresh();gpLoadPrintCfg();gpLoadMiscToggles();renderBuses();renderStu();gpUpdateSettingsSubs();var fb=document.getElementById('gacc-fb');if(fb&&!fb.classList.contains('open'))fb.classList.add('open');}else{document.getElementById('pw-err').textContent='❌ Wrong password';document.getElementById('pw-inp').value='';}}
-function gpLoadMiscToggles(){
-  const sibEl=document.getElementById('gp-sibling-enabled');if(sibEl)sibEl.checked=localStorage.getItem('gp_sibling_enabled')!=='0';
-  const phEl=document.getElementById('gp-photo-mandatory');if(phEl)phEl.value=localStorage.getItem('gp_photo_mandatory')||'0';
-}
-function gpSaveSiblingEnabled(){
-  const v=document.getElementById('gp-sibling-enabled').checked;
-  try{localStorage.setItem('gp_sibling_enabled',v?'1':'0');}catch(e){}
-  gpToast(v?'✅ Sibling pass suggestion enabled':'Sibling pass suggestion disabled','inf');
-}
-function gpSavePhotoMandatory(){
-  const v=document.getElementById('gp-photo-mandatory').value;
-  try{localStorage.setItem('gp_photo_mandatory',v);}catch(e){}
-  const msgs={'0':'Picker photo is now optional','1':'✅ Picker photo is now mandatory for everyone','2':'✅ Picker photo is now mandatory — except for Father / Mother'};
-  gpToast(msgs[v]||'Saved','inf');
-}
-// Central check — used everywhere a pass is about to be issued. `relation` is
-// the picker's relation to the student (e.g. "Father", "Mother", "Uncle"...).
-function gpPhotoRequired(relation){
-  const mode=localStorage.getItem('gp_photo_mandatory')||'0';
-  if(mode==='1')return true;
-  if(mode==='2'){
-    const r=(relation||'').trim().toLowerCase();
-    return r!=='father'&&r!=='mother';
-  }
-  return false;
-}
+function recCheckPW(){const v=document.getElementById('pw-inp').value;if(v===PASS){document.getElementById('pw-gate').style.display='none';document.getElementById('set-ct').style.display='block';document.getElementById('pw-err').textContent='';loadCfgF();gpLoadStuCfg();gpLoadWACfg();loadMetaWACfg();gpLoadQPThresh();gpLoadPrintCfg();renderBuses();renderStu();gpUpdateSettingsSubs();var fb=document.getElementById('gacc-fb');if(fb&&!fb.classList.contains('open'))fb.classList.add('open');}else{document.getElementById('pw-err').textContent='❌ Wrong password';document.getElementById('pw-inp').value='';}}
 // ═══ GATEPASS STUDENT DB SHARED SYNC ═══
-var gpStuCfg={url:'',code:'',secret:''};
+var gpStuCfg={url:'',code:''};
 var gpStuIv=null;
 var gpStuLocalMod=0;
 // ─── GP STU SYNC TIMER ───
@@ -5142,7 +4887,7 @@ function _gpStuStopTimer(){
   var el=document.getElementById('gp-stu-sync-timer');if(el)el.textContent='';
 }
 
-// ── Daily Auto-Refresh: when the app is opened in the morning, clear the old student list and do a fresh fetch ──
+// ── Daily Auto-Refresh: subah app open hone pe purani student list clear ho aur fresh fetch ho ──
 (function gpDailyReset(){
   var today=new Date().toISOString().slice(0,10); // "YYYY-MM-DD"
   var lastDay=localStorage.getItem('gp_stu_last_fetch_date')||'';
@@ -5165,26 +4910,24 @@ function _gpStuStopTimer(){
 })();
 
 function gpLoadStuCfg(){
-  var u=localStorage.getItem('gp_stu_url'),cd=localStorage.getItem('gp_stu_code'),sec=localStorage.getItem('gp_stu_secret');
-  var urlEl=document.getElementById('gp-stu-url'),codeEl=document.getElementById('gp-stu-code'),secEl=document.getElementById('gp-stu-secret'),stEl=document.getElementById('gp-stu-status');
-  if(urlEl)urlEl.value=u||'';if(codeEl)codeEl.value=cd||'';if(secEl)secEl.value=sec||'';
-  if(u&&cd){gpStuCfg={url:u,code:cd,secret:sec||''};if(stEl)stEl.textContent='Connected: '+cd;gpStuFetchShared();if(gpStuIv)clearInterval(gpStuIv);gpStuIv=setInterval(gpStuFetchShared,30000);_gpStuStartTimer(30);}
+  var u=localStorage.getItem('gp_stu_url'),cd=localStorage.getItem('gp_stu_code');
+  var urlEl=document.getElementById('gp-stu-url'),codeEl=document.getElementById('gp-stu-code'),stEl=document.getElementById('gp-stu-status');
+  if(urlEl)urlEl.value=u||'';if(codeEl)codeEl.value=cd||'';
+  if(u&&cd){gpStuCfg={url:u,code:cd};if(stEl)stEl.textContent='Connected: '+cd;gpStuFetchShared();if(gpStuIv)clearInterval(gpStuIv);gpStuIv=setInterval(gpStuFetchShared,30000);_gpStuStartTimer(30);}
   else{if(stEl)stEl.textContent='Not connected';}
   var sub=document.getElementById('gacc-studb-sub');if(sub)sub.textContent=u?'Connected':'Not connected';
 }
 async function gpSaveStuCfg(){
   var url=(document.getElementById('gp-stu-url').value||'').trim().replace(/\/$/,'');
   var code=(document.getElementById('gp-stu-code').value||'').trim();
-  var secret=(document.getElementById('gp-stu-secret')||{}).value?.trim()||'';
   var stEl=document.getElementById('gp-stu-status');
   if(!url||!code){if(stEl)stEl.textContent='Fill both fields';return;}
   if(stEl)stEl.textContent='Saving…';
-  var authQ=secret?('?auth='+encodeURIComponent(secret)):'';
   try{
-    var r=await fetch(url+'/'+code+'/ping.json'+authQ,{method:'PUT',body:JSON.stringify(1)});
+    var r=await fetch(url+'/'+code+'/ping.json',{method:'PUT',body:JSON.stringify(1)});
     if(!r.ok)throw 0;
-    localStorage.setItem('gp_stu_url',url);localStorage.setItem('gp_stu_code',code);if(secret)localStorage.setItem('gp_stu_secret',secret);
-    gpStuCfg={url,code,secret};
+    localStorage.setItem('gp_stu_url',url);localStorage.setItem('gp_stu_code',code);
+    gpStuCfg={url,code};
     if(stEl)stEl.textContent='✅ Connected! Syncing…';
     var sub=document.getElementById('gacc-studb-sub');if(sub)sub.textContent='Connected';
     gpStuFetchShared();if(gpStuIv)clearInterval(gpStuIv);gpStuIv=setInterval(gpStuFetchShared,30000);_gpStuStartTimer(30);
@@ -5209,8 +4952,8 @@ function gpForceFetchStu(){
 }
 function gpDisconnStu(){
   if(!confirm('Disconnect student DB sync?'))return;
-  localStorage.removeItem('gp_stu_url');localStorage.removeItem('gp_stu_code');localStorage.removeItem('gp_stu_secret');
-  gpStuCfg={url:'',code:'',secret:''};if(gpStuIv)clearInterval(gpStuIv);_gpStuStopTimer();
+  localStorage.removeItem('gp_stu_url');localStorage.removeItem('gp_stu_code');
+  gpStuCfg={url:'',code:''};if(gpStuIv)clearInterval(gpStuIv);_gpStuStopTimer();
   var stEl=document.getElementById('gp-stu-status');if(stEl)stEl.textContent='Disconnected';
   var sub=document.getElementById('gacc-studb-sub');if(sub)sub.textContent='Not connected';
   gpToast('Student sync disconnected','inf');
@@ -5218,20 +4961,19 @@ function gpDisconnStu(){
 async function gpStuFetchShared(){
   if(!gpStuCfg.url||!gpStuCfg.code)return;
   try{
-    var authQ=gpStuCfg.secret?('?auth='+encodeURIComponent(gpStuCfg.secret)):'';
-    // ── Date change detection: force a fetch when a new day starts ──
+    // ── Date change detection: naye din pe force fetch ──
     const _stuToday=new Date().toISOString().slice(0,10);
     const _stuLastDate=localStorage.getItem('gp_stu_last_date')||'';
     const _isNewDay=(_stuLastDate!==_stuToday);
     if(_isNewDay){gpStuLocalMod=0;localStorage.setItem('gp_stu_last_date',_stuToday);}
     // ── Step 1: Cheap lastMod check — skip if nothing changed ──
-    const lmr=await fetch(gpStuCfg.url+'/'+gpStuCfg.code+'/lastMod.json'+authQ);
+    const lmr=await fetch(gpStuCfg.url+'/'+gpStuCfg.code+'/lastMod.json');
     if(lmr.ok){
       const remMod=await lmr.json();
       if(!_isNewDay&&remMod&&remMod===gpStuLocalMod)return;
     }
     // ── Step 2: Full fetch ──
-    var r=await fetch(gpStuCfg.url+'/'+gpStuCfg.code+'.json'+authQ);
+    var r=await fetch(gpStuCfg.url+'/'+gpStuCfg.code+'.json');
     if(!r.ok)return;
     var d=await r.json();
     if(!d||!d.students)return;
@@ -5266,9 +5008,8 @@ async function gpStuPushShared(){
   if(!gpStuCfg.url||!gpStuCfg.code)return;
   var sVal=S.students.length===0?{'__empty':true}:S.students;
   var lm=Date.now();
-  var authQ=gpStuCfg.secret?('?auth='+encodeURIComponent(gpStuCfg.secret)):'';
   try{
-    await fetch(gpStuCfg.url+'/'+gpStuCfg.code+'.json'+authQ,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({students:sVal,lastMod:lm})});
+    await fetch(gpStuCfg.url+'/'+gpStuCfg.code+'.json',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({students:sVal,lastMod:lm})});
     gpStuLocalMod=lm; // update local mod — prevent immediate re-fetch
   }catch(e){}
 }
@@ -5715,11 +5456,11 @@ async function testMetaWACfg(){
 }
 
 function recLockSet(){document.getElementById('pw-gate').style.display='block';document.getElementById('set-ct').style.display='none';document.getElementById('pw-inp').value='';document.getElementById('pw-err').textContent='';document.getElementById('mdlist').style.display='none';document.getElementById('drlist').style.display='none';document.getElementById('mdui').style.display='flex';}
-function loadCfgF(){document.getElementById('cfg-url').value=localStorage.getItem('gp_url')||'';document.getElementById('cfg-code').value=localStorage.getItem('gp_code')||'';var secEl=document.getElementById('cfg-secret');if(secEl)secEl.value=localStorage.getItem('gp_secret')||'';const connected=!!(localStorage.getItem('gp_url')&&localStorage.getItem('gp_code'));document.getElementById('sync-status-info').textContent=connected?`✅ Connected to: ${localStorage.getItem('gp_url')} / ${localStorage.getItem('gp_code')}`:'⚪ Not connected — fill in details and click Save & Connect.';const frEl=document.getElementById('gp-force-refresh');if(frEl)frEl.checked=gpForceRefreshOnFocus;}
-async function testCfg(){const url=document.getElementById('cfg-url').value.trim().replace(/\/$/,'');const code=document.getElementById('cfg-code').value.trim().replace(/[^a-zA-Z0-9_-]/g,'');const secret=(document.getElementById('cfg-secret')||{}).value?.trim()||'';if(!url||!code){cfgSt('⚠️ Fill in both fields first','var(--amber)');return;}cfgSt('Testing…','var(--blue)');const authQ=secret?('?auth='+encodeURIComponent(secret)):'';try{const r=await fetch(`${url}/${code}/ping.json${authQ}`,{method:'PUT',body:JSON.stringify(1)});if(!r.ok)throw 0;cfgSt('✅ Connection successful!','var(--green)');}catch{cfgSt('❌ Failed — check URL & Firebase rules','var(--red)');}}
-async function saveCfg(){const url=document.getElementById('cfg-url').value.trim().replace(/\/$/,'');const code=document.getElementById('cfg-code').value.trim().replace(/[^a-zA-Z0-9_-]/g,'');const secret=(document.getElementById('cfg-secret')||{}).value?.trim()||'';if(!url||!code){cfgSt('⚠️ Fill both fields','var(--amber)');return;}document.getElementById('cfg-save-btn').disabled=true;cfgSt('Testing & saving…','var(--blue)');const authQ=secret?('?auth='+encodeURIComponent(secret)):'';try{const r=await fetch(`${url}/${code}/ping.json${authQ}`,{method:'PUT',body:JSON.stringify(1)});if(!r.ok)throw 0;localStorage.setItem('gp_url',url);localStorage.setItem('gp_code',code);if(secret)localStorage.setItem('gp_secret',secret);cfg={url,code,secret};cfgSt('✅ Saved! Syncing now…','var(--green)');startSync();loadCfgF();}catch{cfgSt('❌ Connection failed','var(--red)');}document.getElementById('cfg-save-btn').disabled=false;}
-function disconnectFB(){if(!confirm('Disconnect Firebase?'))return;localStorage.removeItem('gp_url');localStorage.removeItem('gp_code');localStorage.removeItem('gp_secret');cfg={url:'',code:'',secret:''};if(syncIv)clearInterval(syncIv);setSS('off');loadCfgF();gpToast('✕ Firebase disconnected','inf');}
-function saveForceRefreshSetting(){const el=document.getElementById('gp-force-refresh');gpForceRefreshOnFocus=el?el.checked:true;localStorage.setItem('gp_force_refresh',gpForceRefreshOnFocus?'1':'0');if(cfg.url&&cfg.code){fetch(`${cfg.url}/${cfg.code}.json${gpAuthQ()}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({gpForceRefreshOnFocus:gpForceRefreshOnFocus,lastMod:Date.now()})}).catch(()=>{});}gpToast((gpForceRefreshOnFocus?'✅':'❌')+' Force refresh on focus '+(gpForceRefreshOnFocus?'ON':'OFF'));}
+function loadCfgF(){document.getElementById('cfg-url').value=localStorage.getItem('gp_url')||'';document.getElementById('cfg-code').value=localStorage.getItem('gp_code')||'';const connected=!!(localStorage.getItem('gp_url')&&localStorage.getItem('gp_code'));document.getElementById('sync-status-info').textContent=connected?`✅ Connected to: ${localStorage.getItem('gp_url')} / ${localStorage.getItem('gp_code')}`:'⚪ Not connected — fill in details and click Save & Connect.';const frEl=document.getElementById('gp-force-refresh');if(frEl)frEl.checked=gpForceRefreshOnFocus;}
+async function testCfg(){const url=document.getElementById('cfg-url').value.trim().replace(/\/$/,'');const code=document.getElementById('cfg-code').value.trim().replace(/[^a-zA-Z0-9_-]/g,'');if(!url||!code){cfgSt('⚠️ Fill in both fields first','var(--amber)');return;}cfgSt('Testing…','var(--blue)');try{const r=await fetch(`${url}/${code}/ping.json`,{method:'PUT',body:JSON.stringify(1)});if(!r.ok)throw 0;cfgSt('✅ Connection successful!','var(--green)');}catch{cfgSt('❌ Failed — check URL & Firebase rules','var(--red)');}}
+async function saveCfg(){const url=document.getElementById('cfg-url').value.trim().replace(/\/$/,'');const code=document.getElementById('cfg-code').value.trim().replace(/[^a-zA-Z0-9_-]/g,'');if(!url||!code){cfgSt('⚠️ Fill both fields','var(--amber)');return;}document.getElementById('cfg-save-btn').disabled=true;cfgSt('Testing & saving…','var(--blue)');try{const r=await fetch(`${url}/${code}/ping.json`,{method:'PUT',body:JSON.stringify(1)});if(!r.ok)throw 0;localStorage.setItem('gp_url',url);localStorage.setItem('gp_code',code);cfg={url,code};cfgSt('✅ Saved! Syncing now…','var(--green)');startSync();loadCfgF();}catch{cfgSt('❌ Connection failed','var(--red)');}document.getElementById('cfg-save-btn').disabled=false;}
+function disconnectFB(){if(!confirm('Disconnect Firebase?'))return;localStorage.removeItem('gp_url');localStorage.removeItem('gp_code');cfg={url:'',code:''};if(syncIv)clearInterval(syncIv);setSS('off');loadCfgF();gpToast('✕ Firebase disconnected','inf');}
+function saveForceRefreshSetting(){const el=document.getElementById('gp-force-refresh');gpForceRefreshOnFocus=el?el.checked:true;localStorage.setItem('gp_force_refresh',gpForceRefreshOnFocus?'1':'0');if(cfg.url&&cfg.code){fetch(`${cfg.url}/${cfg.code}.json`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({gpForceRefreshOnFocus:gpForceRefreshOnFocus,lastMod:Date.now()})}).catch(()=>{});}gpToast((gpForceRefreshOnFocus?'✅':'❌')+' Force refresh on focus '+(gpForceRefreshOnFocus?'ON':'OFF'));}
 function cfgSt(m,c){const el=document.getElementById('cfg-status');el.textContent=m;el.style.color=c;}
 
 // ═══ BUSES ═══
@@ -6123,13 +5864,12 @@ async function gpForcePushAllData(){
   st.textContent='🔥 Syncing all data…';st.style.color='var(--amber)';
   try{
     if(hasGP){
-      await fetch(`${cfg.url}/${cfg.code}/passes.json${gpAuthQ()}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(S.passes.length===0?{'__empty':true}:S.passes)});
-      await fetch(`${cfg.url}/${cfg.code}/buses.json${gpAuthQ()}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(S.buses.length===0?{'__empty':true}:S.buses)});
+      await fetch(`${cfg.url}/${cfg.code}/passes.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(S.passes.length===0?{'__empty':true}:S.passes)});
+      await fetch(`${cfg.url}/${cfg.code}/buses.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(S.buses.length===0?{'__empty':true}:S.buses)});
     }
     if(hasStu){
-      const stuAuthQ=gpStuCfg.secret?('?auth='+encodeURIComponent(gpStuCfg.secret)):'';
-      await fetch(`${gpStuCfg.url}/${gpStuCfg.code}.json${stuAuthQ}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:'null'});
-      await fetch(`${gpStuCfg.url}/${gpStuCfg.code}.json${stuAuthQ}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({students:S.students.length===0?{'__empty':true}:S.students,lastMod:Date.now()})});
+      await fetch(`${gpStuCfg.url}/${gpStuCfg.code}.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:'null'});
+      await fetch(`${gpStuCfg.url}/${gpStuCfg.code}.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({students:S.students.length===0?{'__empty':true}:S.students,lastMod:Date.now()})});
     }
     st.textContent='✅ All data synced to Firebase!';st.style.color='var(--green)';
     gpToast('✅ Full Firebase sync complete');
@@ -6147,11 +5887,10 @@ async function gpForcePushFirebase(){
   try{
     if(hasStu){
       // Wipe student DB path then push all students
-      const stuAuthQ=gpStuCfg.secret?('?auth='+encodeURIComponent(gpStuCfg.secret)):'';
-      await fetch(`${gpStuCfg.url}/${gpStuCfg.code}.json${stuAuthQ}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:'null'});
+      await fetch(`${gpStuCfg.url}/${gpStuCfg.code}.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:'null'});
       const sVal=S.students.length===0?{'__empty':true}:S.students;
       const lastMod=Date.now();
-      await fetch(`${gpStuCfg.url}/${gpStuCfg.code}.json${stuAuthQ}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({students:sVal,lastMod})});
+      await fetch(`${gpStuCfg.url}/${gpStuCfg.code}.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({students:sVal,lastMod})});
       st.textContent='✅ Student DB updated — '+S.students.length+' students pushed';st.style.color='var(--green)';
     } else {
       st.textContent='⚠️ Student DB not connected (configure in Students DB settings)';st.style.color='var(--amber)';
@@ -6384,10 +6123,10 @@ function _refInit(){
   // Init RefMetaWACfg from saved CFG
   RefMetaWACfg={phoneNumberId:CFG.metaPhoneId||'',accessToken:CFG.metaToken||'',enabled:(CFG.waSendMode||'web')==='meta',adminEnabled:!!CFG.metaAdminEnabled,templateName:CFG.metaTemplate||'',langCode:CFG.metaLang||'en_US',adminPhone:CFG.metaAdminPhone||''};
   if(CFG.adminAlertEnabled===undefined)CFG.adminAlertEnabled=true;
-  const fu=localStorage.getItem('ref_fb_url'),fc=localStorage.getItem('ref_fb_code'),fsec=localStorage.getItem('ref_fb_secret');
-  if(fu&&fc){fbCfg={url:fu,code:fc,secret:fsec||''};fbFetchAll();if(fbIv)clearInterval(fbIv);fbIv=setInterval(fbFetchAll,8000);}
-  const su=localStorage.getItem('ref_fb_stu_url'),sc=localStorage.getItem('ref_fb_stu_code'),ssec=localStorage.getItem('ref_fb_stu_secret');
-  if(su&&sc){fbStuCfg={url:su,code:sc,secret:ssec||''};fbStuFetch();if(fbStuIv)clearInterval(fbStuIv);fbStuIv=setInterval(fbStuFetch,15000);_fbStuStartTimer(15);}
+  const fu=localStorage.getItem('ref_fb_url'),fc=localStorage.getItem('ref_fb_code');
+  if(fu&&fc){fbCfg={url:fu,code:fc};fbFetchAll();if(fbIv)clearInterval(fbIv);fbIv=setInterval(fbFetchAll,8000);}
+  const su=localStorage.getItem('ref_fb_stu_url'),sc=localStorage.getItem('ref_fb_stu_code');
+  if(su&&sc){fbStuCfg={url:su,code:sc};fbStuFetch();if(fbStuIv)clearInterval(fbStuIv);fbStuIv=setInterval(fbStuFetch,15000);_fbStuStartTimer(15);}
   loadLocal();curFY=getCurrentFY();applyLabels();renderFYSelect();renderDashboard();
   populateDataLists();document.getElementById('f-date').value=todayStr();renderStatusSelect();renderStudentList();
   const exS=document.getElementById('ex-scope');
@@ -7599,8 +7338,7 @@ async function fbPushPublic(){
     .filter(en=>en.status===CFG.preparedStatus)
     .map(en=>({refno:en.refno||'',name:en.to||'',category:en.category||'',date:en.date||'',fy:en.fy||'',readyAt:en.statusChangedAt||en.createdAt||''}));
   try{
-    const authQ=fbCfg.secret?('?auth='+encodeURIComponent(fbCfg.secret)):'';
-    await fetch(`${fbCfg.url}/public_board.json${authQ}`,{method:'PUT',headers:{'Content-Type':'application/json'},
+    await fetch(`${fbCfg.url}/public_board.json`,{method:'PUT',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({tc_list:pubTCs.length?pubTCs:{__empty:true},all_ready:pubAll.length?pubAll:{__empty:true},lastUpdated:Date.now()})});
   }catch(e){}
 }
@@ -7609,37 +7347,34 @@ async function fbPushPublic(){
 async function fbFetchAll(){
   if(!fbCfg.url||!fbCfg.code)return;
   try{
-    const authQ=fbCfg.secret?('?auth='+encodeURIComponent(fbCfg.secret)):'';
     // ── Step 1: Cheap lastMod check (~50 bytes) — skip full download if unchanged ──
-    const lmr=await fetch(`${fbCfg.url}/${fbCfg.code}/lastMod.json${authQ}`);
+    const lmr=await fetch(`${fbCfg.url}/${fbCfg.code}/lastMod.json`);
     if(lmr.ok){const remMod=await lmr.json();if(remMod&&remMod===fbLocalMod)return;}
     // ── Step 2: Full fetch only when something changed ──
-    const r=await fetch(`${fbCfg.url}/${fbCfg.code}.json${authQ}`);if(!r.ok)throw 0;const d=await r.json();
+    const r=await fetch(`${fbCfg.url}/${fbCfg.code}.json`);if(!r.ok)throw 0;const d=await r.json();
     if(d){const sm=d.lastMod||0;if(sm!==fbLocalMod){const toArr=v=>Array.isArray(v)?v:(v&&v.__empty)?[]:(v!=null?v:null);const ents=toArr(d.entries);if(ents!==null)R.entries=ents;if(d.nextSeq)R.nextSeq=d.nextSeq;if(d.overrideSeq)R.overrideSeq=d.overrideSeq;if(d.reclaimedSeqs)R.reclaimedSeqs=d.reclaimedSeqs;fbLocalMod=sm;saveLocal();renderFYSelect();renderRegister();renderDashboard();populateDataLists();}}
   }catch(e){}
 }
 async function fbPush(){
   R.lastMod=Date.now();fbLocalMod=R.lastMod;saveLocal();if(!fbCfg.url||!fbCfg.code)return;
   const eVal=R.entries.length===0?{'__empty':true}:R.entries;
-  const authQ=fbCfg.secret?('?auth='+encodeURIComponent(fbCfg.secret)):'';
-  try{await fetch(`${fbCfg.url}/${fbCfg.code}.json${authQ}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({entries:eVal,nextSeq:R.nextSeq,overrideSeq:R.overrideSeq||{},reclaimedSeqs:R.reclaimedSeqs||{},lastMod:R.lastMod})});}catch(e){}
+  try{await fetch(`${fbCfg.url}/${fbCfg.code}.json`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({entries:eVal,nextSeq:R.nextSeq,overrideSeq:R.overrideSeq||{},reclaimedSeqs:R.reclaimedSeqs||{},lastMod:R.lastMod})});}catch(e){}
 }
-function loadFBCfg(){document.getElementById('fb-url').value=localStorage.getItem('ref_fb_url')||'';document.getElementById('fb-code').value=localStorage.getItem('ref_fb_code')||'';var se=document.getElementById('fb-secret');if(se)se.value=localStorage.getItem('ref_fb_secret')||'';}
-async function testFBCfg(){const url=document.getElementById('fb-url').value.trim().replace(/\/$/,'');const code=document.getElementById('fb-code').value.trim();const secret=(document.getElementById('fb-secret')||{}).value?.trim()||'';if(!url||!code){fbSt('Fill both fields','var(--red)');return;}fbSt('Testing…','var(--amber)');const authQ=secret?('?auth='+encodeURIComponent(secret)):'';try{const r=await fetch(`${url}/${code}/ping.json${authQ}`,{method:'PUT',body:JSON.stringify(1)});if(!r.ok)throw 0;fbSt('Connected!','var(--green)');}catch{fbSt('Connection failed','var(--red)');}}
-async function saveFBCfg(){const url=document.getElementById('fb-url').value.trim().replace(/\/$/,'');const code=document.getElementById('fb-code').value.trim();const secret=(document.getElementById('fb-secret')||{}).value?.trim()||'';if(!url||!code){fbSt('Fill both fields','var(--red)');return;}fbSt('Saving…','var(--amber)');const authQ=secret?('?auth='+encodeURIComponent(secret)):'';try{const r=await fetch(`${url}/${code}/ping.json${authQ}`,{method:'PUT',body:JSON.stringify(1)});if(!r.ok)throw 0;localStorage.setItem('ref_fb_url',url);localStorage.setItem('ref_fb_code',code);if(secret)localStorage.setItem('ref_fb_secret',secret);fbCfg={url,code,secret};fbSt('Connected!','var(--green)');fbFetchAll();if(fbIv)clearInterval(fbIv);fbIv=setInterval(fbFetchAll,8000);}catch{fbSt('Connection failed','var(--red)');}}
-function disconnFB(){if(!confirm('Disconnect from this database?'))return;localStorage.removeItem('ref_fb_url');localStorage.removeItem('ref_fb_code');localStorage.removeItem('ref_fb_secret');fbCfg={url:'',code:'',secret:''};if(fbIv)clearInterval(fbIv);fbSt('Disconnected','var(--muted)');toast('Database disconnected.','inf');}
+function loadFBCfg(){document.getElementById('fb-url').value=localStorage.getItem('ref_fb_url')||'';document.getElementById('fb-code').value=localStorage.getItem('ref_fb_code')||'';}
+async function testFBCfg(){const url=document.getElementById('fb-url').value.trim().replace(/\/$/,'');const code=document.getElementById('fb-code').value.trim();if(!url||!code){fbSt('Fill both fields','var(--red)');return;}fbSt('Testing…','var(--amber)');try{const r=await fetch(`${url}/${code}/ping.json`,{method:'PUT',body:JSON.stringify(1)});if(!r.ok)throw 0;fbSt('Connected!','var(--green)');}catch{fbSt('Connection failed','var(--red)');}}
+async function saveFBCfg(){const url=document.getElementById('fb-url').value.trim().replace(/\/$/,'');const code=document.getElementById('fb-code').value.trim();if(!url||!code){fbSt('Fill both fields','var(--red)');return;}fbSt('Saving…','var(--amber)');try{const r=await fetch(`${url}/${code}/ping.json`,{method:'PUT',body:JSON.stringify(1)});if(!r.ok)throw 0;localStorage.setItem('ref_fb_url',url);localStorage.setItem('ref_fb_code',code);fbCfg={url,code};fbSt('Connected!','var(--green)');fbFetchAll();if(fbIv)clearInterval(fbIv);fbIv=setInterval(fbFetchAll,8000);}catch{fbSt('Connection failed','var(--red)');}}
+function disconnFB(){if(!confirm('Disconnect from this database?'))return;localStorage.removeItem('ref_fb_url');localStorage.removeItem('ref_fb_code');fbCfg={url:'',code:''};if(fbIv)clearInterval(fbIv);fbSt('Disconnected','var(--muted)');toast('Database disconnected.','inf');}
 function fbSt(m,c){const el=document.getElementById('fb-status');el.textContent=m;el.style.color=c;}
 
 // ─── FIREBASE — STUDENTS ─────────────────────────────────
 async function fbStuFetch(){
   if(!fbStuCfg.url||!fbStuCfg.code)return;
   try{
-    const authQ=fbStuCfg.secret?('?auth='+encodeURIComponent(fbStuCfg.secret)):'';
     // ── Step 1: Cheap lastMod check (~50 bytes) — skip full download if unchanged ──
-    const lmr=await fetch(`${fbStuCfg.url}/${fbStuCfg.code}/lastMod.json${authQ}`);
+    const lmr=await fetch(`${fbStuCfg.url}/${fbStuCfg.code}/lastMod.json`);
     if(lmr.ok){const remMod=await lmr.json();if(remMod&&remMod===fbStuLocalMod){_fbStuResetTimer(15);return;}}
     // ── Step 2: Full fetch only when something changed ──
-    const r=await fetch(`${fbStuCfg.url}/${fbStuCfg.code}.json${authQ}`);if(!r.ok)throw 0;const d=await r.json();
+    const r=await fetch(`${fbStuCfg.url}/${fbStuCfg.code}.json`);if(!r.ok)throw 0;const d=await r.json();
     if(d){
       const sm=d.lastMod||0;
       if(sm!==fbStuLocalMod){
@@ -7681,13 +7416,12 @@ async function fbStuPush(){
     busNumber:s.busNumber||s.bus||'',phone:s.phone||'',address:s.address||''
   }));
   const sVal=normalized.length===0?{'__empty':true}:normalized;
-  const authQ=fbStuCfg.secret?('?auth='+encodeURIComponent(fbStuCfg.secret)):'';
-  try{await fetch(`${fbStuCfg.url}/${fbStuCfg.code}.json${authQ}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({students:sVal,lastMod})});}catch(e){}
+  try{await fetch(`${fbStuCfg.url}/${fbStuCfg.code}.json`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({students:sVal,lastMod})});}catch(e){}
 }
-function loadFBStuCfg(){document.getElementById('fb-stu-url').value=localStorage.getItem('ref_fb_stu_url')||'';document.getElementById('fb-stu-code').value=localStorage.getItem('ref_fb_stu_code')||'';var se=document.getElementById('fb-stu-secret');if(se)se.value=localStorage.getItem('ref_fb_stu_secret')||'';}
-async function testFBStuCfg(){const url=document.getElementById('fb-stu-url').value.trim().replace(/\/$/,'');const code=document.getElementById('fb-stu-code').value.trim();const secret=(document.getElementById('fb-stu-secret')||{}).value?.trim()||'';if(!url||!code){fbStuSt('Fill both fields','var(--red)');return;}fbStuSt('Testing…','var(--amber)');const authQ=secret?('?auth='+encodeURIComponent(secret)):'';try{const r=await fetch(`${url}/${code}/ping.json${authQ}`,{method:'PUT',body:JSON.stringify(1)});if(!r.ok)throw 0;fbStuSt('Connected!','var(--green)');}catch{fbStuSt('Failed','var(--red)');}}
-async function saveFBStuCfg(){const url=document.getElementById('fb-stu-url').value.trim().replace(/\/$/,'');const code=document.getElementById('fb-stu-code').value.trim();const secret=(document.getElementById('fb-stu-secret')||{}).value?.trim()||'';if(!url||!code){fbStuSt('Fill both fields','var(--red)');return;}fbStuSt('Saving…','var(--amber)');const authQ=secret?('?auth='+encodeURIComponent(secret)):'';try{const r=await fetch(`${url}/${code}/ping.json${authQ}`,{method:'PUT',body:JSON.stringify(1)});if(!r.ok)throw 0;localStorage.setItem('ref_fb_stu_url',url);localStorage.setItem('ref_fb_stu_code',code);if(secret)localStorage.setItem('ref_fb_stu_secret',secret);fbStuCfg={url,code,secret};fbStuSt('Connected!','var(--green)');fbStuFetch();if(fbStuIv)clearInterval(fbStuIv);fbStuIv=setInterval(fbStuFetch,15000);_fbStuStartTimer(15);}catch{fbStuSt('Failed','var(--red)');}}
-function disconnFBStu(){if(!confirm('Disconnect the student database?'))return;localStorage.removeItem('ref_fb_stu_url');localStorage.removeItem('ref_fb_stu_code');localStorage.removeItem('ref_fb_stu_secret');fbStuCfg={url:'',code:'',secret:''};if(fbStuIv)clearInterval(fbStuIv);_fbStuStopTimer();fbStuSt('Disconnected','var(--muted)');toast('Student database disconnected.','inf');}
+function loadFBStuCfg(){document.getElementById('fb-stu-url').value=localStorage.getItem('ref_fb_stu_url')||'';document.getElementById('fb-stu-code').value=localStorage.getItem('ref_fb_stu_code')||'';}
+async function testFBStuCfg(){const url=document.getElementById('fb-stu-url').value.trim().replace(/\/$/,'');const code=document.getElementById('fb-stu-code').value.trim();if(!url||!code){fbStuSt('Fill both fields','var(--red)');return;}fbStuSt('Testing…','var(--amber)');try{const r=await fetch(`${url}/${code}/ping.json`,{method:'PUT',body:JSON.stringify(1)});if(!r.ok)throw 0;fbStuSt('Connected!','var(--green)');}catch{fbStuSt('Failed','var(--red)');}}
+async function saveFBStuCfg(){const url=document.getElementById('fb-stu-url').value.trim().replace(/\/$/,'');const code=document.getElementById('fb-stu-code').value.trim();if(!url||!code){fbStuSt('Fill both fields','var(--red)');return;}fbStuSt('Saving…','var(--amber)');try{const r=await fetch(`${url}/${code}/ping.json`,{method:'PUT',body:JSON.stringify(1)});if(!r.ok)throw 0;localStorage.setItem('ref_fb_stu_url',url);localStorage.setItem('ref_fb_stu_code',code);fbStuCfg={url,code};fbStuSt('Connected!','var(--green)');fbStuFetch();if(fbStuIv)clearInterval(fbStuIv);fbStuIv=setInterval(fbStuFetch,15000);_fbStuStartTimer(15);}catch{fbStuSt('Failed','var(--red)');}}
+function disconnFBStu(){if(!confirm('Disconnect the student database?'))return;localStorage.removeItem('ref_fb_stu_url');localStorage.removeItem('ref_fb_stu_code');fbStuCfg={url:'',code:''};if(fbStuIv)clearInterval(fbStuIv);_fbStuStopTimer();fbStuSt('Disconnected','var(--muted)');toast('Student database disconnected.','inf');}
 // ─── STU SYNC TIMER ───
 let _fbStuTimerIv=null,_fbStuTimerCount=0;
 function _fbStuStartTimer(sec){
@@ -7863,11 +7597,11 @@ function copyWixCode(){
 // 1. Create a new Page in Wix Editor (e.g. "Download Documents")
 // 2. Turn ON Dev Mode (from top bar)
 // 3. Add these elements to the page:
-//    - TextInput  → ID: searchInput   (placeholder: "Your name or Admission No.")
+//    - TextInput  → ID: searchInput   (placeholder: "Apna naam ya Admission No.")
 //    - Button     → ID: searchBtn     (text: "Search")
 //    - Text       → ID: statusText    (initial: "Search your document")
 //    - Button     → ID: downloadBtn   (text: "⬇️ Download") — hide by default
-//    - Repeater   → ID: resultsRepeater (optional — for showing multiple results)
+//    - Repeater   → ID: resultsRepeater (optional — multiple results ke liye)
 // 4. Paste this code in Pages > [PageName] > Page Code
 // 5. Create a Collection named "Documents" in Wix CMS
 //    Fields: name (Text), admNo (Text), refNo (Text), docType (Text),
@@ -8115,7 +7849,7 @@ function saveTGCfg(){
   localStorage.setItem('gp_tg_cfg',JSON.stringify(TGCfg));
   // Push approve setting to Firebase so all devices get it
   if(TGCfg.approveSync&&cfg.url&&cfg.code){
-    fetch(`${cfg.url}/${cfg.code}.json${gpAuthQ()}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({tgApproveEnabled:TGCfg.approveEnabled,tgApproveSynced:true,lastMod:Date.now()})}).catch(()=>{});
+    fetch(`${cfg.url}/${cfg.code}.json`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({tgApproveEnabled:TGCfg.approveEnabled,tgApproveSynced:true,lastMod:Date.now()})}).catch(()=>{});
   }
   const st=document.getElementById('tg-status');
   st.textContent='✓ Saved — '+TGCfg.chatIds.length+' chat ID'+(TGCfg.chatIds.length!==1?'s':'')+(TGCfg.approveSync?' · Synced to all devices':'');st.style.color='var(--green)';
@@ -8681,7 +8415,7 @@ function addFYFromSettings(){
   localStorage.setItem('ref_extra_fys',JSON.stringify(extras));
   document.getElementById('fy-add-input').value='';
   renderFYSelect();renderFYManageList();
-  toast('FY '+getFYLabel(key)+' added');
+  toast('FY '+getFYLabel(key)+' add ho gayi');
 }
 async function deleteFY(fy){
   const entries=R.entries.filter(e=>e.fy===fy);
@@ -9868,11 +9602,10 @@ async function refForcePushFirebase(){
   const st=document.getElementById('ref-fp-status');
   st.textContent='🔥 Pushing to Student DB…';st.style.color='var(--amber)';
   try{
-    const authQ=fbStuCfg.secret?('?auth='+encodeURIComponent(fbStuCfg.secret)):'';
-    await fetch(`${fbStuCfg.url}/${fbStuCfg.code}.json${authQ}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:'null'});
+    await fetch(`${fbStuCfg.url}/${fbStuCfg.code}.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:'null'});
     const sVal=STUDENTS.length===0?{'__empty':true}:STUDENTS;
     const lastMod=Date.now();
-    await fetch(`${fbStuCfg.url}/${fbStuCfg.code}.json${authQ}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({students:sVal,lastMod})});
+    await fetch(`${fbStuCfg.url}/${fbStuCfg.code}.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({students:sVal,lastMod})});
     st.textContent='✅ Student DB updated — '+STUDENTS.length+' students pushed';st.style.color='var(--green)';
     toast('✅ Students force-pushed to Firebase');
   }catch(e){st.textContent='❌ Failed: '+e.message;st.style.color='var(--red)';}
@@ -9968,17 +9701,15 @@ window.addEventListener('appinstalled',()=>pwaDismiss());
 <script>
 const SETTINGS_EXPORT_KEYS=[
   // Gatepass
-  'gp_url','gp_code','gp_secret','gp_tg_cfg','gp_ptg_cfg','gp_wa_cfg','gp_meta_wa_cfg','gp_print_cfg',
-  'gp_signature','gp_stu_url','gp_stu_code','gp_stu_secret','gp_od_cfg','gp_qp_thresh','gp_qp_window','gp_force_refresh',
-  'gp_sibling_enabled','gp_photo_mandatory',
+  'gp_url','gp_code','gp_tg_cfg','gp_ptg_cfg','gp_wa_cfg','gp_meta_wa_cfg','gp_print_cfg',
+  'gp_signature','gp_stu_url','gp_stu_code','gp_od_cfg','gp_qp_thresh','gp_qp_window','gp_force_refresh',
   // Reference Register
-  'ref_fb_url','ref_fb_code','ref_fb_secret','ref_fb_stu_url','ref_fb_stu_code','ref_fb_stu_secret','ref_tg_cfg',
+  'ref_fb_url','ref_fb_code','ref_fb_stu_url','ref_fb_stu_code','ref_tg_cfg',
   'ref_cfg','ref_fs_cfg','ref_od_cfg','ref_wix_cfg','ref_extra_fys',
   // Fee QR
   'feeqr_fb','feeqr_settings','feeqr_wa_enabled','feeqr_settings_pw',
   // Due List
-  'dl_col_map_v1','dl_sheet_v1','dl_class_mode_v1','dl_wa_settings','dl_auto_reload','dl_pinned_sheet','dl_settings_pw','dl_fb_url','dl_fb_path','dl_fb_code',
-  'dl_rzp_proxy_url','dl_rzp_redirect_url','dl_txn_fb_url','dl_txn_fb_path','dl_txn_fb_secret','dl_app_token',
+  'dl_col_map_v1','dl_sheet_v1','dl_class_mode_v1','dl_wa_settings','dl_auto_reload','dl_pinned_sheet','dl_settings_pw','dl_fb_url','dl_fb_code',
   // WA Inbox
   'wai_cfg_v1','wai_fb_url','wai_fb_code','wai_inbox_pw',
   // Theme / UI
@@ -9987,11 +9718,11 @@ const SETTINGS_EXPORT_KEYS=[
 
 // ═══ CLEAR LOCAL STORAGE (App-wise + Combined) ═══
 const APP_STORAGE_KEYS = {
-  gatepass: ['gp_url','gp_code','gp_secret','gp_local','gp_local_mod','gp_wa_cfg','gp_meta_wa_cfg','gp_tg_cfg','gp_force_refresh','gp_qp_thresh','gp_qp_window','gp_signature','gp_stu_url','gp_stu_code','gp_stu_secret','gp_stu_last_fetch_date','gp_od_cfg','gp_ptg_cfg','gp_sibling_enabled','gp_photo_mandatory'],
-  register: ['ref_cfg','ref_data','ref_fb_url','ref_fb_code','ref_fb_secret','ref_fb_stu_url','ref_fb_stu_code','ref_fb_stu_secret','ref_fs_cfg','ref_od_cfg','ref_tg_cfg','ref_wix_cfg','ref_students','ref_extra_fys'],
+  gatepass: ['gp_url','gp_code','gp_local','gp_local_mod','gp_wa_cfg','gp_meta_wa_cfg','gp_tg_cfg','gp_force_refresh','gp_qp_thresh','gp_qp_window','gp_signature','gp_stu_url','gp_stu_code','gp_stu_last_fetch_date','gp_od_cfg','gp_ptg_cfg'],
+  register: ['ref_cfg','ref_data','ref_fb_url','ref_fb_code','ref_fb_stu_url','ref_fb_stu_code','ref_fs_cfg','ref_od_cfg','ref_tg_cfg','ref_wix_cfg','ref_students','ref_extra_fys'],
   feeqr:    ['feeqr_fb','feeqr_settings','feeqr_settings_pw','feeqr_students','feeqr_wa_enabled'],
   theme:    ['lis_theme','lis_sb'],
-  duelist:  ['dl_data_v1','dl_col_map_v1','dl_sheet_v1','dl_class_mode_v1','dl_wa_settings','dl_auto_reload','dl_pinned_sheet','dl_settings_pw','dl_fb_url','dl_fb_path','dl_fb_code','dl_rzp_proxy_url','dl_rzp_redirect_url','dl_txn_fb_url','dl_txn_fb_path','dl_txn_fb_secret','dl_app_token','dl_settings'],
+  duelist:  ['dl_data_v1','dl_col_map_v1','dl_sheet_v1','dl_class_mode_v1','dl_wa_settings','dl_auto_reload','dl_pinned_sheet','dl_settings_pw','dl_fb_url','dl_fb_code','dl_settings'],
 };
 function clearAppStorage(app){
   const stEl=document.getElementById('global-clear-status');
@@ -10724,7 +10455,7 @@ document.head.insertAdjacentHTML('beforeend','<style>#screen-due.active{display:
       // Firebase is configured — do not set empty, fetch is pending
       var _fbUrl=localStorage.getItem('dl_fb_url')||'';
       if(!_fbUrl){ dlUseEmbedded(); }
-      // else: dlData stays [], and it gets fetched from Firebase on DOMContentLoaded
+      // else: dlData=[] rahega, Firebase DOMContentLoaded pe fetch karega
     }
   } catch(e){
     var _fbUrl2=localStorage.getItem('dl_fb_url')||'';
@@ -11307,7 +11038,7 @@ window.dlSendWhatsApp=function(){
 // ── Create QR codes for all students, then start sending ──
 function dlCreateQRsAndSend(students,phoneId,token,tmplName,proxyUrl){
   var sub=document.getElementById('dl-wa-prog-sub');
-  var qrMap={}; // adm → {qr_id, short_url}
+  var qrMap={}; // adm → {qr_id, upi_url}
   var pending=students.length;
 
   students.forEach(function(s){
@@ -11322,11 +11053,11 @@ function dlCreateQRsAndSend(students,phoneId,token,tmplName,proxyUrl){
     // Delete old QR for this student (if any) before creating new one
     // Check Firebase via proxy for any existing QR with same adm
     var deletePromise = proxyUrl
-      ? fetch(proxyUrl+'/qr-by-adm/'+encodeURIComponent(adm), { headers: dlApiHeaders() })
+      ? fetch(proxyUrl+'/qr-by-adm/'+encodeURIComponent(adm))
           .then(function(r){ return r.json(); })
           .then(function(d){
             if(d.found && d.qr_id){
-              return fetch(proxyUrl+'/delete-qr/'+d.qr_id, { method:'DELETE', headers: dlApiHeaders() }).catch(function(){});
+              return fetch(proxyUrl+'/delete-qr/'+d.qr_id, { method:'DELETE' }).catch(function(){});
             }
           })
           .catch(function(){})
@@ -11335,7 +11066,7 @@ function dlCreateQRsAndSend(students,phoneId,token,tmplName,proxyUrl){
     deletePromise.then(function(){
       return fetch(proxyUrl+'/create-qr',{
         method:'POST',
-        headers: dlApiHeaders({'Content-Type':'application/json'}),
+        headers:{'Content-Type':'application/json'},
         body:JSON.stringify({
           adm: adm,
           name: (s.name||s.adm||'Student'),
@@ -11348,7 +11079,7 @@ function dlCreateQRsAndSend(students,phoneId,token,tmplName,proxyUrl){
     .then(function(r){ return r.json(); })
     .then(function(data){
       if(data.qr_id){
-        qrMap[adm]={ qr_id: data.qr_id, short_url: data.short_url };
+        qrMap[adm]={ qr_id: data.qr_id, image_url: data.image_url };
         // Track for future cleanup
         if(!window._dlPendingQrMap) window._dlPendingQrMap = {};
         window._dlPendingQrMap[adm] = data.qr_id;
@@ -11395,18 +11126,18 @@ function dlSendBatch(students,phoneId,token,tmplName,idx,sent,failed,qrMap,proxy
   var adm=String(s.adm||s.name);
   var redirectBase=(localStorage.getItem('dl_rzp_redirect_url')||'').replace(/\/+$/,'');
   var qrInfo=qrMap[adm]||null;
-  var suffix;
+  var suffix='?adm='+encodeURIComponent(s.adm||s.name)
+    +'&name='+encodeURIComponent(s.name||'')
+    +'&am='+encodeURIComponent(Math.round(Number(s.balance)))
+    +'&class='+encodeURIComponent(s.cls||'');
   if(qrInfo && qrInfo.qr_id){
-    // Only the payment-link id goes in the URL. The fee-pay page fetches
-    // the student name/amount/class itself from the worker (which reads
-    // the amount that was locked server-side when the link was created).
-    // This means editing the URL bar can no longer change what gets charged.
-    suffix='?qr_id='+encodeURIComponent(qrInfo.qr_id)+'&proxy='+encodeURIComponent(proxyUrl||'');
-  } else {
-    // No payment link could be created (Razorpay not configured, or the
-    // create-qr call failed) — do NOT fall back to a link with the amount
-    // in the URL. That fallback was tamperable and untracked.
-    suffix='?error=link_unavailable';
+    suffix+='&qr_id='+encodeURIComponent(qrInfo.qr_id);
+    suffix+='&proxy='+encodeURIComponent(proxyUrl||'');
+    // Pass TXN Firebase details so redirect page can poll for confirmation
+    var txnFbUrl = (localStorage.getItem('dl_txn_fb_url')||'').replace(/\/+$/,'');
+    var txnFbSec = localStorage.getItem('dl_txn_fb_secret')||'';
+    if(txnFbUrl) suffix+='&txn_fb='+encodeURIComponent(txnFbUrl);
+    if(txnFbSec) suffix+='&txn_fb_secret='+encodeURIComponent(txnFbSec);
   }
 
   // ── Build parameters based on template name ──
@@ -11513,23 +11244,20 @@ window.dlCloseProgress=function(){
 
 // ── Due List Firebase Sync ──
 var DL_FB_URL_KEY = 'dl_fb_url';
-var DL_FB_PATH_KEY = 'dl_fb_path';    // optional data folder/namespace — like Reference Register's Sync Code
-var DL_FB_CODE_KEY = 'dl_fb_code';    // real Firebase database secret, sent as ?auth=
+var DL_FB_CODE_KEY = 'dl_fb_code';
 var DL_FB_INTERVAL_KEY = 'dl_fb_interval';
 var _dlFbListener = null;
 
 function dlFbGetCfg(){
   var url = (localStorage.getItem(DL_FB_URL_KEY)||'').trim().replace(/\/+$/,'');
-  var path = (localStorage.getItem(DL_FB_PATH_KEY)||'').trim().replace(/^\/+|\/+$/g,'');
   var code = (localStorage.getItem(DL_FB_CODE_KEY)||'').trim();
-  return {url:url, path:path, code:code};
+  return {url:url, code:code};
 }
 
 function dlFbEndpoint(path){
   var cfg = dlFbGetCfg();
   if(!cfg.url) return null;
-  var fullPath = cfg.path ? (cfg.path + '/' + path) : path;
-  var ep = cfg.url + '/' + fullPath + '.json';
+  var ep = cfg.url + '/' + path + '.json';
   if(cfg.code) ep += '?auth=' + encodeURIComponent(cfg.code);
   return ep;
 }
@@ -11541,16 +11269,13 @@ function dlFbSetStatus(msg, color){
 
 window.dlFbSaveAndConnect = function(){
   var urlEl = document.getElementById('dl-fb-url');
-  var pathEl = document.getElementById('dl-fb-synccode');
   var codeEl = document.getElementById('dl-fb-code');
   var intEl = document.getElementById('dl-fb-interval');
   var url = (urlEl?urlEl.value.trim():'').replace(/\/+$/,'');
-  var path = pathEl ? pathEl.value.trim().replace(/^\/+|\/+$/g,'') : '';
   var code = codeEl?codeEl.value.trim():'';
   var interval = intEl ? intEl.value : '30';
   if(!url){ dlFbSetStatus('⚠️ Enter Firebase URL first','#d97706'); return; }
   localStorage.setItem(DL_FB_URL_KEY, url);
-  localStorage.setItem(DL_FB_PATH_KEY, path);
   localStorage.setItem(DL_FB_CODE_KEY, code);
   localStorage.setItem(DL_FB_INTERVAL_KEY, interval); // always save chosen interval
   dlFbSetStatus('⏳ Connecting…','#1d4ed8');
@@ -11659,11 +11384,9 @@ function dlFbStartPolling(){
     if(_origOpen) _origOpen.apply(this,arguments);
     var cfg = dlFbGetCfg();
     var urlEl = document.getElementById('dl-fb-url');
-    var pathEl = document.getElementById('dl-fb-synccode');
     var codeEl = document.getElementById('dl-fb-code');
     var intEl = document.getElementById('dl-fb-interval');
     if(urlEl) urlEl.value = cfg.url||'';
-    if(pathEl) pathEl.value = cfg.path||'';
     if(codeEl) codeEl.value = cfg.code||'';
     if(intEl){
       var savedInt = localStorage.getItem(DL_FB_INTERVAL_KEY)||'30';
@@ -11681,10 +11404,10 @@ function dlFbStartPolling(){
 document.addEventListener('DOMContentLoaded', function(){
   dlFbStartPolling();
   // Trigger an immediate fetch — do not wait for polling
-  // This way the data is already in localStorage before the screen opens
+  // Isse data localStorage mein aa jaata hai screen open hone se pehle
   var _cfg = dlFbGetCfg();
   if(_cfg.url){
-    dlFbFetchNow(true); // silent=true, runs in the background
+    dlFbFetchNow(true); // silent=true, background mein
   }
 });
 
@@ -11715,34 +11438,20 @@ document.addEventListener('DOMContentLoaded',function(){
 var DL_RZP_PROXY_KEY    = 'dl_rzp_proxy_url';
 var DL_RZP_REDIRECT_KEY = 'dl_rzp_redirect_url';
 var DL_TXN_FB_URL_KEY   = 'dl_txn_fb_url';
-var DL_TXN_FB_PATH_KEY  = 'dl_txn_fb_path';    // optional data folder — like everywhere else
 var DL_TXN_FB_SEC_KEY   = 'dl_txn_fb_secret';
-var DL_APP_TOKEN_KEY    = 'dl_app_token';      // shared secret sent to worker as X-App-Token
 var DL_TXN_KEY          = 'dl_transactions';   // captured txns cache
 var DL_PENDING_KEY      = 'dl_pending_qrs';    // pending qr_ids list
-
-// ── Headers helper: attach the app token to every worker request ──
-window.dlApiHeaders = function(extra){
-  var h = Object.assign({}, extra||{});
-  var tok = localStorage.getItem(DL_APP_TOKEN_KEY)||'';
-  if(tok) h['X-App-Token'] = tok;
-  return h;
-};
 
 // ── Save / Load Razorpay config ──
 window.dlRzpSaveConfig = function(){
   var p = (document.getElementById('dl-rzp-proxy-url')||{}).value||'';
   var r = (document.getElementById('dl-rzp-redirect-url')||{}).value||'';
   var tfb = (document.getElementById('dl-txn-fb-url')||{}).value||'';
-  var tpc = (document.getElementById('dl-txn-fb-synccode')||{}).value||'';
   var tsc = (document.getElementById('dl-txn-fb-secret')||{}).value||'';
-  var atk = (document.getElementById('dl-app-token')||{}).value||'';
   localStorage.setItem(DL_RZP_PROXY_KEY, p.trim().replace(/\/+$/,''));
   localStorage.setItem(DL_RZP_REDIRECT_KEY, r.trim().replace(/\/+$/,''));
   if(tfb) localStorage.setItem(DL_TXN_FB_URL_KEY, tfb.trim().replace(/\/+$/,''));
-  localStorage.setItem(DL_TXN_FB_PATH_KEY, tpc.trim().replace(/^\/+|\/+$/g,''));
   if(tsc) localStorage.setItem(DL_TXN_FB_SEC_KEY, tsc.trim());
-  if(atk) localStorage.setItem(DL_APP_TOKEN_KEY, atk.trim());
   var st = document.getElementById('dl-rzp-status');
   if(st){ st.textContent='✅ Saved!'; setTimeout(function(){ st.textContent=''; },2000); }
 };
@@ -11754,15 +11463,11 @@ window.dlRzpSaveConfig = function(){
     var pEl = document.getElementById('dl-rzp-proxy-url');
     var rEl = document.getElementById('dl-rzp-redirect-url');
     var tfbEl = document.getElementById('dl-txn-fb-url');
-    var tpcEl = document.getElementById('dl-txn-fb-synccode');
     var tscEl = document.getElementById('dl-txn-fb-secret');
-    var atkEl = document.getElementById('dl-app-token');
     if(pEl)   pEl.value   = localStorage.getItem(DL_RZP_PROXY_KEY)||'';
     if(rEl)   rEl.value   = localStorage.getItem(DL_RZP_REDIRECT_KEY)||'';
     if(tfbEl) tfbEl.value = localStorage.getItem(DL_TXN_FB_URL_KEY)||'';
-    if(tpcEl) tpcEl.value = localStorage.getItem(DL_TXN_FB_PATH_KEY)||'';
     if(tscEl) tscEl.value = localStorage.getItem(DL_TXN_FB_SEC_KEY)||'';
-    if(atkEl) atkEl.value = localStorage.getItem(DL_APP_TOKEN_KEY)||'';
   };
 })();
 
@@ -11857,13 +11562,11 @@ var _dlTxnFbTimer = null;
 
 function dlTxnFbPoll(){
   var fbUrl    = (localStorage.getItem('dl_txn_fb_url')||'').replace(/\/+$/,'');
-  var fbPath   = (localStorage.getItem('dl_txn_fb_path')||'').trim().replace(/^\/+|\/+$/g,'');
   var fbSecret = localStorage.getItem('dl_txn_fb_secret')||'';
   if(!fbUrl) return;
 
-  var node = fbPath ? (fbPath+'/dl_transactions') : 'dl_transactions';
-  var qs = (fbSecret ? 'auth='+encodeURIComponent(fbSecret)+'&' : '') + 'orderBy="paid_at"&limitToLast=20';
-  fetch(fbUrl+'/'+node+'.json?'+qs)
+  var auth = fbSecret ? '?auth='+fbSecret : '';
+  fetch(fbUrl+'/dl_transactions.json'+auth+'&orderBy="paid_at"&limitToLast=20')
     .then(function(r){ return r.json(); })
     .then(function(data){
       if(!data || typeof data !== 'object') return;
@@ -11897,9 +11600,9 @@ function dlAutoCloseQr(qrId){
   var proxyUrl = (localStorage.getItem(DL_RZP_PROXY_KEY)||'').replace(/\/+$/,'');
   if(!proxyUrl || !qrId) return;
   // 1. Close QR on Razorpay (stop further payments)
-  fetch(proxyUrl+'/close-qr/'+qrId, { method:'POST', headers: dlApiHeaders() }).catch(function(){});
+  fetch(proxyUrl+'/close-qr/'+qrId, { method:'POST' }).catch(function(){});
   // 2. Delete from MAIN Firebase qr_map (clean up — next month fresh QR will be created)
-  fetch(proxyUrl+'/delete-qr/'+qrId, { method:'DELETE', headers: dlApiHeaders() }).catch(function(){});
+  fetch(proxyUrl+'/delete-qr/'+qrId, { method:'DELETE' }).catch(function(){});
 }
 
 function dlTxnFbStartPolling(){
