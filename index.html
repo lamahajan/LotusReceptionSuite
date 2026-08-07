@@ -3960,9 +3960,8 @@ window.S=S;
 // localMod persisted — app reopen won't re-fetch if Firebase hasn't changed
 let localMod=parseInt(localStorage.getItem('gp_local_mod')||'0',10)||0;
 let gpForceRefreshOnFocus=localStorage.getItem('gp_force_refresh')!=='0';// default ON
-let cfg={url:'',code:''},syncIv=null;
+let cfg={url:'',code:''};
 let _issuingPass=false; // guard against double-tap on issue button
-let _pendingPushKeys=new Set(); // keys that failed to push — retry on next fetchAll
 let camStream=null,photo=null,cpSel=null,isDark=false;
 let qpSel=null;
 const PASS=(()=>{const _e='bWFoYWphbg==';try{return atob(_e);}catch{return '';}})();
@@ -3988,8 +3987,6 @@ function loadLocalData(){
     const d=localStorage.getItem('gp_local');
     if(d){const p=JSON.parse(d);if(p.students)S.students=p.students;if(p.passes)S.passes=p.passes;if(p.buses&&p.buses.length)S.buses=p.buses;updBadge();popBusSel();}
   }catch(err){}
-  if(!localStorage.getItem('gp_sync_snapshot'))_savePassSnapshot(S.passes); // seed baseline once
-  // GP students come from GP Firebase only — no direct cross-sync with Ref register
 }
 // ── PHOTO CACHE — localStorage backup for offline/quick access ───────────────
 const _photoCache={
@@ -4002,7 +3999,7 @@ const _photoCache={
     keys.forEach(k=>{const id=k.slice(9);const p=S.passes.find(x=>x.id===id);if(!p||(p.date||'')<cutoff)localStorage.removeItem(k);});
   }
 };
-// Delete a pass's photo from Firebase /photos/ node
+// Delete a pass's photo from Firebase /photos/ node (on-demand — never streamed)
 async function _deletePhotoFromFB(passId){
   if(!cfg.url||!cfg.code||!passId)return;
   try{
@@ -4014,13 +4011,13 @@ async function _deleteGateOutFromFB(passId){
   if(!cfg.url||!cfg.code||!passId)return;
   try{await fetch(`${cfg.url}/${cfg.code}/gateout/${passId}.json`,{method:'DELETE'});}catch(e){}
 }
-// Push a single photo to Firebase separately (keeps main passes array small)
+// Push a single photo to Firebase separately (keeps the passes node small/cheap)
 async function _pushPhotoToFB(passId, photoData){
   if(!cfg.url||!cfg.code||!passId||!photoData)return;
   try{await fetch(`${cfg.url}/${cfg.code}/photos/${passId}.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(photoData)});}
   catch(e){}
 }
-// Fetch a single photo from Firebase and cache it locally
+// Fetch a single photo from Firebase on demand and cache it locally
 async function _fetchPhotoFromFB(passId){
   if(!cfg.url||!cfg.code||!passId)return null;
   try{
@@ -4059,197 +4056,131 @@ function saveLocal(){
 function recToggleTheme(){window.toggleTheme();isDark=document.body.classList.contains('dark');document.getElementById('screen-rec').classList.toggle('dark',isDark);var b=document.getElementById('theme-btn');if(b)b.textContent=isDark?'☀️ Light':'🌙 Dark';}
 function recInitTheme(){isDark=document.body.classList.contains('dark');document.getElementById('screen-rec').classList.toggle('dark',isDark);var b=document.getElementById('theme-btn');if(b)b.textContent=isDark?'☀️ Light':'🌙 Dark';}
 
-// ═══ SYNC MERGE — tracks the passes state we last confirmed matches Firebase, so a
-// reconnecting device can tell apart "server moved on without me" (fetch it) from
-// "I made a local change that never got pushed" (keep it) — instead of picking one
-// side blindly by timestamp, which used to let a stale offline device wipe out
-// another device's delete/add.
-function _passSig(p){if(!p)return'';const{pickerPhoto,_hasPhoto,...rest}=p;return JSON.stringify(rest);}
-function _buildPassSnapshot(arr){const m={};(arr||[]).forEach(p=>{if(p&&p.id)m[p.id]=_passSig(p);});return m;}
-function _savePassSnapshot(arr){try{localStorage.setItem('gp_sync_snapshot',JSON.stringify(_buildPassSnapshot(arr)));}catch(e){}}
-function _loadPassSnapshot(){try{return JSON.parse(localStorage.getItem('gp_sync_snapshot')||'{}');}catch(e){return{};}}
-// Merge freshly-fetched server passes with any local-only unsynced changes.
-// Returns {merged, changed} — changed=true means we found local work that must be
-// pushed back so the server (and other devices) catch up.
-function _mergeLocalPending(freshPs){
-  const snap=_loadPassSnapshot();
-  const localMap={};(S.passes||[]).forEach(p=>{if(p&&p.id)localMap[p.id]=p;});
-  const freshMap={};(freshPs||[]).forEach(p=>{if(p&&p.id)freshMap[p.id]=p;});
-  let changed=false;
-  // Local adds/edits never confirmed synced (missing from snapshot, or signature
-  // differs from snapshot) win — they haven't had a chance to reach the server yet.
-  Object.keys(localMap).forEach(id=>{
-    const lp=localMap[id],wasSynced=id in snap;
-    if(!wasSynced||snap[id]!==_passSig(lp)){freshMap[id]=lp;changed=true;}
-  });
-  // Local deletes never confirmed synced (id was known-synced, now missing locally,
-  // but still present on the server) get removed from the merged result too.
-  Object.keys(snap).forEach(id=>{
-    if(!(id in localMap)&&(id in freshMap)){delete freshMap[id];changed=true;}
-  });
-  return changed?{merged:Object.values(freshMap),changed:true}:{merged:freshPs,changed:false};
-}
+// ═══ FIREBASE — REAL-TIME SYNC (StaffFlow-style, bandwidth-optimized) ═══
+// Design:
+//  • Passes live at /passes/{id} (own record each) instead of one big array —
+//    a device only ever writes the ONE record it changed, so two devices can
+//    never stomp on each other's data anymore (this was the old overwrite bug).
+//  • Live updates arrive via Firebase's REST *streaming* endpoint using the
+//    browser's native EventSource — no polling loop, no repeated full fetches.
+//    Firebase pushes only the changed record over the wire, which is exactly
+//    what keeps this cheap on the Firebase free (Spark) bandwidth quota.
+//  • push('passes') diffs against the last-known-pushed signature per id and
+//    only sends what actually changed/was deleted — never re-sends unchanged
+//    records.
+let _passesById={};      // live mirror of the /passes node, keyed by id
+let _pushedPassSig={};   // last signature we successfully pushed per id (dedupes writes)
+let _gpES=null,_gpESGateout=null; // open EventSource streams
 
-// ═══ FIREBASE ═══
-async function fetchAll(){
-  if(!cfg.url||!cfg.code)return;
+function _loadPushedSig(){try{return JSON.parse(localStorage.getItem('gp_pushed_sig')||'{}');}catch(e){return{};}}
+function _savePushedSig(){try{localStorage.setItem('gp_pushed_sig',JSON.stringify(_pushedPassSig));}catch(e){}}
+_pushedPassSig=_loadPushedSig();
+
+// Apply a Firebase streaming "put"/"patch" event ({path,data}) onto a plain local mirror object.
+function _applyRTPatch(obj,path,data){
+  if(path==='/'){
+    Object.keys(obj).forEach(k=>delete obj[k]);
+    if(data&&typeof data==='object')Object.assign(obj,data);
+    return;
+  }
+  const parts=path.split('/').filter(Boolean);
+  let cur=obj;
+  for(let i=0;i<parts.length-1;i++){if(!cur[parts[i]]||typeof cur[parts[i]]!=='object')cur[parts[i]]={};cur=cur[parts[i]];}
+  const lastKey=parts[parts.length-1];
+  if(data===null)delete cur[lastKey];else cur[lastKey]=data;
+}
+function _rebuildPassesFromMirror(){
+  const _today=new Date().toISOString().slice(0,10),_yesterday=new Date(Date.now()-86400000).toISOString().slice(0,10);
+  const arr=Object.keys(_passesById).map(id=>{const p=_passesById[id];return p&&typeof p==='object'?{...p,id}:null;}).filter(Boolean);
+  arr.forEach(p=>{
+    if(p._hasPhoto&&!p.pickerPhoto){
+      const cached=_photoCache.get(p.id);
+      if(cached)p.pickerPhoto=cached;
+      else if(p.date===_today||p.date===_yesterday)_fetchPhotoFromFB(p.id).then(ph=>{if(ph){const sp=S.passes.find(x=>x.id===p.id);if(sp)sp.pickerPhoto=ph;renderAll();}});
+    }
+  });
+  arr.sort((a,b)=>(b.date+b.time).localeCompare(a.date+a.time));
+  S.passes=arr;
+  saveLocal();
+  renderAll();
+}
+function fetchAll(){ /* kept as a no-op alias — the live stream replaces manual fetch/poll */ }
+function startSync(){
+  if(!cfg.url||!cfg.code){setSS('off');return;}
   setSS('ing');
-  let _mergeNeedsPush=false;
-  try{
-    // ── STEP 1: Cheap lastMod + clear-command check (~50-100 bytes) ──────────
-    // Firebase stores lastMod as a child node — fetch only that first
-    const [lmr,ccr]=await Promise.all([
-      fetch(`${cfg.url}/${cfg.code}/lastMod.json`),
-      fetch(`${cfg.url}/${cfg.code}/clearCmd.json`)
-    ]);
-    let _forceClear=false;
-    if(ccr.ok){
-      const remClear=(await ccr.json())||0;
-      const appliedClear=parseInt(localStorage.getItem('gp_clear_cmd_applied')||'0',10)||0;
-      if(remClear>appliedClear){
-        // Some device broadcast "clear local pass cache" — wipe ours and force a
-        // fresh fetch. Don't touch snapshot-as-pending-delete logic: reset the
-        // snapshot too, so the empty local state isn't mistaken for local deletes.
-        S.passes=[];
-        localStorage.setItem('gp_sync_snapshot','{}');
-        localStorage.setItem('gp_clear_cmd_applied',String(remClear));
-        localMod=0;
-        _forceClear=true;
-      }
+  if(_gpES)_gpES.close();
+  if(_gpESGateout)_gpESGateout.close();
+  _passesById={};
+  _gpES=new EventSource(`${cfg.url}/${cfg.code}/passes.json`);
+  const _onPassesEvent=ev=>{
+    try{
+      const {path,data}=JSON.parse(ev.data);
+      _applyRTPatch(_passesById,path,data);
+      _rebuildPassesFromMirror();
+      setSS('ok');
+      push('passes'); // safety net: sends anything created locally before the stream connected
+    }catch(e){}
+  };
+  _gpES.addEventListener('put',_onPassesEvent);
+  _gpES.addEventListener('patch',_onPassesEvent);
+  _gpES.onerror=()=>{setSS('err');}; // EventSource retries the connection on its own — status flips back on next event
+  // Gate-out events from the companion Gate app — small node, worth its own live stream
+  _gpESGateout=new EventSource(`${cfg.url}/${cfg.code}/gateout.json`);
+  const _applyGateOut=(id,rec)=>{
+    if(!id||!rec||!rec.gateOutTime)return;
+    const p=S.passes.find(x=>x.id===id);
+    if(p&&!p.gateOutTime){
+      p.gateOutTime=rec.gateOutTime;if(rec.busNumber)p.busNumber=rec.busNumber;if(rec._ts)p._ts=rec._ts;
+      if(TGCfg.enabled&&TGCfg.token&&p.tgMsgId)editTelegramOnExit(p);
+      if(MetaWACfg.enabled&&MetaWACfg.phoneNumberId&&MetaWACfg.accessToken&&MetaWACfg.outTemplateName)metaWASendGateOut(p);
+      saveLocal();renderAll();
     }
-    if(lmr.ok){
-      const remMod=(await lmr.json())||0;
-      if(!_forceClear&&remMod===localMod){
-        // Server unchanged since we last saw it — safe to retry any failed pushes now
-        if(_pendingPushKeys.size>0){for(const k of [..._pendingPushKeys])await push(k);}
-        setSS('ok');return;
-      }
-      // remMod differs from localMod (higher OR lower) — some device may have added/
-      // deleted data while we were away. NEVER push our local copy blindly here (that
-      // was overwriting other devices' deletes/adds on reconnect). Always pull fresh
-      // data first — fall through to the full fetch below regardless of direction.
-    }
-    // ── STEP 2: Full fetch only when something changed ────────────────────────
-    const r=await fetch(`${cfg.url}/${cfg.code}.json`);
-    if(!r.ok)throw 0;
-    const d=await r.json();
-    if(d){
-      const sm=d.lastMod||0;
-      const toArr=v=>Array.isArray(v)?v:(v&&v.__empty)?[]:(v!=null&&typeof v==='object'?Object.values(v).filter(x=>x!=null):null);
-      const ps=toArr(d.passes);
-      if(ps!==null){
-        // ── Step A: merge gateout node FIRST (apply Gate app's gateOutTimes) ──
-        // Must be done before TG detection, otherwise gateOutTime will be null
-        if(d.gateout&&typeof d.gateout==='object'){
-          const _goMap={};Object.entries(d.gateout).forEach(([pid,rec])=>{if(rec&&rec.gateOutTime)_goMap[pid]=rec;});
-          ps.forEach(p=>{
-            const rec=_goMap[p.id];
-            if(rec&&!p.gateOutTime){
-              p.gateOutTime=rec.gateOutTime;
-              if(rec.busNumber)p.busNumber=rec.busNumber;
-              if(rec._ts)p._ts=rec._ts;
-            }
-          });
-        }
-        // ── Step B: Detect newly-exited passes → edit Telegram message + Meta WA out notification ──
-        if(TGCfg.enabled&&TGCfg.token){
-          const oldMap={};S.passes.forEach(p=>{if(p.id)oldMap[p.id]=p.gateOutTime||null;});
-          ps.forEach(p=>{
-            const wasKnown=p.id in oldMap;
-            if(wasKnown&&p.tgMsgId&&p.gateOutTime&&!oldMap[p.id]){
-              const localPass=S.passes.find(x=>x.id===p.id);
-              if(localPass&&localPass._hasPhoto)p._hasPhoto=true;
-              editTelegramOnExit(p);
-            }
-          });
-        }
-        // Meta WA Gate Out notification (runs regardless of Telegram)
-        if(MetaWACfg.enabled&&MetaWACfg.phoneNumberId&&MetaWACfg.accessToken&&MetaWACfg.outTemplateName){
-          const oldMap2={};S.passes.forEach(p=>{if(p.id)oldMap2[p.id]=p.gateOutTime||null;});
-          ps.forEach(p=>{
-            const wasKnown=p.id in oldMap2;
-            if(wasKnown&&p.gateOutTime&&!oldMap2[p.id]){
-              metaWASendGateOut(p);
-            }
-          });
-        }
-        // ── Step C: Photo restore ──
-        const _today=new Date().toISOString().slice(0,10);
-        const _yesterday=new Date(Date.now()-86400000).toISOString().slice(0,10);
-        const _missingPhotos=[];
-        ps.forEach(p=>{
-          if(p._hasPhoto&&!p.pickerPhoto){
-            const cached=_photoCache.get(p.id);
-            if(cached){p.pickerPhoto=cached;}
-            else if(p.date===_today||p.date===_yesterday){_missingPhotos.push(p);}
-          }
-        });
-        // ── Step D: merge local-only pending adds/edits/deletes onto fresh server data ──
-        const _mres=_mergeLocalPending(ps);
-        const finalPs=_mres.merged;
-        _mergeNeedsPush=_mres.changed;
-        // Sort passes — newest on top (by date+time descending)
-        finalPs.sort((a,b)=>(b.date+b.time).localeCompare(a.date+a.time));
-        S.passes=finalPs;
-        // Fetch missing photos from Firebase (only today+yesterday, max 10 at a time)
-        if(_missingPhotos.length&&cfg.url&&cfg.code){
-          _missingPhotos.slice(0,10).forEach(async p=>{
-            const ph=await _fetchPhotoFromFB(p.id);
-            if(ph){
-              p.pickerPhoto=ph;
-              const sp=S.passes.find(x=>x.id===p.id);
-              if(sp)sp.pickerPhoto=ph;
-            }
-          });
-        }
-      }
-      if(d.buses&&!d.buses.__empty){const _raw=Array.isArray(d.buses)?d.buses:Object.values(d.buses);const _clean=_raw.filter(b=>b!=null&&b!=='');if(_clean.length)S.buses=_clean;}
-      if(d.tgApproveSynced&&typeof d.tgApproveEnabled!=='undefined'){
-        const rv=!!d.tgApproveEnabled;
-        if(TGCfg.approveEnabled!==rv){TGCfg.approveEnabled=rv;localStorage.setItem('gp_tg_cfg',JSON.stringify(TGCfg));const el=document.getElementById('tg-approve-enabled');if(el)el.checked=rv;startTGApprovalPolling();gpToast((rv?'✅':'❌')+' Approve/Deny '+(rv?'ON':'OFF')+' (synced from another device)');}
-      }
-      if(typeof d.gpForceRefreshOnFocus!=='undefined'){
-        const rv=!!d.gpForceRefreshOnFocus;
-        if(gpForceRefreshOnFocus!==rv){gpForceRefreshOnFocus=rv;localStorage.setItem('gp_force_refresh',rv?'1':'0');const el=document.getElementById('gp-force-refresh');if(el)el.checked=rv;gpToast((rv?'✅':'❌')+' Force refresh on focus '+(rv?'ON':'OFF')+' (synced)');}
-      }
-      if(_mergeNeedsPush){
-        // Local had unsynced adds/edits/deletes that survived the merge — push the
-        // merged result back so the server (and other devices) catch up.
-        await push('passes');
-      }else{
-        localMod=sm;saveLocal();
-      }
-      _savePassSnapshot(S.passes);
-      renderAll();
-    }
-    setSS('ok');
-  }catch{setSS('err');}
+  };
+  const _onGateoutEvent=ev=>{
+    try{
+      const {path,data}=JSON.parse(ev.data);
+      if(path==='/'){if(data&&typeof data==='object')Object.entries(data).forEach(([id,rec])=>_applyGateOut(id,rec));}
+      else{const id=path.split('/').filter(Boolean)[0];if(id)_applyGateOut(id,data);}
+    }catch(e){}
+  };
+  _gpESGateout.addEventListener('put',_onGateoutEvent);
+  _gpESGateout.addEventListener('patch',_onGateoutEvent);
+  // Buses: small and infrequently-changed — one fresh fetch on (re)connect is enough
+  fetch(`${cfg.url}/${cfg.code}/buses.json`).then(r=>r.ok?r.json():null).then(d=>{if(Array.isArray(d)&&d.length){S.buses=d;popBusSel();}}).catch(()=>{});
 }
 async function push(k){
-  if(!cfg.url||!cfg.code){saveLocal();return;}
-  S.lastMod=Date.now();localMod=S.lastMod;setSS('ing');
-  saveLocal(); // save AFTER bumping localMod so it's never stale on restart
-  if(k==='students')return;
-  // Photos are compressed (~50KB) so safe to send to Firebase for multi-device sync
-  // Strip photos from passes before Firebase push (photos stored separately under /photos/)
-  const _stripP=arr=>Array.isArray(arr)?arr.map(p=>p&&p.pickerPhoto&&p.pickerPhoto!=='__has_photo'?{...p,pickerPhoto:null,_hasPhoto:true}:p):arr;
-  const val=Array.isArray(S[k])&&S[k].length===0?{'__empty':true}:(k==='passes'?_stripP(S[k]):S[k]);
-  try{
-    if(k==='passes'){
-      await fetch(`${cfg.url}/${cfg.code}/passes.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(val)});
-      await fetch(`${cfg.url}/${cfg.code}/lastMod.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(S.lastMod)});
-    } else if(k==='buses'){
-      await fetch(`${cfg.url}/${cfg.code}/buses.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(val)});
-      await fetch(`${cfg.url}/${cfg.code}/lastMod.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(S.lastMod)});
-    } else {
-      await fetch(`${cfg.url}/${cfg.code}.json`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({[k]:val,lastMod:S.lastMod})});
-    }
-    _pendingPushKeys.delete(k);
-    if(k==='passes')_savePassSnapshot(S.passes);
-    setSS('ok');
-  }catch{_pendingPushKeys.add(k);setSS('err');}
+  saveLocal();
+  if(!cfg.url||!cfg.code)return;
+  if(k==='students')return; // Gate Pass students are local-only — see Students DB settings for the separate shared roster sync
+  if(k==='buses'){
+    setSS('ing');
+    try{await fetch(`${cfg.url}/${cfg.code}/buses.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(S.buses.length===0?{'__empty':true}:S.buses)});setSS('ok');}
+    catch(e){setSS('err');}
+    return;
+  }
+  if(k==='passes'){
+    const _strip=p=>(p&&p.pickerPhoto&&p.pickerPhoto!=='__has_photo')?{...p,pickerPhoto:null,_hasPhoto:true}:p;
+    const currentMap={};S.passes.forEach(p=>{if(p&&p.id)currentMap[p.id]=p;});
+    const toWrite=[],toDeleteIds=[];
+    Object.keys(currentMap).forEach(id=>{
+      const val=_strip(currentMap[id]),sig=JSON.stringify(val);
+      if(_pushedPassSig[id]!==sig)toWrite.push({id,val,sig});
+    });
+    Object.keys(_pushedPassSig).forEach(id=>{if(!(id in currentMap))toDeleteIds.push(id);});
+    if(!toWrite.length&&!toDeleteIds.length)return; // nothing changed — no request sent
+    setSS('ing');
+    try{
+      await Promise.all([
+        ...toWrite.map(w=>fetch(`${cfg.url}/${cfg.code}/passes/${w.id}.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(w.val)})),
+        ...toDeleteIds.map(id=>fetch(`${cfg.url}/${cfg.code}/passes/${id}.json`,{method:'DELETE'}))
+      ]);
+      toWrite.forEach(w=>_pushedPassSig[w.id]=w.sig);
+      toDeleteIds.forEach(id=>delete _pushedPassSig[id]);
+      _savePushedSig();
+      setSS('ok');
+    }catch(e){setSS('err');}
+  }
 }
-// syncGpStudentsToRef removed — GP ↔ Ref sync happens only via Firebase
 function setSS(st){
   const d=document.getElementById('sdot'),ti=document.getElementById('stim');
   if(d){
@@ -4264,25 +4195,12 @@ function setSS(st){
     else ti.textContent='';
   }
 }
-function startSync(){
-  setSS('ing');
-  // Once-per-day full fetch: if app opened for first time today → force fresh Firebase fetch
-  // This ensures deletions/changes made on other devices get reflected
-  const _today=new Date().toISOString().slice(0,10);
-  const _lastFullFetch=localStorage.getItem('gp_last_full_fetch')||'';
-  if(_lastFullFetch!==_today){
-    localMod=0; // force full fetch
-    localStorage.setItem('gp_last_full_fetch',_today);
-  }
-  fetchAll();
-  if(syncIv)clearInterval(syncIv);
-  syncIv=setInterval(fetchAll,6000);
-}
-// Re-sync immediately when tab/app comes back to foreground
-document.addEventListener('visibilitychange',()=>{
-  if(document.visibilityState==='visible'&&cfg.url&&cfg.code){if(gpForceRefreshOnFocus)localMod=0;fetchAll();}
-});
 function renderAll(){popBusSel();updBadge();const a=document.querySelector('.tb.active');if(!a)return;const f=a.getAttribute('onclick')||'';if(f.includes('rec'))renderRec();if(f.includes('cut'))renderCpBusSummary();if(f.includes('set')&&document.getElementById('set-ct').style.display!=='none'){renderBuses();renderStu();}renderQGSidebar();}
+// Mobile browsers can silently suspend an open EventSource in a backgrounded tab —
+// restart the stream when the app comes back to the foreground, just in case.
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState==='visible'&&cfg.url&&cfg.code&&(!_gpES||_gpES.readyState===2))startSync();
+});
 
 // ═══ UTILS ═══
 function todayStr(){return new Date().toISOString().split('T')[0];}
@@ -5645,8 +5563,8 @@ async function testMetaWACfg(){
 function recLockSet(){document.getElementById('pw-gate').style.display='block';document.getElementById('set-ct').style.display='none';document.getElementById('pw-inp').value='';document.getElementById('pw-err').textContent='';document.getElementById('mdlist').style.display='none';document.getElementById('drlist').style.display='none';document.getElementById('mdui').style.display='flex';}
 function loadCfgF(){document.getElementById('cfg-url').value=localStorage.getItem('gp_url')||'';document.getElementById('cfg-code').value=localStorage.getItem('gp_code')||'';const connected=!!(localStorage.getItem('gp_url')&&localStorage.getItem('gp_code'));document.getElementById('sync-status-info').textContent=connected?`✅ Connected to: ${localStorage.getItem('gp_url')} / ${localStorage.getItem('gp_code')}`:'⚪ Not connected — fill in details and click Save & Connect.';const frEl=document.getElementById('gp-force-refresh');if(frEl)frEl.checked=gpForceRefreshOnFocus;}
 async function testCfg(){const url=document.getElementById('cfg-url').value.trim().replace(/\/$/,'');const code=document.getElementById('cfg-code').value.trim().replace(/[^a-zA-Z0-9_-]/g,'');if(!url||!code){cfgSt('⚠️ Fill in both fields first','var(--amber)');return;}cfgSt('Testing…','var(--blue)');try{const r=await fetch(`${url}/${code}/ping.json`,{method:'PUT',body:JSON.stringify(1)});if(!r.ok)throw 0;cfgSt('✅ Connection successful!','var(--green)');}catch{cfgSt('❌ Failed — check URL & Firebase rules','var(--red)');}}
-async function saveCfg(){const url=document.getElementById('cfg-url').value.trim().replace(/\/$/,'');const code=document.getElementById('cfg-code').value.trim().replace(/[^a-zA-Z0-9_-]/g,'');if(!url||!code){cfgSt('⚠️ Fill both fields','var(--amber)');return;}document.getElementById('cfg-save-btn').disabled=true;cfgSt('Testing & saving…','var(--blue)');try{const r=await fetch(`${url}/${code}/ping.json`,{method:'PUT',body:JSON.stringify(1)});if(!r.ok)throw 0;localStorage.setItem('gp_url',url);localStorage.setItem('gp_code',code);cfg={url,code};cfgSt('✅ Saved! Syncing now…','var(--green)');startSync();loadCfgF();}catch{cfgSt('❌ Connection failed','var(--red)');}document.getElementById('cfg-save-btn').disabled=false;}
-function disconnectFB(){if(!confirm('Disconnect Firebase?'))return;localStorage.removeItem('gp_url');localStorage.removeItem('gp_code');cfg={url:'',code:''};if(syncIv)clearInterval(syncIv);setSS('off');loadCfgF();gpToast('✕ Firebase disconnected','inf');}
+async function saveCfg(){const url=document.getElementById('cfg-url').value.trim().replace(/\/$/,'');const code=document.getElementById('cfg-code').value.trim().replace(/[^a-zA-Z0-9_-]/g,'');if(!url||!code){cfgSt('⚠️ Fill both fields','var(--amber)');return;}document.getElementById('cfg-save-btn').disabled=true;cfgSt('Testing & saving…','var(--blue)');try{const r=await fetch(`${url}/${code}/ping.json`,{method:'PUT',body:JSON.stringify(1)});if(!r.ok)throw 0;localStorage.setItem('gp_url',url);localStorage.setItem('gp_code',code);cfg={url,code};cfgSt('✅ Saved! Live sync connected…','var(--green)');startSync();loadCfgF();}catch{cfgSt('❌ Connection failed','var(--red)');}document.getElementById('cfg-save-btn').disabled=false;}
+function disconnectFB(){if(!confirm('Disconnect Firebase?'))return;localStorage.removeItem('gp_url');localStorage.removeItem('gp_code');cfg={url:'',code:''};if(_gpES){_gpES.close();_gpES=null;}if(_gpESGateout){_gpESGateout.close();_gpESGateout=null;}setSS('off');loadCfgF();gpToast('✕ Firebase disconnected','inf');}
 function saveForceRefreshSetting(){const el=document.getElementById('gp-force-refresh');gpForceRefreshOnFocus=el?el.checked:true;localStorage.setItem('gp_force_refresh',gpForceRefreshOnFocus?'1':'0');if(cfg.url&&cfg.code){fetch(`${cfg.url}/${cfg.code}.json`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({gpForceRefreshOnFocus:gpForceRefreshOnFocus,lastMod:Date.now()})}).catch(()=>{});}gpToast((gpForceRefreshOnFocus?'✅':'❌')+' Force refresh on focus '+(gpForceRefreshOnFocus?'ON':'OFF'));}
 function cfgSt(m,c){const el=document.getElementById('cfg-status');el.textContent=m;el.style.color=c;}
 
@@ -6039,73 +5957,25 @@ function _gpBatchPrint(passes){
 }
 
 // ═══ GATEPASS BACKUP & FORCE PUSH ═══
+// Data is now per-record and stays live-synced automatically, so a "broadcast clear
+// to every device" is no longer needed — these buttons are now simple manual helpers.
 async function gpForcePushAllData(){
-  const hasGP=cfg.url&&cfg.code;
-  const hasStu=gpStuCfg.url&&gpStuCfg.code;
-  if(!hasGP&&!hasStu){gpToast('⚠️ No Firebase DB connected','err');return;}
+  if(!cfg.url||!cfg.code){gpToast('⚠️ No Firebase DB connected','err');return;}
   const st=document.getElementById('gp-fp-status');
-  const parts=[];
-  if(hasGP)parts.push('Passes: '+S.passes.length+', Buses: '+S.buses.length);
-  if(hasStu)parts.push('Students: '+S.students.length);
-  if(!confirm('This will run a full Firebase sync of:\n'+parts.join('\n')+'\n\nContinue?'))return;
-  st.textContent='🔥 Syncing all data…';st.style.color='var(--amber)';
-  try{
-    if(hasGP){
-      await fetch(`${cfg.url}/${cfg.code}/passes.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(S.passes.length===0?{'__empty':true}:S.passes)});
-      await fetch(`${cfg.url}/${cfg.code}/buses.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(S.buses.length===0?{'__empty':true}:S.buses)});
-    }
-    if(hasStu){
-      await fetch(`${gpStuCfg.url}/${gpStuCfg.code}.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:'null'});
-      await fetch(`${gpStuCfg.url}/${gpStuCfg.code}.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({students:S.students.length===0?{'__empty':true}:S.students,lastMod:Date.now()})});
-    }
-    st.textContent='✅ All data synced to Firebase!';st.style.color='var(--green)';
-    gpToast('✅ Full Firebase sync complete');
-  }catch(e){st.textContent='❌ Failed: '+e.message;st.style.color='var(--red)';}
+  if(st){st.textContent='🔥 Pushing local passes & buses…';st.style.color='var(--amber)';}
+  Object.keys(_pushedPassSig).forEach(id=>delete _pushedPassSig[id]); // force every local pass to be re-sent
+  await push('passes');
+  await push('buses');
+  if(st){st.textContent='✅ Local data pushed to Firebase';st.style.color='var(--green)';}
+  gpToast('✅ Push complete');
 }
-
-
 async function gpBroadcastClearLocal(){
-  if(!cfg.url||!cfg.code){gpToast('⚠️ Firebase not connected','err');return;}
-  if(!confirm('This clears the local pass cache on EVERY connected device (this one too) and makes each re-fetch fresh from Firebase.\n\nFirebase\'s own data and each device\'s settings are NOT touched — only the local pass cache.\n\nContinue?'))return;
-  const st=document.getElementById('gp-clear-status');
-  if(st){st.textContent='📡 Broadcasting…';st.style.color='var(--amber)';}
-  try{
-    const ts=Date.now();
-    await fetch(`${cfg.url}/${cfg.code}/clearCmd.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(ts)});
-    // Apply on this device immediately too, instead of waiting for the next poll
-    localStorage.setItem('gp_clear_cmd_applied',String(ts));
-    S.passes=[];
-    localStorage.setItem('gp_sync_snapshot','{}');
-    localMod=0;
-    await fetchAll();
-    if(st){st.textContent='✅ Sent — every device refreshes within ~6s';st.style.color='var(--green)';}
-    gpToast('✅ All devices will clear & refresh shortly');
-  }catch(e){
-    if(st){st.textContent='❌ Failed to send — check connection';st.style.color='var(--red)';}
-    gpToast('❌ Broadcast failed','err');
-  }
+  gpToast('Not needed anymore — passes sync live per-record, so devices never go out of sync','inf');
 }
 async function gpForcePushFirebase(){
-  const hasGP=cfg.url&&cfg.code;
-  const hasStu=gpStuCfg.url&&gpStuCfg.code;
-  if(!hasGP&&!hasStu){gpToast('⚠️ No Firebase DB connected','err');return;}
-  if(!confirm('This will CLEAR the Student DB on Firebase and push current local students.\n\nStudents: '+S.students.length+'\n\nContinue?'))return;
-  const st=document.getElementById('gp-fp-status');
-  st.textContent='🔥 Pushing to Student DB…';st.style.color='var(--amber)';
-  try{
-    if(hasStu){
-      // Wipe student DB path then push all students
-      await fetch(`${gpStuCfg.url}/${gpStuCfg.code}.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:'null'});
-      const sVal=S.students.length===0?{'__empty':true}:S.students;
-      const lastMod=Date.now();
-      await fetch(`${gpStuCfg.url}/${gpStuCfg.code}.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({students:sVal,lastMod})});
-      st.textContent='✅ Student DB updated — '+S.students.length+' students pushed';st.style.color='var(--green)';
-    } else {
-      st.textContent='⚠️ Student DB not connected (configure in Students DB settings)';st.style.color='var(--amber)';
-      return;
-    }
-    gpToast('✅ Students force-pushed to Firebase');
-  }catch(e){st.textContent='❌ Failed: '+e.message;st.style.color='var(--red)';}
+  if(!cfg.url||!cfg.code){gpToast('⚠️ No Firebase DB connected','err');return;}
+  gpToast('🔄 Reconnecting live sync…','inf');
+  startSync();
 }
 
 function gpExportJSON(){
