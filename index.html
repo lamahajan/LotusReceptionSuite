@@ -4069,6 +4069,8 @@ function recInitTheme(){isDark=document.body.classList.contains('dark');document
 //    only sends what actually changed/was deleted — never re-sends unchanged
 //    records.
 let _passesById={};      // live mirror of the /passes node, keyed by id
+let _gateoutById={};     // live mirror of the /gateout node, keyed by id — reapplied on every rebuild
+                          // so a /passes stream event never wipes an already-known exit
 let _pushedPassSig={};   // last signature we successfully pushed per id (dedupes writes)
 let _gpES=null,_gpESGateout=null; // open EventSource streams
 
@@ -4092,6 +4094,16 @@ function _applyRTPatch(obj,path,data){
 function _rebuildPassesFromMirror(){
   const _today=new Date().toISOString().slice(0,10),_yesterday=new Date(Date.now()-86400000).toISOString().slice(0,10);
   const arr=Object.keys(_passesById).map(id=>{const p=_passesById[id];return p&&typeof p==='object'?{...p,id}:null;}).filter(Boolean);
+  // Reapply any gate-out we already know about — /passes node never stores gateOutTime,
+  // so without this a fresh rebuild (new pass cut, reconnect, app reopen) would wipe exits.
+  arr.forEach(p=>{
+    const g=_gateoutById[p.id];
+    if(g&&g.gateOutTime&&!p.gateOutTime){
+      p.gateOutTime=g.gateOutTime;
+      if(g.busNumber)p.busNumber=g.busNumber;
+      if(g._ts)p._ts=g._ts;
+    }
+  });
   arr.forEach(p=>{
     if(p._hasPhoto&&!p.pickerPhoto){
       const cached=_photoCache.get(p.id);
@@ -4111,6 +4123,7 @@ function startSync(){
   if(_gpES)_gpES.close();
   if(_gpESGateout)_gpESGateout.close();
   _passesById={};
+  _gateoutById={};
   _gpES=new EventSource(`${cfg.url}/${cfg.code}/passes.json`);
   const _onPassesEvent=ev=>{
     try{
@@ -4128,6 +4141,7 @@ function startSync(){
   _gpESGateout=new EventSource(`${cfg.url}/${cfg.code}/gateout.json`);
   const _applyGateOut=(id,rec)=>{
     if(!id||!rec||!rec.gateOutTime)return;
+    _gateoutById[id]=rec; // keep for reapplication on future passes-mirror rebuilds
     const p=S.passes.find(x=>x.id===id);
     if(p&&!p.gateOutTime){
       p.gateOutTime=rec.gateOutTime;if(rec.busNumber)p.busNumber=rec.busNumber;if(rec._ts)p._ts=rec._ts;
