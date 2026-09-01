@@ -2733,33 +2733,34 @@ Reason: {reason}"></textarea>
       <div style="background:#fff;border-bottom:1px solid #e2e8f0;padding:0 14px;height:54px;display:flex;align-items:center;gap:10px;flex-shrink:0;z-index:9">
         <span style="font-size:20px;flex-shrink:0">🗓️</span>
         <span style="font-size:15px;font-weight:800;color:#0f172a;letter-spacing:-.2px;flex:1">Attendance</span>
-        <div id="att-date-lbl" style="font-size:12px;color:#7c3aed;font-weight:700;font-family:'Outfit',sans-serif"></div>
-        <button onclick="attOpenSettings()" style="background:#f1f5f9;border:1.5px solid #e2e8f0;border-radius:9px;padding:6px 10px;cursor:pointer;font-size:13px;margin-left:8px" title="Settings">⚙️</button>
+        <input type="date" id="att-date-input" onchange="attOnDateChange()" style="border:1.5px solid #e2e8f0;border-radius:9px;padding:7px 10px;font-size:13px;font-family:var(--sans);color:#0f172a;background:#f8fafc;outline:none">
+        <button onclick="attOpenSettings()" style="background:#f1f5f9;border:1.5px solid #e2e8f0;border-radius:9px;padding:7px 10px;cursor:pointer;font-size:14px" title="Settings">⚙️</button>
+        <button onclick="attRefresh()" style="background:#eef2ff;border:1.5px solid #c7d2fe;border-radius:9px;padding:7px 10px;cursor:pointer;font-size:14px" title="Refresh">🔄</button>
       </div>
 
-      <!-- CLASS PICKER + COUNTS -->
+      <!-- SEARCH + BULK ACTION -->
       <div style="padding:12px 14px;background:#fff;border-bottom:1px solid #f1f5f9;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-        <select id="att-class-sel" onchange="attOnClassChange()" style="flex:1;min-width:160px;background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:9px;padding:8px 10px;font-size:13px;font-family:var(--sans);color:#0f172a">
-          <option value="">— Select Class —</option>
-        </select>
-        <div style="display:flex;gap:6px;font-size:11px;font-weight:700">
-          <span style="background:#dcfce7;color:#15803d;border-radius:20px;padding:4px 10px" id="att-cnt-present">P: 0</span>
-          <span style="background:#fee2e2;color:#b91c1c;border-radius:20px;padding:4px 10px" id="att-cnt-absent">A: 0</span>
-          <span style="background:#fef3c7;color:#92400e;border-radius:20px;padding:4px 10px" id="att-cnt-leave">L: 0</span>
+        <div style="flex:1;min-width:180px;display:flex;align-items:center;background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:9px;padding:9px 12px;gap:6px">
+          <span style="font-size:13px;color:#94a3b8">🔍</span>
+          <input id="att-search" oninput="attRenderList()" placeholder="Search name or admission…" style="flex:1;border:none;background:transparent;outline:none;font-size:13px;color:#0f172a;min-width:0">
         </div>
+        <button id="att-mark-rest-btn" onclick="attMarkRestPresent()" style="background:#16a34a;color:#fff;border:none;border-radius:9px;padding:10px 16px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap">✅ Mark Rest Present</button>
       </div>
 
-      <div style="background:#f5f3ff;border-bottom:1.5px solid #ddd6fe;padding:6px 14px;font-size:11px;color:#6d28d9;font-weight:600">
-        🚌 Class opens with everyone marked <b>Present</b> by default — just flip the exceptions (Absent/Leave), then Save. Bus counts in the Gate app sync in one shot when you save (biometric-scanned students are auto-skipped).
+      <!-- FILTER PILLS -->
+      <div style="padding:12px 14px 8px;display:flex;flex-wrap:wrap;gap:8px">
+        <button onclick="attSetFilter('all')" id="att-flt-all" style="border:none;border-radius:20px;padding:8px 16px;font-size:13px;font-weight:800;cursor:pointer;background:#7c3aed;color:#fff">All <span id="att-flt-cnt-all">0</span></button>
+      </div>
+      <div style="padding:0 14px 10px;display:flex;flex-wrap:wrap;gap:8px;border-bottom:1px solid #f1f5f9">
+        <button onclick="attSetFilter('present')" id="att-flt-present" style="border:1.5px solid #86efac;border-radius:20px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;background:#fff;color:#15803d">Present <span id="att-flt-cnt-present">0</span></button>
+        <button onclick="attSetFilter('leave')" id="att-flt-leave" style="border:1.5px solid #fde68a;border-radius:20px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;background:#fff;color:#92400e">Leave <span id="att-flt-cnt-leave">0</span></button>
+        <button onclick="attSetFilter('absent')" id="att-flt-absent" style="border:1.5px solid #fca5a5;border-radius:20px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;background:#fff;color:#b91c1c">Absent <span id="att-flt-cnt-absent">0</span></button>
+        <button onclick="attSetFilter('unmarked')" id="att-flt-unmarked" style="border:1.5px solid #cbd5e1;border-radius:20px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;background:#fff;color:#64748b">Unmarked <span id="att-flt-cnt-unmarked">0</span></button>
       </div>
 
-      <div id="att-list" style="flex:1;overflow-y:auto;padding:10px 12px 90px"></div>
+      <div id="att-readonly-note" style="display:none;background:#fffbeb;border-bottom:1.5px solid #fde68a;padding:6px 14px;font-size:11px;color:#92400e;font-weight:600">📖 Historical view (read-only) — from the permanent Sheet record.</div>
 
-      <!-- STICKY SAVE BAR -->
-      <div id="att-save-bar" style="display:none;position:absolute;left:0;right:0;bottom:0;background:#fff;border-top:1.5px solid #e2e8f0;padding:10px 14px;display:flex;align-items:center;gap:10px;box-shadow:0 -4px 12px rgba(0,0,0,.06)">
-        <span id="att-save-msg" style="font-size:11px;color:#d97706;font-weight:700;flex:1">● Unsaved changes</span>
-        <button onclick="attSaveClass()" style="border:none;border-radius:9px;padding:10px 20px;font-size:13px;font-weight:800;cursor:pointer;background:#7c3aed;color:#fff">💾 Save Class Attendance</button>
-      </div>
+      <div id="att-list" style="flex:1;overflow-y:auto;padding:10px 12px 20px"></div>
     </div>
 
     <!-- ATTENDANCE SETTINGS MODAL -->
@@ -2781,7 +2782,7 @@ Reason: {reason}"></textarea>
             <button onclick="attDisconnWorker()" style="border:1.5px solid #fca5a5;background:#fef2f2;color:#dc2626;border-radius:9px;padding:10px 14px;font-size:12px;font-weight:700;cursor:pointer">✕</button>
           </div>
           <div style="font-size:11px;color:#94a3b8;line-height:1.7">
-            This single worker handles everything server-side: saving Present/Absent/Leave for a whole class in one request, checking today's biometric scans (to avoid double-counting), syncing each bus's "On Bus" count in the Gate app, pushing the permanent record to a Google Sheet, and clearing Firebase back down to just today's data.<br><br>
+            This single worker handles everything server-side: saving Present/Absent/Leave (auto-batched a couple seconds after your last change), checking today's biometric scans (to avoid double-counting), syncing each bus's "On Bus" count in the Gate app, pushing the permanent record to a Google Sheet, and clearing Firebase back down to just today's data.<br><br>
             Deploy <code style="background:#f1f5f9;padding:1px 5px;border-radius:4px">class-attendance-worker.js</code> on Cloudflare Workers and set its <code style="background:#f1f5f9;padding:1px 5px;border-radius:4px">ATTEND_FIREBASE_URL</code>, <code style="background:#f1f5f9;padding:1px 5px;border-radius:4px">ATTEND_FIREBASE_CODE</code>, <code style="background:#f1f5f9;padding:1px 5px;border-radius:4px">RAW_FIREBASE_URL</code>, <code style="background:#f1f5f9;padding:1px 5px;border-radius:4px">RAW_FIREBASE_CODE</code>, <code style="background:#f1f5f9;padding:1px 5px;border-radius:4px">BT_FIREBASE_URL</code>, <code style="background:#f1f5f9;padding:1px 5px;border-radius:4px">BT_FIREBASE_CODE</code>, <code style="background:#f1f5f9;padding:1px 5px;border-radius:4px">ATT_SHEET_WEBHOOK_URL</code> env vars, then paste its URL above.<br><br>
             <code style="background:#f1f5f9;padding:1px 5px;border-radius:4px">ATT_SHEET_WEBHOOK_URL</code> is a separate Apps Script Web App — deploy <code style="background:#f1f5f9;padding:1px 5px;border-radius:4px">attendance-sheet-webapp.gs</code> to a new Google Sheet (Extensions ▸ Apps Script) and use its deployment URL. This sheet is the permanent record; Firebase only ever keeps today's data.
           </div>
@@ -3453,9 +3454,10 @@ var SCREEN_NAMES={home:'Home',rec:'Gatepass',ref:'Reference Register',att:'Atten
 function goTo(name){
   // Close pw-prompt if open
   var pw=document.getElementById('pw-prompt-ov');if(pw)pw.classList.remove('open');
-  // Autosave any unsaved attendance edits before leaving the Attendance screen
-  if(_currentScreen==='att' && name!=='att' && typeof attDirty!=='undefined' && attDirty && typeof attSaveClass==='function'){
-    attSaveClass(true /*silent*/);
+  // Flush any pending (debounced) attendance save before leaving the screen
+  if(_currentScreen==='att' && name!=='att' && typeof attSaveTimer!=='undefined' && attSaveTimer && typeof attSaveDirty==='function'){
+    clearTimeout(attSaveTimer); attSaveTimer=null;
+    attSaveDirty();
   }
   document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});
   var targetScreen=document.getElementById('screen-'+name);
@@ -10849,19 +10851,22 @@ document.addEventListener('DOMContentLoaded', function(){
 });
 
 // ═══════════════════════════════════════════════════════
-//  ATTENDANCE MODULE (att_*) — Present/Absent/Leave, marked
-//  class-wide and saved in ONE batched request to a Cloudflare
-//  Worker, which does all the Firebase read/writes server-side:
-//  records attendance, checks today's biometric scans (skips
-//  already-scanned students), and syncs each bus's "On Bus"
-//  count in the Gate app (replaces whatever was there before).
+//  ATTENDANCE MODULE (att_*) — whole-school searchable list,
+//  Present/Leave/Absent/Unmarked filters, auto-batched save
+//  (debounced ~1.2s after the last edit — only CHANGED students
+//  are sent, keeping requests small no matter how many taps).
+//  The Worker does the rest server-side: biometric skip-check,
+//  bus-count sync into the Gate app, and the permanent Sheet copy.
 // ═══════════════════════════════════════════════════════
 var attWorkerUrl = localStorage.getItem('att_worker_url') || '';
-var attToday   = {};   // {safeAdmKey: {status,class,busNumber,name,ts}} — last SAVED state for todayStr()
-var attDraft   = {};   // {admissionNumber: status} — in-memory edits for the currently open class, not yet saved
-var attSelClass = '';
-var attDirty   = false;
-var attSaving  = false;
+var attToday    = {};   // {safeAdmKey: {status,class,busNumber,name,ts}} — last SAVED state for the viewed date
+var attDraft    = {};   // {admissionNumber: status} — 'present'|'absent'|'leave'|'unmarked', in-memory
+var attSynced   = {};   // {admissionNumber: status} — last state actually confirmed saved (for diffing)
+var attFilter   = 'all';
+var attViewDate = '';   // YYYY-MM-DD currently shown
+var attSaveTimer = null;
+var attSaving    = false;
+var attReadOnly  = false;
 
 function attSafeKey(v){ return String(v==null?'':v).trim().replace(/[.$#\[\]\/\s]/g,'_'); }
 
@@ -10889,141 +10894,179 @@ function attDisconnWorker(){
   attWorkerUrl=''; attSt('att-worker-status','Disconnected','');
 }
 
-function attPopClassSel(){
-  var sel=document.getElementById('att-class-sel'); if(!sel)return;
-  var classes=Array.from(new Set((S.students||[]).map(function(s){return (s.class||'').trim();}).filter(Boolean))).sort();
-  var cur=sel.value;
-  sel.innerHTML='<option value="">— Select Class —</option>'+classes.map(function(c){
-    return '<option value="'+c.replace(/"/g,'&quot;')+'">'+c+'</option>';
-  }).join('');
-  if(cur && classes.indexOf(cur)>-1) sel.value=cur;
-}
+function attRefresh(){ attLoadForDate(attViewDate || todayStr()); }
 
 async function attLoadToday(){
-  if(!attWorkerUrl){attToday={};attRenderList();return;}
+  var dInput=document.getElementById('att-date-input');
+  var t=todayStr();
+  if(dInput) dInput.value=t;
+  await attLoadForDate(t);
+}
+
+function attOnDateChange(){
+  var dInput=document.getElementById('att-date-input');
+  var d=(dInput&&dInput.value)?dInput.value:todayStr();
+  attLoadForDate(d);
+}
+
+async function attLoadForDate(date){
+  attViewDate=date;
+  attReadOnly = (date !== todayStr());
+  var note=document.getElementById('att-readonly-note'); if(note)note.style.display=attReadOnly?'block':'none';
+  var searchBar=document.getElementById('att-search'); if(searchBar)searchBar.disabled=attReadOnly;
+  var restBtn=document.getElementById('att-mark-rest-btn'); if(restBtn)restBtn.style.display=attReadOnly?'none':'inline-block';
+
+  attToday={}; attDraft={}; attSynced={};
+  if(!attWorkerUrl){ attRenderList(); return; }
   try{
-    var r=await fetch(attWorkerUrl+'/status?date='+todayStr());
+    var r=await fetch(attWorkerUrl+'/status?date='+date);
     var d=r.ok?await r.json():null;
-    attToday=(d&&d.attendance&&typeof d.attendance==='object')?d.attendance:{};
+    var recs=(d&&d.attendance&&typeof d.attendance==='object')?d.attendance:{};
+    attToday=recs;
   }catch(e){attToday={};}
   attRenderList();
 }
 
-// Called on the class <select> onchange — autosaves the previous class first
-// (if it had unsaved edits) so nothing is lost when switching classes.
-async function attOnClassChange(){
-  var sel=document.getElementById('att-class-sel');
-  var nextClass = sel?sel.value:'';
-  if(attDirty && attSelClass){
-    await attSaveClass(true /*silent*/);
-  }
-  attDraft={};
-  attSelClass = nextClass;
+function attSetFilter(f){
+  attFilter=f;
+  ['all','present','leave','absent','unmarked'].forEach(function(k){
+    var el=document.getElementById('att-flt-'+k);
+    if(!el)return;
+    var isActive=(k===f);
+    if(k==='all'){
+      el.style.background=isActive?'#7c3aed':'#fff';
+      el.style.color=isActive?'#fff':'#7c3aed';
+      el.style.border=isActive?'none':'1.5px solid #ddd6fe';
+    }
+  });
   attRenderList();
 }
 
 function attRenderList(){
   var list=document.getElementById('att-list'); if(!list)return;
-  var dateLbl=document.getElementById('att-date-lbl'); if(dateLbl)dateLbl.textContent=todayStr();
-  if(!attSelClass){
-    list.innerHTML='<div style="text-align:center;padding:40px 20px;color:#94a3b8;font-size:13px">Select a class to mark attendance</div>';
-    attUpdCounts(); attUpdSaveBar(); return;
-  }
-  var students=(S.students||[]).filter(function(s){return (s.class||'').trim()===attSelClass;})
-    .sort(function(a,b){return (a.name||'').localeCompare(b.name||'');});
-  if(!students.length){
-    list.innerHTML='<div style="text-align:center;padding:40px 20px;color:#94a3b8;font-size:13px">No students found in this class</div>';
-    attUpdCounts(); attUpdSaveBar(); return;
-  }
-  // Default every student to "present" unless already saved-today or edited-in-draft
+  var students=(S.students||[]).slice().sort(function(a,b){return (a.name||'').localeCompare(b.name||'');});
+
+  // Seed drafts: saved status for the viewed date, else 'unmarked'
   students.forEach(function(s){
     var adm=String(s.admissionNumber||'');
-    if(attDraft.hasOwnProperty(adm)) return;
+    if(attDraft.hasOwnProperty(adm))return;
     var savedRec=attToday[attSafeKey(adm)]||attToday[adm];
-    attDraft[adm]=savedRec?savedRec.status:'present';
+    var st=savedRec?savedRec.status:'unmarked';
+    attDraft[adm]=st;
+    attSynced[adm]=st;
   });
-  list.innerHTML=students.map(function(s){
+
+  attUpdCounts(students);
+
+  var search=(document.getElementById('att-search')||{}).value||'';
+  search=search.trim().toLowerCase();
+  var filtered=students.filter(function(s){
     var adm=String(s.admissionNumber||'');
-    var status=attDraft[adm]||'present';
+    var status=attDraft[adm]||'unmarked';
+    if(attFilter!=='all' && status!==attFilter) return false;
+    if(search){
+      var hay=((s.name||'')+' '+adm+' '+(s.class||'')).toLowerCase();
+      if(hay.indexOf(search)===-1) return false;
+    }
+    return true;
+  });
+
+  if(!filtered.length){
+    list.innerHTML='<div style="text-align:center;padding:40px 20px;color:#94a3b8;font-size:13px">No students match</div>';
+    return;
+  }
+
+  list.innerHTML=filtered.map(function(s){
+    var adm=String(s.admissionNumber||'');
+    var status=attDraft[adm]||'unmarked';
     function btn(val,label,activeBg,activeColor){
       var active=status===val;
-      return '<button onclick="attMark(\''+adm.replace(/'/g,"\\'")+'\',\''+val+'\')" style="flex:1;padding:8px 6px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;border:1.5px solid '+(active?activeColor:'#e2e8f0')+';background:'+(active?activeBg:'#fff')+';color:'+(active?activeColor:'#64748b')+'">'+label+'</button>';
+      return '<button '+(attReadOnly?'disabled':'onclick="attMark(\''+adm.replace(/'/g,"\\'")+'\',\''+val+'\')"')+' style="flex:1;padding:8px 4px;border-radius:8px;font-size:10.5px;font-weight:700;cursor:'+(attReadOnly?'default':'pointer')+';border:1.5px solid '+(active?activeColor:'#e2e8f0')+';background:'+(active?activeBg:'#fff')+';color:'+(active?activeColor:'#64748b')+'">'+label+'</button>';
     }
-    return '<div style="background:#fff;border:1.5px solid #f1f5f9;border-radius:10px;padding:10px 12px;margin-bottom:8px;display:flex;align-items:center;gap:10px">'
+    return '<div style="background:#fff;border:1.5px solid #f1f5f9;border-radius:10px;padding:10px 12px;margin-bottom:8px;display:flex;align-items:center;gap:8px">'
       +'<div onclick="attShowStats(\''+adm.replace(/'/g,"\\'")+'\')" style="flex:1;min-width:0;cursor:pointer">'
         +'<div style="font-size:13px;font-weight:700;color:#0f172a">'+(s.name||'')+' <span style="color:#c4b5fd;font-size:10px">📊</span></div>'
-        +'<div style="font-size:11px;color:#94a3b8">Adm: '+adm+(s.busNumber?' · 🚌 '+s.busNumber:'')+'</div>'
+        +'<div style="font-size:11px;color:#94a3b8">Adm: '+adm+(s.class?' · '+s.class:'')+(s.busNumber?' · 🚌 '+s.busNumber:'')+'</div>'
       +'</div>'
-      +'<div style="display:flex;gap:6px;width:190px;flex-shrink:0">'
+      +'<div style="display:flex;gap:5px;width:180px;flex-shrink:0">'
         +btn('present','Present','#dcfce7','#15803d')
         +btn('absent','Absent','#fee2e2','#b91c1c')
         +btn('leave','Leave','#fef3c7','#92400e')
       +'</div>'
     +'</div>';
   }).join('');
-  attUpdCounts();
-  attUpdSaveBar();
 }
 
-function attUpdCounts(){
-  var vals=Object.keys(attDraft||{}).map(function(k){return attDraft[k];});
-  var p=vals.filter(function(v){return v==='present';}).length;
-  var a=vals.filter(function(v){return v==='absent';}).length;
-  var l=vals.filter(function(v){return v==='leave';}).length;
-  var pe=document.getElementById('att-cnt-present'); if(pe)pe.textContent='P: '+p;
-  var ae=document.getElementById('att-cnt-absent'); if(ae)ae.textContent='A: '+a;
-  var le=document.getElementById('att-cnt-leave'); if(le)le.textContent='L: '+l;
+function attUpdCounts(students){
+  students = students || (S.students||[]);
+  var p=0,l=0,a=0,u=0;
+  students.forEach(function(s){
+    var adm=String(s.admissionNumber||'');
+    var st=attDraft[adm]||'unmarked';
+    if(st==='present')p++; else if(st==='leave')l++; else if(st==='absent')a++; else u++;
+  });
+  var set=function(id,v){var el=document.getElementById(id); if(el)el.textContent=v;};
+  set('att-flt-cnt-all', students.length);
+  set('att-flt-cnt-present', p);
+  set('att-flt-cnt-leave', l);
+  set('att-flt-cnt-absent', a);
+  set('att-flt-cnt-unmarked', u);
 }
 
-function attUpdSaveBar(){
-  var bar=document.getElementById('att-save-bar'); if(!bar)return;
-  bar.style.display = attSelClass ? 'flex' : 'none';
-  var msg=document.getElementById('att-save-msg');
-  if(msg){
-    if(attSaving) msg.textContent='⏳ Saving…';
-    else if(attDirty) msg.textContent='● Unsaved changes';
-    else msg.textContent='✓ Saved';
-    msg.style.color = attSaving?'#7c3aed':(attDirty?'#d97706':'#15803d');
-  }
-}
-
-// Local, instant tap — no network call per student. Just updates the draft;
-// the whole class is sent to the worker together on Save (or on class switch).
+// Local, instant tap — no network call per student. Schedules a debounced
+// batched save so rapid taps collapse into one request.
 function attMark(adm,status){
   attDraft[adm]=status;
-  attDirty=true;
   attRenderList();
+  attScheduleSave();
 }
 
-async function attSaveClass(silent){
-  if(!attSelClass || !Object.keys(attDraft).length) return;
-  if(!attWorkerUrl){ if(!silent && typeof toast==='function')toast('Connect the Attendance Worker in Settings first','err'); return; }
-  var students=(S.students||[]).filter(function(s){return (s.class||'').trim()===attSelClass;});
-  var payload=students.map(function(s){
+function attMarkRestPresent(){
+  if(attReadOnly)return;
+  (S.students||[]).forEach(function(s){
     var adm=String(s.admissionNumber||'');
-    return {admissionNumber:adm, name:s.name||'', class:s.class||'', busNumber:s.busNumber||'', status:attDraft[adm]||'present'};
+    if((attDraft[adm]||'unmarked')==='unmarked') attDraft[adm]='present';
   });
-  attSaving=true; attUpdSaveBar();
+  attRenderList();
+  attScheduleSave();
+}
+
+function attScheduleSave(){
+  if(attSaveTimer) clearTimeout(attSaveTimer);
+  attSaveTimer=setTimeout(attSaveDirty, 1200);
+}
+
+// Sends only the students whose status changed since the last confirmed save.
+async function attSaveDirty(){
+  if(!attWorkerUrl || attReadOnly) return;
+  var changed=[];
+  Object.keys(attDraft).forEach(function(adm){
+    if(attDraft[adm]!==attSynced[adm] && attDraft[adm]!=='unmarked') changed.push(adm);
+  });
+  if(!changed.length) return;
+  var byAdm={}; (S.students||[]).forEach(function(s){byAdm[String(s.admissionNumber||'')]=s;});
+  var payload=changed.map(function(adm){
+    var s=byAdm[adm]||{};
+    return {admissionNumber:adm, name:s.name||'', class:s.class||'', busNumber:s.busNumber||'', status:attDraft[adm]};
+  });
+  attSaving=true;
   try{
     var r=await fetch(attWorkerUrl+'/mark',{
       method:'POST', headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({date:todayStr(), class:attSelClass, students:payload})
+      body:JSON.stringify({date:attViewDate||todayStr(), students:payload})
     });
     if(!r.ok) throw 0;
-    // reflect saved state locally so re-opening this class shows it as saved
     payload.forEach(function(p){
+      attSynced[p.admissionNumber]=p.status;
       attToday[attSafeKey(p.admissionNumber)]={status:p.status,class:p.class,busNumber:p.busNumber,name:p.name,ts:Date.now()};
     });
-    attDirty=false;
-    if(!silent && typeof toast==='function')toast('Attendance saved for '+attSelClass);
   }catch(e){
-    if(!silent && typeof toast==='function')toast('Save failed — check the worker connection','err');
+    if(typeof toast==='function')toast('Save failed — check the worker connection','err');
   }
-  attSaving=false; attUpdSaveBar();
+  attSaving=false;
 }
 
 function _attInit(){
-  attPopClassSel();
   attLoadToday();
 }
 
