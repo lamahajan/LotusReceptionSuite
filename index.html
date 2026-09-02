@@ -2742,10 +2742,10 @@ Reason: {reason}"></textarea>
 
       <!-- STATS + SEARCH + BULK ACTIONS -->
       <div style="padding:8px 14px;background:#fff;border-bottom:1px solid #f1f5f9;display:flex;gap:6px;align-items:center;flex-wrap:wrap;flex-shrink:0">
-        <button onclick="attSetFilter('present')" id="att-flt-present" style="border:1.5px solid #86efac;border-radius:16px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer;background:#fff;color:#15803d;white-space:nowrap">Present <span id="att-flt-cnt-present">0</span></button>
-        <button onclick="attSetFilter('leave')" id="att-flt-leave" style="border:1.5px solid #fde68a;border-radius:16px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer;background:#fff;color:#92400e;white-space:nowrap">Leave <span id="att-flt-cnt-leave">0</span></button>
-        <button onclick="attSetFilter('absent')" id="att-flt-absent" style="border:1.5px solid #fca5a5;border-radius:16px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer;background:#fff;color:#b91c1c;white-space:nowrap">Absent <span id="att-flt-cnt-absent">0</span></button>
-        <button onclick="attSetFilter('unmarked')" id="att-flt-unmarked" style="border:1.5px solid #cbd5e1;border-radius:16px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer;background:#fff;color:#64748b;white-space:nowrap">Unmarked <span id="att-flt-cnt-unmarked">0</span></button>
+        <button onclick="attSetFilter('present')" id="att-flt-present" title="Present" style="border:1.5px solid #86efac;border-radius:16px;padding:4px 9px;font-size:11px;font-weight:700;cursor:pointer;background:#fff;color:#15803d;white-space:nowrap">P <span id="att-flt-cnt-present">0</span></button>
+        <button onclick="attSetFilter('leave')" id="att-flt-leave" title="Leave" style="border:1.5px solid #fde68a;border-radius:16px;padding:4px 9px;font-size:11px;font-weight:700;cursor:pointer;background:#fff;color:#92400e;white-space:nowrap">L <span id="att-flt-cnt-leave">0</span></button>
+        <button onclick="attSetFilter('absent')" id="att-flt-absent" title="Absent" style="border:1.5px solid #fca5a5;border-radius:16px;padding:4px 9px;font-size:11px;font-weight:700;cursor:pointer;background:#fff;color:#b91c1c;white-space:nowrap">A <span id="att-flt-cnt-absent">0</span></button>
+        <button onclick="attSetFilter('unmarked')" id="att-flt-unmarked" title="Unmarked" style="border:1.5px solid #cbd5e1;border-radius:16px;padding:4px 9px;font-size:11px;font-weight:700;cursor:pointer;background:#fff;color:#64748b;white-space:nowrap">U <span id="att-flt-cnt-unmarked">0</span></button>
         <div style="flex:1;min-width:140px;display:flex;align-items:center;background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:8px;padding:6px 10px;gap:5px">
           <span style="font-size:11px;color:#94a3b8">🔍</span>
           <input id="att-search" oninput="attRenderList()" placeholder="Search name or admission…" style="flex:1;border:none;background:transparent;outline:none;font-size:12px;color:#0f172a;min-width:0">
@@ -11056,6 +11056,37 @@ function attRenderClassPills(students){
   wrap.innerHTML=html;
 }
 
+// ── Avatar helpers: initials + a stable pastel color per student ──
+var ATT_AVATAR_PALETTE=[
+  {bg:'#cffafe',fg:'#0e7490'},
+  {bg:'#dcfce7',fg:'#15803d'},
+  {bg:'#fef3c7',fg:'#92400e'},
+  {bg:'#fee2e2',fg:'#b91c1c'},
+  {bg:'#ede9fe',fg:'#6d28d9'},
+  {bg:'#dbeafe',fg:'#1d4ed8'},
+  {bg:'#fce7f3',fg:'#be185d'}
+];
+function attInitials(name){
+  var parts=String(name||'').trim().split(/\s+/).filter(Boolean);
+  if(!parts.length) return '?';
+  if(parts.length===1) return parts[0].slice(0,2).toUpperCase();
+  return (parts[0][0]+parts[1][0]).toUpperCase();
+}
+function attAvatarColor(seed){
+  var s=String(seed||''); var h=0;
+  for(var i=0;i<s.length;i++){ h=(h*31+s.charCodeAt(i))>>>0; }
+  return ATT_AVATAR_PALETTE[h%ATT_AVATAR_PALETTE.length];
+}
+// Same tolerant class-order match used for the class pills, reused so the
+// list groups in the same sequence as the Due List (Pre Nursery → Nursery → …).
+function attClassOrderIndex(cls){
+  var norm=function(s){ return String(s||'').trim().toLowerCase().replace(/[\s.\-]/g,''); };
+  var order=['Pre Nursery','Pre-Nursery'].concat(typeof CLS_ORDER!=='undefined'?CLS_ORDER:[]);
+  var n=norm(cls);
+  for(var i=0;i<order.length;i++){ if(norm(order[i])===n) return i; }
+  return order.length;
+}
+
 function attRenderList(){
   var list=document.getElementById('att-list'); if(!list)return;
   var students=(S.students||[]).slice().sort(function(a,b){return (a.name||'').localeCompare(b.name||'');});
@@ -11092,17 +11123,40 @@ function attRenderList(){
     return;
   }
 
-  list.innerHTML=filtered.map(function(s){
+  // Group by class, in the same order as the Due List
+  filtered.sort(function(a,b){
+    var ia=attClassOrderIndex(a.class), ib=attClassOrderIndex(b.class);
+    if(ia!==ib) return ia-ib;
+    return (a.name||'').localeCompare(b.name||'');
+  });
+
+  var lastCls=null, html='';
+  filtered.forEach(function(s){
+    var clsLabel=(s.class||'').trim()||'Unassigned';
+    if(clsLabel!==lastCls){
+      lastCls=clsLabel;
+      html+='<div class="dl-cls-header" style="border-radius:8px;margin:0 0 8px">'
+        +'<span style="font-size:11px;font-weight:800;color:#3b5bdb;letter-spacing:.8px;text-transform:uppercase">'+esc(clsLabel)+'</span>'
+        +'<div style="flex:1;height:1px;background:#c5cce8"></div>'
+      +'</div>';
+    }
     var adm=String(s.admissionNumber||'');
     var status=attDraft[adm]||'unmarked';
+    var initials=attInitials(s.name);
+    var avaC=attAvatarColor(adm||s.name);
     function btn(val,label,solidColor){
       var active=status===val;
       return '<button '+(attReadOnly?'disabled':'onclick="attMark(\''+adm.replace(/'/g,"\\'")+'\',\''+val+'\')"')+' style="flex:1;padding:8px 4px;border-radius:8px;font-size:10.5px;font-weight:700;cursor:'+(attReadOnly?'default':'pointer')+';border:1.5px solid '+(active?solidColor:'#e2e8f0')+';background:'+(active?solidColor:'#fff')+';color:'+(active?'#fff':'#64748b')+'">'+label+'</button>';
     }
-    return '<div style="background:#fff;border:1.5px solid #f1f5f9;border-radius:10px;padding:10px 12px;margin-bottom:8px;display:flex;align-items:center;gap:8px">'
+    html+='<div style="background:#fff;border:1.5px solid #f1f5f9;border-radius:12px;padding:10px 12px;margin-bottom:8px;display:flex;align-items:center;gap:10px">'
+      +'<div style="width:38px;height:38px;border-radius:10px;background:'+avaC.bg+';color:'+avaC.fg+';display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;flex-shrink:0">'+initials+'</div>'
       +'<div onclick="attShowStats(\''+adm.replace(/'/g,"\\'")+'\')" style="flex:1;min-width:0;cursor:pointer">'
         +'<div style="font-size:13px;font-weight:700;color:#0f172a">'+(s.name||'')+' <span style="color:#f9a8d4;font-size:10px">📊</span></div>'
-        +'<div style="font-size:11px;color:#94a3b8">Adm: '+adm+(s.class?' · '+s.class:'')+(s.busNumber?' · 🚌 '+s.busNumber:'')+'</div>'
+        +'<div style="font-size:11px;color:#94a3b8;display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:2px">'
+          +'<span>#'+adm+'</span>'
+          +(s.class?'<span style="background:#f1f5f9;color:#64748b;border-radius:6px;padding:1px 7px;font-size:9.5px;font-weight:800;text-transform:uppercase;letter-spacing:.3px">'+esc(s.class)+'</span>':'')
+          +(s.busNumber?'<span>🚌 '+esc(s.busNumber)+'</span>':'')
+        +'</div>'
       +'</div>'
       +'<div style="display:flex;gap:5px;width:180px;flex-shrink:0">'
         +btn('present','Present','#16a34a')
@@ -11110,7 +11164,8 @@ function attRenderList(){
         +btn('leave','Leave','#d97706')
       +'</div>'
     +'</div>';
-  }).join('');
+  });
+  list.innerHTML=html;
   attUpdSaveBar();
 }
 
