@@ -2764,7 +2764,7 @@ Reason: {reason}"></textarea>
       </div>
 
       <!-- ALL + CLASS PILLS — single horizontally-scrollable line, like Due List -->
-      <div style="padding:10px 14px;display:flex;flex-wrap:nowrap;gap:8px;border-bottom:1px solid #f1f5f9;align-items:center;flex-shrink:0;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;background:#fff" id="att-class-bar">
+      <div style="padding:8px 12px;display:flex;flex-wrap:nowrap;gap:6px;border-bottom:1px solid #f1f5f9;align-items:center;flex-shrink:0;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;background:#fff" id="att-class-bar">
         <button onclick="attSetFilter('all')" id="att-flt-all" style="display:inline-flex;align-items:center;gap:5px;border-radius:20px;padding:6px 13px;font-size:12px;font-weight:700;cursor:pointer;border:1.5px solid;transition:all .15s;flex-shrink:0;white-space:nowrap;font-family:'Plus Jakarta Sans',sans-serif;background:#ec4899;color:#fff;border-color:#ec4899">All <span id="att-flt-cnt-all" style="font-family:'Outfit',sans-serif;font-size:11px;opacity:.75">0</span></button>
         <div id="att-class-pills" style="display:contents"></div>
       </div>
@@ -2772,7 +2772,7 @@ Reason: {reason}"></textarea>
 
       <div id="att-readonly-note" style="display:none;background:#fffbeb;border-bottom:1.5px solid #fde68a;padding:6px 14px;font-size:11px;color:#92400e;font-weight:600;flex-shrink:0">📖 Historical view (read-only) — from the permanent Sheet record.</div>
 
-      <div id="att-list" style="flex:1;overflow-y:auto;padding:10px 12px 14px;background:#fdf2f8"></div>
+      <div id="att-list" style="flex:1;overflow-y:auto;padding:10px 12px 14px;background:#fff0f6"></div>
 
       <!-- STICKY SAVE BAR -->
       <div id="att-save-bar" style="display:none;flex-shrink:0;background:#fff;border-top:1.5px solid #e2e8f0;padding:10px 14px;align-items:center;box-shadow:0 -4px 12px rgba(0,0,0,.08)">
@@ -2923,7 +2923,7 @@ Reason: {reason}"></textarea>
   <button id="dl-tab-all" style="display:none">All Due <span id="dl-tab-all-cnt">0</span></button>
 
   <!-- LIST -->
-  <div id="dl-list" style="flex:1;overflow-y:auto;padding:8px 10px 80px;background:#eff6ff">
+  <div id="dl-list" style="flex:1;overflow-y:auto;padding:8px 10px 80px;background:#f0f4ff">
     <div id="dl-empty" style="display:none;text-align:center;padding:60px 20px;color:#94a3b8">
       <div style="font-size:44px;margin-bottom:12px">💸</div>
       <div style="font-size:14px;font-weight:700;margin-bottom:6px;color:#64748b">No Fee Data</div>
@@ -11210,7 +11210,7 @@ function attRenderList(){
     var clsLabel=(s.class||'').trim()||'Unassigned';
     if(clsLabel!==lastCls){
       lastCls=clsLabel;
-      html+='<div class="dl-cls-header" style="background:#fdf2f8;border-bottom-color:#fbcfe8;border-radius:8px;margin:0 0 8px">'
+      html+='<div class="dl-cls-header" style="background:#fff0f6;border-bottom-color:#ffd6e8;border-radius:8px;margin:0 0 8px">'
         +'<span style="font-size:11px;font-weight:800;color:#db2777;letter-spacing:.8px;text-transform:uppercase">'+esc(clsLabel)+'</span>'
         +'<div style="flex:1;height:1px;background:#f9c8dd"></div>'
       +'</div>';
