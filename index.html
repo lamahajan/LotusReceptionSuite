@@ -2742,7 +2742,6 @@ Reason: {reason}"></textarea>
       <!-- STATS + SEARCH + BULK ACTIONS -->
       <div id="att-stats-row" style="padding:8px 14px;background:#fff;border-bottom:1px solid #f1f5f9;display:flex;gap:6px;align-items:center;flex-wrap:wrap;flex-shrink:0">
         <button onclick="attSetFilter('present')" id="att-flt-present" title="Present" style="border:1.5px solid #86efac;border-radius:16px;padding:4px 9px;font-size:11px;font-weight:700;cursor:pointer;background:#fff;color:#15803d;white-space:nowrap">P <span id="att-flt-cnt-present">0</span></button>
-        <button onclick="attSetFilter('leave')" id="att-flt-leave" title="Leave" style="border:1.5px solid #fde68a;border-radius:16px;padding:4px 9px;font-size:11px;font-weight:700;cursor:pointer;background:#fff;color:#92400e;white-space:nowrap">L <span id="att-flt-cnt-leave">0</span></button>
         <button onclick="attSetFilter('absent')" id="att-flt-absent" title="Absent" style="border:1.5px solid #fca5a5;border-radius:16px;padding:4px 9px;font-size:11px;font-weight:700;cursor:pointer;background:#fff;color:#b91c1c;white-space:nowrap">A <span id="att-flt-cnt-absent">0</span></button>
         <button onclick="attSetFilter('unmarked')" id="att-flt-unmarked" title="Unmarked" style="border:1.5px solid #cbd5e1;border-radius:16px;padding:4px 9px;font-size:11px;font-weight:700;cursor:pointer;background:#fff;color:#64748b;white-space:nowrap">U <span id="att-flt-cnt-unmarked">0</span></button>
         <div id="att-search-wrap" style="flex:1;min-width:140px;display:flex;align-items:center;background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:8px;padding:6px 10px;gap:5px">
@@ -10923,7 +10922,7 @@ document.addEventListener('DOMContentLoaded', function(){
 // ═══════════════════════════════════════════════════════
 var attWorkerUrl = localStorage.getItem('att_worker_url') || '';
 var attToday    = {};   // {safeAdmKey: {status,class,busNumber,name,ts}} — last SAVED state for the viewed date
-var attDraft    = {};   // {admissionNumber: status} — 'present'|'absent'|'leave'|'unmarked', in-memory
+var attDraft    = {};   // {admissionNumber: status} — 'present'|'absent'|'unmarked', in-memory
 var attSynced   = {};   // {admissionNumber: status} — last state actually confirmed saved (for diffing)
 var attFilter   = 'all';
 var attClassFilter = ''; // '' = all classes
@@ -11040,18 +11039,27 @@ async function attLoadForDate(date){
   attRenderList();
 }
 
+// Colors for each status filter chip — border/text tint when inactive,
+// solid fill (same hue) when active.
+var ATT_FLT_COLORS = {
+  all:      { active:'#ec4899', border:'#e0e0e0', inactiveBg:'#f5f5f5', inactiveColor:'#444'    },
+  present:  { active:'#16a34a', border:'#86efac', inactiveBg:'#fff',    inactiveColor:'#15803d' },
+  absent:   { active:'#dc2626', border:'#fca5a5', inactiveBg:'#fff',    inactiveColor:'#b91c1c' },
+  unmarked: { active:'#64748b', border:'#cbd5e1', inactiveBg:'#fff',    inactiveColor:'#64748b' }
+};
+
 function attSetFilter(f){
-  attFilter=f;
-  if(f==='all') attClassFilter=''; // tapping "All" here also clears any class-pill selection
-  ['all','present','leave','absent','unmarked'].forEach(function(k){
+  // Tapping the already-active filter a second time deselects it back to "All".
+  attFilter = (attFilter===f) ? 'all' : f;
+  if(attFilter==='all') attClassFilter=''; // landing on "All" also clears any class-pill selection
+  ['all','present','absent','unmarked'].forEach(function(k){
     var el=document.getElementById('att-flt-'+k);
     if(!el)return;
-    var isActive=(k===f);
-    if(k==='all'){
-      el.style.background=isActive?'#ec4899':'#f5f5f5';
-      el.style.color=isActive?'#fff':'#444';
-      el.style.borderColor=isActive?'#ec4899':'#e0e0e0';
-    }
+    var isActive=(k===attFilter);
+    var c=ATT_FLT_COLORS[k];
+    el.style.background = isActive ? c.active : c.inactiveBg;
+    el.style.color      = isActive ? '#fff' : c.inactiveColor;
+    el.style.borderColor= isActive ? c.active : c.border;
   });
   attUpdMarkRestBtns();
   attRenderList();
@@ -11074,9 +11082,10 @@ function attSetClassFilter(cls){
   var allBtn=document.getElementById('att-flt-all');
   if(allBtn){
     var showAllActive = !attClassFilter && attFilter==='all';
-    allBtn.style.background=showAllActive?'#ec4899':'#f5f5f5';
-    allBtn.style.color=showAllActive?'#fff':'#444';
-    allBtn.style.borderColor=showAllActive?'#ec4899':'#e0e0e0';
+    var c=ATT_FLT_COLORS.all;
+    allBtn.style.background=showAllActive?c.active:c.inactiveBg;
+    allBtn.style.color=showAllActive?'#fff':c.inactiveColor;
+    allBtn.style.borderColor=showAllActive?c.active:c.border;
   }
   attUpdMarkRestBtns();
   attRenderList();
@@ -11221,7 +11230,7 @@ function attRenderList(){
     var avaC=attAvatarColor(adm||s.name);
     function btn(val,label,solidColor){
       var active=status===val;
-      return '<button '+(attReadOnly?'disabled':'onclick="attMark(\''+adm.replace(/'/g,"\\'")+'\',\''+val+'\')"')+' style="flex:1;padding:8px 4px;border-radius:8px;font-size:10.5px;font-weight:700;cursor:'+(attReadOnly?'default':'pointer')+';border:1.5px solid '+(active?solidColor:'#e2e8f0')+';background:'+(active?solidColor:'#fff')+';color:'+(active?'#fff':'#64748b')+'">'+label+'</button>';
+      return '<button '+(attReadOnly?'disabled':'onclick="attMark(\''+adm.replace(/'/g,"\\'")+'\',\''+val+'\')"')+' style="width:34px;height:34px;flex-shrink:0;border-radius:50%;font-size:13px;font-weight:800;cursor:'+(attReadOnly?'default':'pointer')+';border:1.5px solid '+(active?solidColor:'#e2e8f0')+';background:'+(active?solidColor:'#fff')+';color:'+(active?'#fff':'#64748b')+';display:flex;align-items:center;justify-content:center;padding:0">'+label+'</button>';
     }
     html+='<div style="background:#fff;border:1.5px solid #f1f5f9;border-radius:12px;padding:10px 12px;margin-bottom:8px;display:flex;align-items:center;gap:10px">'
       +'<div style="width:38px;height:38px;border-radius:10px;background:'+avaC.bg+';color:'+avaC.fg+';display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;flex-shrink:0">'+initials+'</div>'
@@ -11233,10 +11242,9 @@ function attRenderList(){
           +(s.busNumber?'<span>🚌 '+esc(s.busNumber)+'</span>':'')
         +'</div>'
       +'</div>'
-      +'<div style="display:flex;gap:5px;width:180px;flex-shrink:0">'
-        +btn('present','Present','#16a34a')
-        +btn('absent','Absent','#dc2626')
-        +btn('leave','Leave','#d97706')
+      +'<div style="display:flex;gap:6px;flex-shrink:0">'
+        +btn('present','P','#16a34a')
+        +btn('absent','A','#dc2626')
       +'</div>'
     +'</div>';
   });
@@ -11246,16 +11254,15 @@ function attRenderList(){
 
 function attUpdCounts(students){
   students = students || (S.students||[]);
-  var p=0,l=0,a=0,u=0;
+  var p=0,a=0,u=0;
   students.forEach(function(s){
     var adm=String(s.admissionNumber||'');
     var st=attDraft[adm]||'unmarked';
-    if(st==='present')p++; else if(st==='leave')l++; else if(st==='absent')a++; else u++;
+    if(st==='present')p++; else if(st==='absent')a++; else u++;
   });
   var set=function(id,v){var el=document.getElementById(id); if(el)el.textContent=v;};
   set('att-flt-cnt-all', students.length);
   set('att-flt-cnt-present', p);
-  set('att-flt-cnt-leave', l);
   set('att-flt-cnt-absent', a);
   set('att-flt-cnt-unmarked', u);
 }
