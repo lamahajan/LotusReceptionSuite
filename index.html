@@ -2856,7 +2856,7 @@ Reason: {reason}"></textarea>
   </div>
 
   <!-- TOOLBAR: TABS + SEARCH + SORT -->
-  <div style="background:#fff;border-bottom:1px solid #f1f5f9;padding:7px 12px;display:flex;align-items:center;gap:8px;flex-shrink:0">
+  <div style="background:#fff;border-bottom:1px solid #f1f5f9;padding:7px 12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;row-gap:8px;flex-shrink:0">
     <!-- Compact tab segment control -->
     <div style="display:flex;background:#f0fdf4;border:1.5px solid #86efac;border-radius:9px;padding:2px;gap:1px;flex-shrink:0">
       <button id="dl-tb-due" onclick="dlGoTab('due',this)"
@@ -2869,7 +2869,7 @@ Reason: {reason}"></textarea>
       </button>
     </div>
     <!-- Search for Due List (hidden when Transactions tab active) -->
-    <div id="dl-search-wrap" style="flex:1;display:flex;align-items:center;background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:9px;padding:5px 10px;gap:5px">
+    <div id="dl-search-wrap" style="flex:1 1 140px;min-width:140px;display:flex;align-items:center;background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:9px;padding:5px 10px;gap:5px">
       <span style="font-size:12px;color:#94a3b8">🔍</span>
       <input id="dl-search" type="text" placeholder="Search name or admission…" oninput="dlRender()" style="flex:1;background:none;border:none;font-size:11px;outline:none;font-family:var(--sans);color:#0f172a;min-width:0">
     </div>
@@ -2881,7 +2881,7 @@ Reason: {reason}"></textarea>
       <option value="name">A–Z</option>
     </select>
     <!-- Transactions toolbar: search + clear all (hidden when Due List tab active) -->
-    <div id="dl-txn-toolbar" style="display:none;flex:1;align-items:center;gap:7px">
+    <div id="dl-txn-toolbar" style="display:none;flex:1 1 100%;align-items:center;gap:7px">
       <div style="flex:1;display:flex;align-items:center;background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:9px;padding:5px 10px;gap:5px">
         <span style="font-size:12px;color:#94a3b8">🔍</span>
         <input id="dl-txn-search" oninput="dlTxnRender()" placeholder="Search name / adm…"
