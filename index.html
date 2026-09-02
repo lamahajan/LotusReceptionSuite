@@ -8738,6 +8738,8 @@ const SETTINGS_EXPORT_KEYS=[
   'ref_cfg','ref_fs_cfg','ref_od_cfg','ref_wix_cfg','ref_extra_fys',
   // Due List
   'dl_col_map_v1','dl_sheet_v1','dl_class_mode_v1','dl_wa_settings','dl_auto_reload','dl_pinned_sheet','dl_settings_pw','dl_fb_url','dl_fb_code',
+  // Attendance
+  'att_worker_url','att_settings_pw',
   // WA Inbox
   'wai_cfg_v1','wai_fb_url','wai_fb_code','wai_inbox_pw',
   // Theme / UI
@@ -8750,6 +8752,7 @@ const APP_STORAGE_KEYS = {
   register: ['ref_cfg','ref_data','ref_fb_url','ref_fb_code','ref_fb_stu_url','ref_fb_stu_code','ref_fs_cfg','ref_od_cfg','ref_tg_cfg','ref_wix_cfg','ref_students','ref_extra_fys'],
   theme:    ['lis_theme','lis_sb'],
   duelist:  ['dl_data_v1','dl_col_map_v1','dl_sheet_v1','dl_class_mode_v1','dl_wa_settings','dl_auto_reload','dl_pinned_sheet','dl_settings_pw','dl_fb_url','dl_fb_code','dl_settings'],
+  attendance: ['att_worker_url','att_settings_pw'],
 };
 function clearAppStorage(app){
   const stEl=document.getElementById('global-clear-status');
@@ -8764,7 +8767,7 @@ function clearAppStorage(app){
     if(!confirm(confirmMsg))return;
     // Delete all gp_, ref_, lis_ keys
     const toDelete=[];
-    for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&(k.startsWith('gp_')||k.startsWith('ref_')||k.startsWith('lis_')||k.startsWith('dl_')||k.startsWith('wai_')))toDelete.push(k);}
+    for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&(k.startsWith('gp_')||k.startsWith('ref_')||k.startsWith('lis_')||k.startsWith('dl_')||k.startsWith('wai_')||k.startsWith('att_')))toDelete.push(k);}
     toDelete.forEach(k=>localStorage.removeItem(k));
     setStatus('✅ All local storage cleared ('+toDelete.length+' keys) — reloading…','var(--green)');
     if(typeof toast==='function')toast('🗑️ Full reset — reloading','err');
@@ -8772,7 +8775,7 @@ function clearAppStorage(app){
     return;
   }
   keys=APP_STORAGE_KEYS[app]||[];
-  const appNames={gatepass:'Gatepass',register:'Register',theme:'Theme / UI',duelist:'Due List'};
+  const appNames={gatepass:'Gatepass',register:'Register',theme:'Theme / UI',duelist:'Due List',attendance:'Attendance'};
   label=appNames[app]||app;
   if(!keys.length)return;
   if(!confirm('Clear '+label+' local data?\n\nFirebase data stays safe.\nPage will reload.'))return;
