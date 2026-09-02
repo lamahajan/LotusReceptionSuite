@@ -2738,45 +2738,32 @@ Reason: {reason}"></textarea>
         <button onclick="attRefresh()" style="background:#fdf2f8;border:1.5px solid #fbcfe8;border-radius:9px;padding:7px 10px;cursor:pointer;font-size:14px" title="Refresh">🔄</button>
       </div>
 
-      <!-- SUB-TABS: Dashboard / Mark Attendance -->
-      <div style="background:#fff;border-bottom:1px solid #e2e8f0;padding:8px 14px;display:flex;gap:8px">
-        <button id="att-tab-dash" onclick="attSwitchView('dashboard')" style="flex:1;border:none;border-radius:9px;padding:9px;font-size:13px;font-weight:700;cursor:pointer;background:#ec4899;color:#fff">📊 Dashboard</button>
-        <button id="att-tab-mark" onclick="attSwitchView('mark')" style="flex:1;border:none;border-radius:9px;padding:9px;font-size:13px;font-weight:700;cursor:pointer;background:#f1f5f9;color:#64748b">✅ Mark Attendance</button>
+      <!-- SEARCH + BULK ACTION -->
+      <div style="padding:12px 14px;background:#fff;border-bottom:1px solid #f1f5f9;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <div style="flex:1;min-width:180px;display:flex;align-items:center;background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:9px;padding:9px 12px;gap:6px">
+          <span style="font-size:13px;color:#94a3b8">🔍</span>
+          <input id="att-search" oninput="attRenderList()" placeholder="Search name or admission…" style="flex:1;border:none;background:transparent;outline:none;font-size:13px;color:#0f172a;min-width:0">
+        </div>
+        <button id="att-mark-rest-btn" onclick="attMarkRestPresent()" style="background:#16a34a;color:#fff;border:none;border-radius:9px;padding:10px 16px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap">✅ Mark Rest Present</button>
       </div>
 
-      <!-- ═══ DASHBOARD VIEW ═══ -->
-      <div id="att-view-dashboard" style="flex:1;overflow-y:auto;padding:16px 14px 30px"></div>
-
-      <!-- ═══ MARK ATTENDANCE VIEW ═══ -->
-      <div id="att-view-mark" style="display:none;flex:1;flex-direction:column;overflow:hidden">
-
-        <!-- SEARCH + BULK ACTION -->
-        <div style="padding:12px 14px;background:#fff;border-bottom:1px solid #f1f5f9;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-          <div style="flex:1;min-width:180px;display:flex;align-items:center;background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:9px;padding:9px 12px;gap:6px">
-            <span style="font-size:13px;color:#94a3b8">🔍</span>
-            <input id="att-search" oninput="attRenderList()" placeholder="Search name or admission…" style="flex:1;border:none;background:transparent;outline:none;font-size:13px;color:#0f172a;min-width:0">
-          </div>
-          <button id="att-mark-rest-btn" onclick="attMarkRestPresent()" style="background:#16a34a;color:#fff;border:none;border-radius:9px;padding:10px 16px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap">✅ Mark Rest Present</button>
-        </div>
-
-        <!-- FILTER PILLS -->
-        <div style="padding:12px 14px 8px;display:flex;flex-wrap:wrap;gap:8px">
-          <button onclick="attSetFilter('all')" id="att-flt-all" style="border:none;border-radius:20px;padding:8px 16px;font-size:13px;font-weight:800;cursor:pointer;background:#ec4899;color:#fff">All <span id="att-flt-cnt-all">0</span></button>
-        </div>
-        <div style="padding:0 14px 10px;display:flex;flex-wrap:wrap;gap:8px;border-bottom:1px solid #f1f5f9">
-          <button onclick="attSetFilter('present')" id="att-flt-present" style="border:1.5px solid #86efac;border-radius:20px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;background:#fff;color:#15803d">Present <span id="att-flt-cnt-present">0</span></button>
-          <button onclick="attSetFilter('leave')" id="att-flt-leave" style="border:1.5px solid #fde68a;border-radius:20px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;background:#fff;color:#92400e">Leave <span id="att-flt-cnt-leave">0</span></button>
-          <button onclick="attSetFilter('absent')" id="att-flt-absent" style="border:1.5px solid #fca5a5;border-radius:20px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;background:#fff;color:#b91c1c">Absent <span id="att-flt-cnt-absent">0</span></button>
-          <button onclick="attSetFilter('unmarked')" id="att-flt-unmarked" style="border:1.5px solid #cbd5e1;border-radius:20px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;background:#fff;color:#64748b">Unmarked <span id="att-flt-cnt-unmarked">0</span></button>
-        </div>
-
-        <!-- CLASS PILLS -->
-        <div id="att-class-pills" style="padding:10px 14px;display:flex;flex-wrap:wrap;gap:8px;border-bottom:1px solid #f1f5f9;overflow-x:auto"></div>
-
-        <div id="att-readonly-note" style="display:none;background:#fffbeb;border-bottom:1.5px solid #fde68a;padding:6px 14px;font-size:11px;color:#92400e;font-weight:600">📖 Historical view (read-only) — from the permanent Sheet record.</div>
-
-        <div id="att-list" style="flex:1;overflow-y:auto;padding:10px 12px 90px"></div>
+      <!-- FILTER PILLS -->
+      <div style="padding:12px 14px 8px;display:flex;flex-wrap:wrap;gap:8px">
+        <button onclick="attSetFilter('all')" id="att-flt-all" style="border:none;border-radius:20px;padding:8px 16px;font-size:13px;font-weight:800;cursor:pointer;background:#ec4899;color:#fff">All <span id="att-flt-cnt-all">0</span></button>
       </div>
+      <div style="padding:0 14px 10px;display:flex;flex-wrap:wrap;gap:8px;border-bottom:1px solid #f1f5f9">
+        <button onclick="attSetFilter('present')" id="att-flt-present" style="border:1.5px solid #86efac;border-radius:20px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;background:#fff;color:#15803d">Present <span id="att-flt-cnt-present">0</span></button>
+        <button onclick="attSetFilter('leave')" id="att-flt-leave" style="border:1.5px solid #fde68a;border-radius:20px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;background:#fff;color:#92400e">Leave <span id="att-flt-cnt-leave">0</span></button>
+        <button onclick="attSetFilter('absent')" id="att-flt-absent" style="border:1.5px solid #fca5a5;border-radius:20px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;background:#fff;color:#b91c1c">Absent <span id="att-flt-cnt-absent">0</span></button>
+        <button onclick="attSetFilter('unmarked')" id="att-flt-unmarked" style="border:1.5px solid #cbd5e1;border-radius:20px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;background:#fff;color:#64748b">Unmarked <span id="att-flt-cnt-unmarked">0</span></button>
+      </div>
+
+      <!-- CLASS PILLS -->
+      <div id="att-class-pills" style="padding:10px 14px;display:flex;flex-wrap:wrap;gap:8px;border-bottom:1px solid #f1f5f9;overflow-x:auto"></div>
+
+      <div id="att-readonly-note" style="display:none;background:#fffbeb;border-bottom:1.5px solid #fde68a;padding:6px 14px;font-size:11px;color:#92400e;font-weight:600">📖 Historical view (read-only) — from the permanent Sheet record.</div>
+
+      <div id="att-list" style="flex:1;overflow-y:auto;padding:10px 12px 90px"></div>
 
       <!-- STICKY SAVE BAR -->
       <div id="att-save-bar" style="display:none;position:absolute;left:0;right:0;bottom:0;background:#fff;border-top:1.5px solid #e2e8f0;padding:10px 14px;align-items:center;box-shadow:0 -4px 12px rgba(0,0,0,.08)">
@@ -10915,75 +10902,8 @@ var attSaveTimer = null;
 var attSaving    = false;
 var attReadOnly  = false;
 var attSettingsUnlocked = false;
-var attCurrentView = 'dashboard';
 
 function attSafeKey(v){ return String(v==null?'':v).trim().replace(/[.$#\[\]\/\s]/g,'_'); }
-
-function attSwitchView(view){
-  attCurrentView=view;
-  var dash=document.getElementById('att-view-dashboard');
-  var mark=document.getElementById('att-view-mark');
-  var tabD=document.getElementById('att-tab-dash');
-  var tabM=document.getElementById('att-tab-mark');
-  if(view==='dashboard'){
-    if(dash)dash.style.display='block';
-    if(mark)mark.style.display='none';
-    if(tabD){tabD.style.background='#ec4899';tabD.style.color='#fff';}
-    if(tabM){tabM.style.background='#f1f5f9';tabM.style.color='#64748b';}
-    attRenderDashboard();
-  } else {
-    if(dash)dash.style.display='none';
-    if(mark){mark.style.display='flex';mark.style.flexDirection='column';}
-    if(tabM){tabM.style.background='#ec4899';tabM.style.color='#fff';}
-    if(tabD){tabD.style.background='#f1f5f9';tabD.style.color='#64748b';}
-  }
-}
-
-function attRenderDashboard(){
-  var el=document.getElementById('att-view-dashboard'); if(!el)return;
-  var students=S.students||[];
-  var p=0,l=0,a=0,u=0;
-  students.forEach(function(s){
-    var adm=String(s.admissionNumber||'');
-    var st=attDraft[adm]||'unmarked';
-    if(st==='present')p++; else if(st==='leave')l++; else if(st==='absent')a++; else u++;
-  });
-  var total=students.length;
-  var markedPct = total ? Math.round(((p+l+a)/total)*100) : 0;
-
-  var card=function(label,val,bg,fg){
-    return '<div style="flex:1;min-width:130px;background:'+bg+';border-radius:12px;padding:14px">'
-      +'<div style="font-size:26px;font-weight:800;color:'+fg+';font-family:\'Outfit\',sans-serif">'+val+'</div>'
-      +'<div style="font-size:11px;color:'+fg+';font-weight:700;opacity:.75">'+label+'</div>'
-    +'</div>';
-  };
-
-  var pendingClasses=Array.from(new Set(students.map(function(s){return (s.class||'').trim();}).filter(Boolean))).sort()
-    .map(function(c){
-      var unmarked=students.filter(function(s){return (s.class||'').trim()===c && (attDraft[String(s.admissionNumber||'')]||'unmarked')==='unmarked';}).length;
-      return {c:c, unmarked:unmarked};
-    }).filter(function(x){return x.unmarked>0;}).sort(function(x,y){return y.unmarked-x.unmarked;});
-
-  el.innerHTML =
-    '<div style="font-size:12px;color:#94a3b8;font-weight:700;margin-bottom:10px">'+(attViewDate||todayStr())+' · '+markedPct+'% marked</div>'
-    +'<div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:10px">'
-      +card('TOTAL STUDENTS', total, '#f1f5f9', '#334155')
-      +card('PRESENT TODAY', p, '#dcfce7', '#15803d')
-    +'</div>'
-    +'<div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:18px">'
-      +card('ON LEAVE', l, '#fef3c7', '#92400e')
-      +card('ABSENT', a, '#fee2e2', '#b91c1c')
-    +'</div>'
-    +(pendingClasses.length
-      ? '<div style="font-size:12px;font-weight:800;color:#64748b;margin-bottom:8px">⏳ Classes still pending ('+u+' unmarked total)</div>'
-        +pendingClasses.map(function(x){
-          return '<div onclick="attSwitchView(\'mark\');attSetClassFilter(\''+x.c.replace(/'/g,"\\'")+'\')" style="display:flex;align-items:center;justify-content:space-between;background:#fff;border:1.5px solid #f1f5f9;border-radius:10px;padding:10px 14px;margin-bottom:6px;cursor:pointer">'
-            +'<span style="font-size:13px;font-weight:700;color:#0f172a">'+x.c+'</span>'
-            +'<span style="font-size:11px;font-weight:700;color:#b45309;background:#fef3c7;border-radius:12px;padding:3px 10px">'+x.unmarked+' unmarked</span>'
-          +'</div>';
-        }).join('')
-      : '<div style="text-align:center;padding:20px;color:#15803d;font-size:13px;font-weight:700;background:#f0fdf4;border-radius:12px">✅ Everyone is marked for today</div>');
-}
 
 function attOpenSettings(){
   document.getElementById('att-settings-modal').style.display='flex';
@@ -11079,7 +10999,7 @@ async function attLoadForDate(date){
   var restBtn=document.getElementById('att-mark-rest-btn'); if(restBtn)restBtn.style.display=attReadOnly?'none':'inline-block';
 
   attToday={}; attDraft={}; attSynced={};
-  if(!attWorkerUrl){ attRenderList(); attRenderDashboard(); return; }
+  if(!attWorkerUrl){ attRenderList(); return; }
   try{
     var r=await fetch(attWorkerUrl+'/status?date='+date);
     var d=r.ok?await r.json():null;
@@ -11087,7 +11007,6 @@ async function attLoadForDate(date){
     attToday=recs;
   }catch(e){attToday={};}
   attRenderList();
-  attRenderDashboard();
 }
 
 function attSetFilter(f){
@@ -11112,14 +11031,20 @@ function attSetClassFilter(cls){
 
 function attRenderClassPills(students){
   var wrap=document.getElementById('att-class-pills'); if(!wrap)return;
-  var classes=Array.from(new Set(students.map(function(s){return (s.class||'').trim();}).filter(Boolean))).sort();
+  var counts={};
+  students.forEach(function(s){ var c=(s.class||'').trim(); if(c) counts[c]=(counts[c]||0)+1; });
+  // Same natural class order Due List uses, plus Pre Nursery ahead of Nursery
+  var order=['Pre Nursery','Pre-Nursery'].concat(typeof CLS_ORDER!=='undefined'?CLS_ORDER:[]);
+  var ordered=order.filter(function(c){return counts[c];});
+  var extra=Object.keys(counts).filter(function(c){return ordered.indexOf(c)===-1;}).sort();
+  var classes=ordered.concat(extra);
   var chip=function(label,cls,count,active){
-    return '<button onclick="attSetClassFilter(\''+cls.replace(/'/g,"\\'")+'\')" style="flex-shrink:0;border-radius:16px;padding:5px 12px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;border:1.5px solid '+(active?'#ec4899':'#e2e8f0')+';background:'+(active?'#fdf2f8':'#fff')+';color:'+(active?'#ec4899':'#64748b')+'">'+label+' '+count+'</button>';
+    var aS=active?'background:#ec4899;color:#fff;border-color:#ec4899;':'background:#f5f5f5;color:#444;border-color:#e0e0e0;';
+    return '<button onclick="attSetClassFilter(\''+cls.replace(/'/g,"\\'")+'\')" style="display:inline-flex;align-items:center;gap:5px;border-radius:20px;padding:6px 13px;font-size:12px;font-weight:700;cursor:pointer;border:1.5px solid;transition:all .15s;flex-shrink:0;white-space:nowrap;font-family:\'Plus Jakarta Sans\',sans-serif;'+aS+'">'+label+'<span style="font-family:\'Outfit\',sans-serif;font-size:11px;opacity:.75">'+count+'</span></button>';
   };
   var html='';
   classes.forEach(function(c){
-    var count=students.filter(function(s){return (s.class||'').trim()===c;}).length;
-    html+=chip(c,c,count,attClassFilter===c);
+    html+=chip(c,c,counts[c],attClassFilter===c);
   });
   wrap.innerHTML=html;
 }
@@ -11261,7 +11186,6 @@ async function attSaveDirty(){
     if(typeof toast==='function')toast('Save failed — check the worker connection','err');
   }
   attSaving=false; attUpdSaveBar();
-  attRenderDashboard();
 }
 
 function _attInit(){
