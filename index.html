@@ -2737,23 +2737,30 @@ Reason: {reason}"></textarea>
         <span style="font-size:15px;font-weight:800;color:#0f172a;letter-spacing:-.2px;flex:1">Attendance</span>
         <input type="date" id="att-date-input" onchange="attOnDateChange()" style="border:1.5px solid #e2e8f0;border-radius:9px;padding:7px 10px;font-size:13px;font-family:var(--sans);color:#0f172a;background:#f8fafc;outline:none">
         <button onclick="attOpenSettings()" style="background:#f1f5f9;border:1.5px solid #e2e8f0;border-radius:9px;padding:7px 10px;cursor:pointer;font-size:14px" title="Settings">⚙️</button>
-        <button onclick="attRefresh()" style="background:#fdf2f8;border:1.5px solid #fbcfe8;border-radius:9px;padding:7px 10px;cursor:pointer;font-size:14px" title="Refresh">🔄</button>
       </div>
 
       <!-- STATS + SEARCH + BULK ACTIONS -->
-      <div style="padding:8px 14px;background:#fff;border-bottom:1px solid #f1f5f9;display:flex;gap:6px;align-items:center;flex-wrap:wrap;flex-shrink:0">
+      <div id="att-stats-row" style="padding:8px 14px;background:#fff;border-bottom:1px solid #f1f5f9;display:flex;gap:6px;align-items:center;flex-wrap:wrap;flex-shrink:0">
         <button onclick="attSetFilter('present')" id="att-flt-present" title="Present" style="border:1.5px solid #86efac;border-radius:16px;padding:4px 9px;font-size:11px;font-weight:700;cursor:pointer;background:#fff;color:#15803d;white-space:nowrap">P <span id="att-flt-cnt-present">0</span></button>
         <button onclick="attSetFilter('leave')" id="att-flt-leave" title="Leave" style="border:1.5px solid #fde68a;border-radius:16px;padding:4px 9px;font-size:11px;font-weight:700;cursor:pointer;background:#fff;color:#92400e;white-space:nowrap">L <span id="att-flt-cnt-leave">0</span></button>
         <button onclick="attSetFilter('absent')" id="att-flt-absent" title="Absent" style="border:1.5px solid #fca5a5;border-radius:16px;padding:4px 9px;font-size:11px;font-weight:700;cursor:pointer;background:#fff;color:#b91c1c;white-space:nowrap">A <span id="att-flt-cnt-absent">0</span></button>
         <button onclick="attSetFilter('unmarked')" id="att-flt-unmarked" title="Unmarked" style="border:1.5px solid #cbd5e1;border-radius:16px;padding:4px 9px;font-size:11px;font-weight:700;cursor:pointer;background:#fff;color:#64748b;white-space:nowrap">U <span id="att-flt-cnt-unmarked">0</span></button>
-        <div style="flex:1;min-width:140px;display:flex;align-items:center;background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:8px;padding:6px 10px;gap:5px">
+        <div id="att-search-wrap" style="flex:1;min-width:140px;display:flex;align-items:center;background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:8px;padding:6px 10px;gap:5px">
           <span style="font-size:11px;color:#94a3b8">🔍</span>
           <input id="att-search" oninput="attRenderList()" placeholder="Search name or admission…" style="flex:1;border:none;background:transparent;outline:none;font-size:12px;color:#0f172a;min-width:0">
         </div>
-        <div style="flex:1 1 100%;display:grid;grid-template-columns:1fr 1fr;gap:6px;width:100%">
+        <div id="att-mark-rest-wrap" style="flex:1 1 100%;display:grid;grid-template-columns:1fr 1fr;gap:6px;width:100%">
           <button id="att-mark-rest-btn" onclick="attMarkRestPresent()" style="width:100%;box-sizing:border-box;background:#16a34a;color:#fff;border:none;border-radius:7px;padding:6px 4px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;text-align:center">✅ Mark Rest Present</button>
           <button id="att-mark-rest-absent-btn" onclick="attMarkRestAbsent()" style="width:100%;box-sizing:border-box;background:#dc2626;color:#fff;border:none;border-radius:7px;padding:6px 4px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;text-align:center">❌ Mark Rest Absent</button>
         </div>
+        <style>
+          @media (min-width:900px){
+            #att-stats-row{flex-wrap:nowrap}
+            #att-search-wrap{flex:1 1 auto;min-width:160px}
+            #att-mark-rest-wrap{flex:0 0 auto;width:auto;grid-template-columns:auto auto}
+            #att-mark-rest-btn,#att-mark-rest-absent-btn{width:auto;padding:6px 12px}
+          }
+        </style>
       </div>
 
       <!-- ALL + CLASS PILLS — single horizontally-scrollable line, like Due List -->
