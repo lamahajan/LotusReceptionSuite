@@ -11011,6 +11011,7 @@ async function attLoadForDate(date){
   var restBtn=document.getElementById('att-mark-rest-btn'); if(restBtn)restBtn.style.display=attReadOnly?'none':'inline-block';
 
   attToday={}; attDraft={}; attSynced={};
+  attUpdMarkRestBtns();
   if(!attWorkerUrl){ attRenderList(); return; }
   try{
     var r=await fetch(attWorkerUrl+'/status?date='+date);
@@ -11034,7 +11035,18 @@ function attSetFilter(f){
       el.style.border=isActive?'none':'1.5px solid #fbcfe8';
     }
   });
+  attUpdMarkRestBtns();
   attRenderList();
+}
+
+function attUpdMarkRestBtns(){
+  var on=!!attClassFilter;
+  ['att-mark-rest-btn','att-mark-rest-absent-btn'].forEach(function(id){
+    var b=document.getElementById(id); if(!b)return;
+    b.style.opacity=on?'1':'.45';
+    b.style.cursor=on?'pointer':'not-allowed';
+    b.title=on?'':'Pick a class first';
+  });
 }
 
 function attSetClassFilter(cls){
@@ -11048,6 +11060,7 @@ function attSetClassFilter(cls){
     allBtn.style.color=showAllActive?'#fff':'#ec4899';
     allBtn.style.border=showAllActive?'none':'1.5px solid #fbcfe8';
   }
+  attUpdMarkRestBtns();
   attRenderList();
 }
 
@@ -11241,8 +11254,9 @@ function attMark(adm,status){
 
 function attMarkRestPresent(){
   if(attReadOnly)return;
+  if(!attClassFilter){ alert('Pick a class first — this marks everyone still unmarked in that class. Selecting "All" would mark the whole school at once, even classes nobody has opened attendance for yet.'); return; }
   (S.students||[]).forEach(function(s){
-    if(attClassFilter && (s.class||'').trim()!==attClassFilter) return; // respect the selected class pill, if any
+    if((s.class||'').trim()!==attClassFilter) return; // only the selected class — never the whole school
     var adm=String(s.admissionNumber||'');
     if((attDraft[adm]||'unmarked')==='unmarked') attDraft[adm]='present';
   });
@@ -11252,8 +11266,9 @@ function attMarkRestPresent(){
 
 function attMarkRestAbsent(){
   if(attReadOnly)return;
+  if(!attClassFilter){ alert('Pick a class first — this marks everyone still unmarked in that class. Selecting "All" would mark the whole school at once, even classes nobody has opened attendance for yet.'); return; }
   (S.students||[]).forEach(function(s){
-    if(attClassFilter && (s.class||'').trim()!==attClassFilter) return; // respect the selected class pill, if any
+    if((s.class||'').trim()!==attClassFilter) return; // only the selected class — never the whole school
     var adm=String(s.admissionNumber||'');
     if((attDraft[adm]||'unmarked')==='unmarked') attDraft[adm]='absent';
   });
