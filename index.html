@@ -11335,11 +11335,11 @@ async function attShowStats(adm){
     body.innerHTML =
       '<div style="font-size:34px;font-weight:800;color:'+pctColor+';font-family:\'Outfit\',sans-serif">'+pct+'%</div>'
       +'<div style="font-size:11px;color:#94a3b8;margin-bottom:16px">attendance this session</div>'
-      +'<div style="display:flex;gap:8px;margin-bottom:14px">'
+      +'<div style="display:flex;gap:8px;margin-bottom:10px">'
         +'<div style="flex:1;background:#f0fdf4;border-radius:10px;padding:10px"><div style="font-size:18px;font-weight:800;color:#15803d">'+d.presentDays+'</div><div style="font-size:11px;color:#166534;font-weight:700;letter-spacing:.3px">PRESENT</div></div>'
         +'<div style="flex:1;background:#fef2f2;border-radius:10px;padding:10px"><div style="font-size:18px;font-weight:800;color:#b91c1c">'+absentPlusLeave+'</div><div style="font-size:11px;color:#991b1b;font-weight:700;letter-spacing:.3px">ABSENT/LEAVE</div></div>'
       +'</div>'
-      +'<div style="font-size:11px;color:#94a3b8">'+d.totalWorkingDays+' working day'+(d.totalWorkingDays===1?'':'s')+' marked so far</div>';
+      +'<div style="background:#f1f5f9;border-radius:10px;padding:10px"><div style="font-size:18px;font-weight:800;color:#334155">'+d.totalWorkingDays+'</div><div style="font-size:11px;color:#475569;font-weight:700;letter-spacing:.3px">WORKING DAY'+(d.totalWorkingDays===1?'':'S')+' MARKED</div></div>';
   }catch(e){
     if(body)body.innerHTML='Could not reach the worker.';
   }
