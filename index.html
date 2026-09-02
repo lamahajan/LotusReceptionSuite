@@ -2750,15 +2750,18 @@ Reason: {reason}"></textarea>
           <span style="font-size:11px;color:#94a3b8">🔍</span>
           <input id="att-search" oninput="attRenderList()" placeholder="Search name or admission…" style="flex:1;border:none;background:transparent;outline:none;font-size:12px;color:#0f172a;min-width:0">
         </div>
-        <button id="att-mark-rest-btn" onclick="attMarkRestPresent()" style="background:#16a34a;color:#fff;border:none;border-radius:7px;padding:6px 10px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap">✅ Mark Rest Present</button>
-        <button id="att-mark-rest-absent-btn" onclick="attMarkRestAbsent()" style="background:#dc2626;color:#fff;border:none;border-radius:7px;padding:6px 10px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap">❌ Mark Rest Absent</button>
+        <div style="flex:1 1 100%;display:grid;grid-template-columns:1fr 1fr;gap:6px;width:100%">
+          <button id="att-mark-rest-btn" onclick="attMarkRestPresent()" style="width:100%;box-sizing:border-box;background:#16a34a;color:#fff;border:none;border-radius:7px;padding:6px 4px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;text-align:center">✅ Mark Rest Present</button>
+          <button id="att-mark-rest-absent-btn" onclick="attMarkRestAbsent()" style="width:100%;box-sizing:border-box;background:#dc2626;color:#fff;border:none;border-radius:7px;padding:6px 4px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;text-align:center">❌ Mark Rest Absent</button>
+        </div>
       </div>
 
-      <!-- ALL + CLASS PILLS (same line) -->
-      <div style="padding:10px 14px;display:flex;flex-wrap:wrap;gap:8px;border-bottom:1px solid #f1f5f9;align-items:center;flex-shrink:0">
+      <!-- ALL + CLASS PILLS — single horizontally-scrollable line, like Due List -->
+      <div style="padding:10px 14px;display:flex;flex-wrap:nowrap;gap:8px;border-bottom:1px solid #f1f5f9;align-items:center;flex-shrink:0;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none" id="att-class-bar">
         <button onclick="attSetFilter('all')" id="att-flt-all" style="border:none;border-radius:20px;padding:6px 13px;font-size:12px;font-weight:800;cursor:pointer;background:#ec4899;color:#fff;flex-shrink:0;white-space:nowrap">All <span id="att-flt-cnt-all">0</span></button>
-        <div id="att-class-pills" style="display:flex;flex-wrap:wrap;gap:8px"></div>
+        <div id="att-class-pills" style="display:contents"></div>
       </div>
+      <style>#att-class-bar::-webkit-scrollbar{display:none}</style>
 
       <div id="att-readonly-note" style="display:none;background:#fffbeb;border-bottom:1.5px solid #fde68a;padding:6px 14px;font-size:11px;color:#92400e;font-weight:600;flex-shrink:0">📖 Historical view (read-only) — from the permanent Sheet record.</div>
 
@@ -2856,18 +2859,26 @@ Reason: {reason}"></textarea>
   </div>
 
   <!-- TOOLBAR: TABS + SEARCH + SORT -->
-  <div style="background:#fff;border-bottom:1px solid #f1f5f9;padding:7px 12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;row-gap:8px;flex-shrink:0">
+  <div id="dl-due-toolbar" style="background:#fff;border-bottom:1px solid #f1f5f9;padding:7px 12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;row-gap:8px;flex-shrink:0">
     <!-- Compact tab segment control -->
     <div style="display:flex;background:#f0fdf4;border:1.5px solid #86efac;border-radius:9px;padding:2px;gap:1px;flex-shrink:0">
       <button id="dl-tb-due" onclick="dlGoTab('due',this)"
         style="background:#16a34a;color:#fff;border:none;border-radius:7px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:4px;white-space:nowrap;transition:all .15s;font-family:'Plus Jakarta Sans',sans-serif">
-        💸 Due List <span id="dl-cnt-due" style="font-family:'Outfit',sans-serif;background:rgba(255,255,255,.25);border-radius:10px;padding:0 5px">0</span>
+        💸<span class="dl-tab-label"> Due List</span> <span id="dl-cnt-due" style="font-family:'Outfit',sans-serif;background:rgba(255,255,255,.25);border-radius:10px;padding:0 5px">0</span>
       </button>
       <button id="dl-tb-txn" onclick="dlGoTab('txn',this)"
         style="background:transparent;color:#4ade80;border:none;border-radius:7px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:4px;white-space:nowrap;transition:all .15s;font-family:'Plus Jakarta Sans',sans-serif">
-        📋 Transactions
+        📋<span class="dl-tab-label"> Transactions</span>
       </button>
     </div>
+    <style>
+      @media (max-width:700px){
+        .dl-tab-label{display:none}
+        #dl-due-toolbar{flex-wrap:nowrap}
+        #dl-search-wrap{flex:1 1 auto;min-width:0}
+        #dl-sort{flex-shrink:0;padding:5px 4px;font-size:10.5px}
+      }
+    </style>
     <!-- Search for Due List (hidden when Transactions tab active) -->
     <div id="dl-search-wrap" style="flex:1 1 140px;min-width:140px;display:flex;align-items:center;background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:9px;padding:5px 10px;gap:5px">
       <span style="font-size:12px;color:#94a3b8">🔍</span>
