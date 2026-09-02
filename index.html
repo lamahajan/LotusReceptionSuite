@@ -2729,7 +2729,7 @@ Reason: {reason}"></textarea>
     <!-- ══════════════════════════════════════════
          ATTENDANCE SCREEN
     ══════════════════════════════════════════ -->
-    <div id="screen-att" class="screen" style="position:relative">
+    <div id="screen-att" class="screen">
 
       <!-- HEADER -->
       <div style="background:#fff;border-bottom:1px solid #e2e8f0;padding:0 14px;height:54px;display:flex;align-items:center;gap:10px;flex-shrink:0;z-index:9">
@@ -8889,7 +8889,7 @@ var DL_SHEET_KEY='dl_sheet_v1';
 var DL_MODE_KEY='dl_class_mode_v1'; // 'single' | 'multi'
 
 // ── Class sort order ──
-var CLS_ORDER=["NURSERY","Jr.KG","Sr.KG","1st","2nd","3rd","4th","5th","6th","7th","8th","9th","10th","11th","12th"];
+var CLS_ORDER=["Pre Nursery","Pre-Nursery","NURSERY","Jr.KG","Sr.KG","1st","2nd","3rd","4th","5th","6th","7th","8th","9th","10th","11th","12th"];
 
 // ── Embedded fallback data (from Messaging.xlsm) ──
 var EMBEDDED=[]
@@ -11028,14 +11028,20 @@ function attSetClassFilter(cls){
   attRenderList();
 }
 
+// Same class sequence as the Due List module (that CLS_ORDER lives inside its
+// own closure, so it isn't reachable from here — kept as a local copy instead
+// of relying on a global that never existed, which was silently breaking the order).
+var ATT_CLS_ORDER=["NURSERY","Jr.KG","Sr.KG","1st","2nd","3rd","4th","5th","6th","7th","8th","9th","10th","11th","12th"];
+
 function attRenderClassPills(students){
   var wrap=document.getElementById('att-class-pills'); if(!wrap)return;
   var counts={};
   students.forEach(function(s){ var c=(s.class||'').trim(); if(c) counts[c]=(counts[c]||0)+1; });
-  // Same sequence Due List uses (CLS_ORDER), matched loosely so casing/spacing
-  // differences in real data don't break the order — Pre Nursery leads.
+  // Same sequence Due List uses (its own CLS_ORDER — not reachable from here,
+  // see ATT_CLS_ORDER above), matched loosely so casing/spacing differences
+  // in real data don't break the order — Pre Nursery leads.
   var norm=function(s){ return String(s||'').trim().toLowerCase().replace(/[\s.\-]/g,''); };
-  var order=['Pre Nursery','Pre-Nursery'].concat(typeof CLS_ORDER!=='undefined'?CLS_ORDER:[]);
+  var order=['Pre Nursery','Pre-Nursery'].concat(ATT_CLS_ORDER);
   var orderNorm=order.map(norm);
   var realKeys=Object.keys(counts);
   var ordered=[];
@@ -11077,11 +11083,15 @@ function attAvatarColor(seed){
   for(var i=0;i<s.length;i++){ h=(h*31+s.charCodeAt(i))>>>0; }
   return ATT_AVATAR_PALETTE[h%ATT_AVATAR_PALETTE.length];
 }
+// Same class sequence as the Due List module (that CLS_ORDER lives inside its
+// own closure, so it isn't reachable from here — kept as a local copy instead
+// of relying on a global that never existed, which was silently breaking the order).
+
 // Same tolerant class-order match used for the class pills, reused so the
 // list groups in the same sequence as the Due List (Pre Nursery → Nursery → …).
 function attClassOrderIndex(cls){
   var norm=function(s){ return String(s||'').trim().toLowerCase().replace(/[\s.\-]/g,''); };
-  var order=['Pre Nursery','Pre-Nursery'].concat(typeof CLS_ORDER!=='undefined'?CLS_ORDER:[]);
+  var order=['Pre Nursery','Pre-Nursery'].concat(ATT_CLS_ORDER);
   var n=norm(cls);
   for(var i=0;i<order.length;i++){ if(norm(order[i])===n) return i; }
   return order.length;
