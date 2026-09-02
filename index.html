@@ -724,12 +724,12 @@ body{color:var(--text);font-family:var(--sans);min-height:100vh}
 </style>
 
 <style id="wa-styles">
-.dl-card-wrap{position:relative;flex-shrink:0;}
+.dl-card-wrap{position:relative;flex-shrink:0;margin-bottom:6px;}
 .dl-card-wrap.selected .dl-card-inner{border-color:#25D366!important;background:#f0fff4!important;}
 .dl-chk{position:absolute;left:10px;top:50%;transform:translateY(-50%);width:18px;height:18px;accent-color:#25D366;cursor:pointer;z-index:2;display:none;}
 .dl-select-mode .dl-chk{display:block;}
 .dl-select-mode .dl-card-inner{padding-left:36px!important;}
-.dl-cls-header{display:flex;align-items:center;gap:8px;padding:8px 14px;background:#f0f4ff;border-bottom:1.5px solid #e0e8ff;position:sticky;top:0;z-index:3;flex-shrink:0;}
+.dl-cls-header{display:flex;align-items:center;gap:8px;padding:8px 14px;background:#f0f4ff;border-bottom:1.5px solid #e0e8ff;position:sticky;top:0;z-index:3;flex-shrink:0;margin-bottom:6px;}
 .dl-cls-selall{width:16px;height:16px;accent-color:#25D366;cursor:pointer;display:none;flex-shrink:0;}
 .dl-select-mode .dl-cls-selall{display:block;}
 #dl-wa-fab{background:linear-gradient(135deg,#075E54,#128C7E);padding:10px 14px;z-index:301;flex-direction:column;gap:8px;box-shadow:0 -4px 20px rgba(0,0,0,.2);flex-shrink:0;}
@@ -2905,7 +2905,7 @@ Reason: {reason}"></textarea>
   <button id="dl-tab-all" style="display:none">All Due <span id="dl-tab-all-cnt">0</span></button>
 
   <!-- LIST -->
-  <div id="dl-list" style="flex:1;overflow-y:auto;padding:8px 10px 80px;display:flex;flex-direction:column;gap:6px;background:#f8fafc">
+  <div id="dl-list" style="flex:1;overflow-y:auto;padding:8px 10px 80px;background:#f8fafc">
     <div id="dl-empty" style="display:none;text-align:center;padding:60px 20px;color:#94a3b8">
       <div style="font-size:44px;margin-bottom:12px">💸</div>
       <div style="font-size:14px;font-weight:700;margin-bottom:6px;color:#64748b">No Fee Data</div>
@@ -8891,6 +8891,19 @@ var DL_MODE_KEY='dl_class_mode_v1'; // 'single' | 'multi'
 // ── Class sort order ──
 var CLS_ORDER=["Pre Nursery","Pre-Nursery","NURSERY","Jr.KG","Sr.KG","1st","2nd","3rd","4th","5th","6th","7th","8th","9th","10th","11th","12th"];
 
+// Display-only casing fix: the raw class value from the source data is
+// inconsistently cased ("NURSERY" in full caps while everything else is
+// natural case). This normalizes just what's SHOWN as a label — matching,
+// filtering, and sorting still use the original raw value untouched.
+function clsLabel(c){
+  var s=String(c||'').trim();
+  if(/^nursery$/i.test(s)) return 'Nursery';
+  if(/^pre[-\s]?nursery$/i.test(s)) return 'Pre Nursery';
+  if(/^jr\.?\s*kg$/i.test(s)) return 'Jr. Kg';
+  if(/^sr\.?\s*kg$/i.test(s)) return 'Sr. Kg';
+  return s;
+}
+
 // ── Embedded fallback data (from Messaging.xlsm) ──
 var EMBEDDED=[]
 
@@ -9252,7 +9265,7 @@ window.dlBuildClassBar=function dlBuildClassBar(){
   CLS_ORDER.forEach(function(cls){
     if(!counts[cls])return;
     var active=!allActive&&dlSelectedClasses.has(cls);
-    html+=dlPillBtn(cls,cls,counts[cls],active);
+    html+=dlPillBtn(cls,clsLabel(cls),counts[cls],active);
   });
   bar.innerHTML=html;
   dlUpdateHeaderStats();
@@ -9365,7 +9378,7 @@ window.dlRender=function(){
       var grpTotal=grp.reduce(function(s,x){return s+x.balance;},0);
       html+='<div class="dl-cls-header" data-cls="'+esc(cls)+'">'
         +'<input type="checkbox" class="dl-cls-selall" data-cls="'+esc(cls)+'" onclick="dlSelectAllClass(this)"/>'
-        +'<span style="font-size:11px;font-weight:800;color:#3b5bdb;letter-spacing:.8px;text-transform:uppercase">'+cls+'</span>'
+        +'<span style="font-size:11px;font-weight:800;color:#3b5bdb;letter-spacing:.8px;text-transform:uppercase">'+clsLabel(cls)+'</span>'
         +'<div style="flex:1;height:1px;background:#c5cce8"></div>'
         +'<span style="font-size:10px;font-weight:600;color:#6b7db3;margin-right:4px">'+grp.length+' students</span>'
         +'<span style="background:#fef9ec;color:#b45309;border:1.5px solid #fde68a;border-radius:20px;padding:2px 10px;font-size:10px;font-weight:800;font-family:\'Outfit\',sans-serif">₹'+grpTotal.toLocaleString('en-IN')+'</span>'
@@ -11010,6 +11023,7 @@ async function attLoadForDate(date){
 
 function attSetFilter(f){
   attFilter=f;
+  if(f==='all') attClassFilter=''; // tapping "All" here also clears any class-pill selection
   ['all','present','leave','absent','unmarked'].forEach(function(k){
     var el=document.getElementById('att-flt-'+k);
     if(!el)return;
@@ -11025,6 +11039,15 @@ function attSetFilter(f){
 
 function attSetClassFilter(cls){
   attClassFilter = (attClassFilter===cls) ? '' : cls; // tap again to clear
+  // Keep the "All" pill's pink state in sync: it should only look active
+  // when no class is picked (and the status filter is also 'all').
+  var allBtn=document.getElementById('att-flt-all');
+  if(allBtn){
+    var showAllActive = !attClassFilter && attFilter==='all';
+    allBtn.style.background=showAllActive?'#ec4899':'#fff';
+    allBtn.style.color=showAllActive?'#fff':'#ec4899';
+    allBtn.style.border=showAllActive?'none':'1.5px solid #fbcfe8';
+  }
   attRenderList();
 }
 
@@ -11032,6 +11055,17 @@ function attSetClassFilter(cls){
 // own closure, so it isn't reachable from here — kept as a local copy instead
 // of relying on a global that never existed, which was silently breaking the order).
 var ATT_CLS_ORDER=["NURSERY","Jr.KG","Sr.KG","1st","2nd","3rd","4th","5th","6th","7th","8th","9th","10th","11th","12th"];
+
+// Same display-only casing fix as the Due List module (kept as a separate
+// local copy — this module's functions live outside that module's closure).
+function attClsLabel(c){
+  var s=String(c||'').trim();
+  if(/^nursery$/i.test(s)) return 'Nursery';
+  if(/^pre[-\s]?nursery$/i.test(s)) return 'Pre Nursery';
+  if(/^jr\.?\s*kg$/i.test(s)) return 'Jr. Kg';
+  if(/^sr\.?\s*kg$/i.test(s)) return 'Sr. Kg';
+  return s;
+}
 
 function attRenderClassPills(students){
   var wrap=document.getElementById('att-class-pills'); if(!wrap)return;
@@ -11057,7 +11091,7 @@ function attRenderClassPills(students){
   };
   var html='';
   classes.forEach(function(c){
-    html+=chip(c,c,counts[c],attClassFilter===c);
+    html+=chip(attClsLabel(c),c,counts[c],attClassFilter===c);
   });
   wrap.innerHTML=html;
 }
@@ -11208,6 +11242,7 @@ function attMark(adm,status){
 function attMarkRestPresent(){
   if(attReadOnly)return;
   (S.students||[]).forEach(function(s){
+    if(attClassFilter && (s.class||'').trim()!==attClassFilter) return; // respect the selected class pill, if any
     var adm=String(s.admissionNumber||'');
     if((attDraft[adm]||'unmarked')==='unmarked') attDraft[adm]='present';
   });
@@ -11218,6 +11253,7 @@ function attMarkRestPresent(){
 function attMarkRestAbsent(){
   if(attReadOnly)return;
   (S.students||[]).forEach(function(s){
+    if(attClassFilter && (s.class||'').trim()!==attClassFilter) return; // respect the selected class pill, if any
     var adm=String(s.admissionNumber||'');
     if((attDraft[adm]||'unmarked')==='unmarked') attDraft[adm]='absent';
   });
