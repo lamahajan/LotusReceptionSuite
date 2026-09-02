@@ -11264,7 +11264,8 @@ function attMarkRestAbsent(){
 function attDirtyCount(){
   var n=0;
   Object.keys(attDraft).forEach(function(adm){
-    if(attDraft[adm]!==attSynced[adm] && attDraft[adm]!=='unmarked') n++;
+    var draft=attDraft[adm]||'unmarked', synced=attSynced[adm]||'unmarked';
+    if(draft!==synced) n++; // includes reverting a previously-saved mark back to unmarked
   });
   return n;
 }
@@ -11278,11 +11279,15 @@ function attUpdSaveBar(){
 }
 
 // Sends only the students whose status changed since the last confirmed save.
+// A revert back to "unmarked" (e.g. undoing an accidental Mark Rest on a
+// class) counts as a real change too — it needs to reach the server so that
+// day stops being counted as a working day for that student.
 async function attSaveDirty(){
   if(!attWorkerUrl || attReadOnly) return;
   var changed=[];
   Object.keys(attDraft).forEach(function(adm){
-    if(attDraft[adm]!==attSynced[adm] && attDraft[adm]!=='unmarked') changed.push(adm);
+    var draft=attDraft[adm]||'unmarked', synced=attSynced[adm]||'unmarked';
+    if(draft!==synced) changed.push(adm);
   });
   if(!changed.length) return;
   var byAdm={}; (S.students||[]).forEach(function(s){byAdm[String(s.admissionNumber||'')]=s;});
