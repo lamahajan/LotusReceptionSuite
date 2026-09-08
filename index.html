@@ -2853,6 +2853,18 @@ Reason: {reason}"></textarea>
       </div>
     </div>
 
+    <!-- ATTENDANCE BUS-WISE REPORT → PER-BUS STUDENT LIST DRILLDOWN -->
+    <div id="att-bus-students-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:1002;align-items:center;justify-content:center;padding:16px" onclick="if(event.target===this)this.style.display='none'">
+      <div style="background:#fff;border-radius:16px;max-width:400px;width:100%;max-height:82vh;display:flex;flex-direction:column;overflow:hidden">
+        <div style="padding:16px 18px;border-bottom:1px solid #f1f5f9;display:flex;align-items:center;gap:10px;flex-shrink:0">
+          <button onclick="document.getElementById('att-bus-students-modal').style.display='none';document.getElementById('att-bus-report-modal').style.display='flex'" style="background:none;border:none;font-size:16px;cursor:pointer;color:#64748b;padding:0 2px">←</button>
+          <span style="font-size:16px;font-weight:800;flex:1" id="att-bus-students-title">🚌 Bus</span>
+          <button onclick="document.getElementById('att-bus-students-modal').style.display='none'" style="background:none;border:none;font-size:18px;cursor:pointer;color:#94a3b8">✕</button>
+        </div>
+        <div id="att-bus-students-body" style="overflow-y:auto;flex:1"></div>
+      </div>
+    </div>
+
     <!-- ══════════════════════════════════════════
          DUE LIST SCREEN
     ══════════════════════════════════════════ -->
@@ -10936,6 +10948,7 @@ document.addEventListener('DOMContentLoaded', function(){
 var attWorkerUrl = localStorage.getItem('att_worker_url') || '';
 var attToday    = {};   // {safeAdmKey: {status,class,busNumber,name,ts}} — last SAVED state for the viewed date
 var attDraft    = {};   // {admissionNumber: status} — 'present'|'absent'|'unmarked', in-memory
+var attLastBusReportGroups = {}; // set by attShowBusReport(), read by attShowBusStudents() drilldown
 var attSynced   = {};   // {admissionNumber: status} — last state actually confirmed saved (for diffing)
 var attFilter   = 'all';
 var attClassFilter = ''; // '' = all classes
@@ -11443,6 +11456,8 @@ function attShowBusReport(){
     byBus[bus].total++;
     byBus[bus][st]++;
   });
+  // stashed for attShowBusStudents() so it doesn't need to recompute byBus
+  attLastBusReportGroups = byBus;
 
   var buses=Object.keys(byBus).sort(function(a,b){
     if(a==='No Bus') return 1;
@@ -11454,15 +11469,16 @@ function attShowBusReport(){
   buses.forEach(function(bus){
     var c=byBus[bus];
     totalP+=c.present; totalA+=c.absent; totalU+=c.unmarked; totalAll+=c.total;
-    rows+='<div style="display:flex;align-items:center;gap:8px;padding:10px 18px;border-bottom:1px solid #f1f5f9">'
+    rows+='<div onclick="attShowBusStudents(\''+bus.replace(/'/g,"\\'")+'\')" style="display:flex;align-items:center;gap:8px;padding:10px 18px;border-bottom:1px solid #f1f5f9;cursor:pointer" onmousedown="this.style.background=\'#fafafa\'" onmouseup="this.style.background=\'\'">'
       +'<div style="flex:1;min-width:0">'
         +'<div style="font-size:13px;font-weight:800;color:#0f172a">🚌 '+esc(bus)+'</div>'
         +'<div style="font-size:10.5px;color:#94a3b8">'+c.total+' student'+(c.total===1?'':'s')+'</div>'
       +'</div>'
-      +'<div style="display:flex;gap:6px;flex-shrink:0">'
+      +'<div style="display:flex;gap:6px;flex-shrink:0;align-items:center">'
         +'<span style="background:#f0fdf4;color:#15803d;border-radius:8px;padding:3px 8px;font-size:11px;font-weight:800">P '+c.present+'</span>'
         +'<span style="background:#fef2f2;color:#b91c1c;border-radius:8px;padding:3px 8px;font-size:11px;font-weight:800">A '+c.absent+'</span>'
         +'<span style="background:#f1f5f9;color:#64748b;border-radius:8px;padding:3px 8px;font-size:11px;font-weight:800">U '+c.unmarked+'</span>'
+        +'<span style="color:#cbd5e1;font-size:13px">›</span>'
       +'</div>'
     +'</div>';
   });
@@ -11479,6 +11495,47 @@ function attShowBusReport(){
   if(body) body.innerHTML = students.length
     ? (header+rows)
     : '<div style="padding:24px 18px;text-align:center;color:#94a3b8;font-size:12px">No students found.</div>';
+}
+
+// Tap a bus row in the Bus-wise report → drill into that bus's own student
+// list with each student's live present/absent/unmarked status. Tapping a
+// student here opens the same stats popup (attShowStats) used elsewhere.
+function attShowBusStudents(bus){
+  var reportModal=document.getElementById('att-bus-report-modal');
+  var modal=document.getElementById('att-bus-students-modal');
+  var titleEl=document.getElementById('att-bus-students-title');
+  var body=document.getElementById('att-bus-students-body');
+  if(reportModal) reportModal.style.display='none';
+  if(modal) modal.style.display='flex';
+  if(titleEl) titleEl.textContent='🚌 '+bus;
+
+  var students=(S.students||[]).filter(function(s){
+    return ((s.busNumber||'').trim()||'No Bus')===bus;
+  }).slice().sort(function(a,b){return (a.name||'').localeCompare(b.name||'');});
+
+  var STATUS_STYLE={
+    present:  {bg:'#f0fdf4',color:'#15803d',label:'PRESENT'},
+    absent:   {bg:'#fef2f2',color:'#b91c1c',label:'ABSENT'},
+    unmarked: {bg:'#f1f5f9',color:'#64748b',label:'UNMARKED'}
+  };
+
+  var rows='';
+  students.forEach(function(s){
+    var adm=String(s.admissionNumber||'');
+    var st=attDraft[adm]||'unmarked';
+    var sty=STATUS_STYLE[st]||STATUS_STYLE.unmarked;
+    rows+='<div onclick="attShowStats(\''+adm.replace(/'/g,"\\'")+'\')" style="display:flex;align-items:center;gap:10px;padding:10px 18px;border-bottom:1px solid #f1f5f9;cursor:pointer">'
+      +'<div style="flex:1;min-width:0">'
+        +'<div style="font-size:13px;font-weight:700;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc(s.name||'')+'</div>'
+        +'<div style="font-size:10.5px;color:#94a3b8">#'+esc(adm)+(s.class?' · '+esc(s.class):'')+'</div>'
+      +'</div>'
+      +'<span style="background:'+sty.bg+';color:'+sty.color+';border-radius:8px;padding:3px 9px;font-size:10.5px;font-weight:800;flex-shrink:0">'+sty.label+'</span>'
+    +'</div>';
+  });
+
+  if(body) body.innerHTML = students.length
+    ? rows
+    : '<div style="padding:24px 18px;text-align:center;color:#94a3b8;font-size:12px">No students on this bus.</div>';
 }
 
 // ═══════════════════════════════════════════════════════
