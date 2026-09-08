@@ -2838,6 +2838,44 @@ Reason: {reason}"></textarea>
           <button onclick="document.getElementById('att-stats-modal').style.display='none'" style="background:none;border:none;font-size:18px;cursor:pointer;color:#94a3b8">✕</button>
         </div>
         <div id="att-stats-body" style="padding:20px 18px;text-align:center;font-size:13px;color:#64748b">Loading…</div>
+        <div style="padding:0 18px 16px">
+          <button onclick="attShowCalendar(attStatsCurrentAdm)" style="width:100%;background:#eef2ff;color:#4338ca;border:none;border-radius:10px;padding:10px;font-size:13px;font-weight:700;cursor:pointer">📅 View Detail</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ATTENDANCE CALENDAR / "VIEW DETAIL" MODAL -->
+    <div id="att-calendar-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:1003;align-items:center;justify-content:center;padding:16px" onclick="if(event.target===this)this.style.display='none'">
+      <div style="background:#fff;border-radius:16px;max-width:400px;width:100%;max-height:88vh;display:flex;flex-direction:column;overflow:hidden">
+        <div style="padding:16px 18px 10px;border-bottom:1px solid #f1f5f9;display:flex;align-items:center;gap:10px;flex-shrink:0">
+          <span style="font-size:16px;font-weight:800;flex:1" id="att-calendar-name">📅 Attendance Calendar</span>
+          <button onclick="document.getElementById('att-calendar-modal').style.display='none'" style="background:none;border:none;font-size:18px;cursor:pointer;color:#94a3b8">✕</button>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;padding:10px 18px;flex-shrink:0">
+          <button onclick="attCalendarShiftMonth(-1)" style="background:#f1f5f9;border:none;border-radius:8px;width:30px;height:30px;font-size:14px;cursor:pointer;color:#334155">‹</button>
+          <span id="att-calendar-month-label" style="flex:1;text-align:center;font-size:13px;font-weight:800;color:#0f172a"></span>
+          <button onclick="attCalendarShiftMonth(1)" style="background:#f1f5f9;border:none;border-radius:8px;width:30px;height:30px;font-size:14px;cursor:pointer;color:#334155">›</button>
+        </div>
+        <div id="att-calendar-body" style="overflow-y:auto;flex:1;padding:0 14px 14px">Loading…</div>
+        <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;padding:10px 14px;border-top:1px solid #f1f5f9;font-size:10.5px;color:#64748b;flex-shrink:0">
+          <span><span style="display:inline-block;width:9px;height:9px;border-radius:3px;background:#22c55e;margin-right:4px"></span>Present</span>
+          <span><span style="display:inline-block;width:9px;height:9px;border-radius:3px;background:#ef4444;margin-right:4px"></span>Absent</span>
+          <span><span style="display:inline-block;width:9px;height:9px;border-radius:3px;background:#e2e8f0;margin-right:4px"></span>Holiday</span>
+          <span><span style="display:inline-block;width:9px;height:9px;border-radius:3px;background:#fde68a;margin-right:4px"></span>Not Marked</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tap-a-day correction popover -->
+    <div id="att-day-edit-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:1004;align-items:center;justify-content:center;padding:16px" onclick="if(event.target===this)this.style.display='none'">
+      <div style="background:#fff;border-radius:16px;max-width:300px;width:100%;padding:18px;text-align:center">
+        <div id="att-day-edit-date" style="font-size:13px;color:#64748b;margin-bottom:4px"></div>
+        <div id="att-day-edit-current" style="font-size:15px;font-weight:800;color:#0f172a;margin-bottom:16px"></div>
+        <div style="display:flex;gap:8px">
+          <button onclick="attCorrectDay('present')" style="flex:1;background:#f0fdf4;color:#15803d;border:1.5px solid #bbf7d0;border-radius:10px;padding:10px 0;font-size:13px;font-weight:800;cursor:pointer">Present</button>
+          <button onclick="attCorrectDay('absent')" style="flex:1;background:#fef2f2;color:#b91c1c;border:1.5px solid #fecaca;border-radius:10px;padding:10px 0;font-size:13px;font-weight:800;cursor:pointer">Absent</button>
+        </div>
+        <button onclick="document.getElementById('att-day-edit-modal').style.display='none'" style="margin-top:10px;background:none;border:none;color:#94a3b8;font-size:12px;cursor:pointer">Cancel</button>
       </div>
     </div>
 
@@ -11407,6 +11445,7 @@ function _attInit(){
 // attendance was actually marked for this student (per their own request).
 async function attShowStats(adm){
   var s=(S.students||[]).find(function(x){return String(x.admissionNumber)===String(adm);});
+  attStatsCurrentAdm=adm; // read by the "View Detail" button to open the calendar for this same student
   var modal=document.getElementById('att-stats-modal');
   var nameEl=document.getElementById('att-stats-name');
   var body=document.getElementById('att-stats-body');
