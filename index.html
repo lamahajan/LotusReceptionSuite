@@ -10987,6 +10987,14 @@ var attWorkerUrl = localStorage.getItem('att_worker_url') || '';
 var attToday    = {};   // {safeAdmKey: {status,class,busNumber,name,ts}} — last SAVED state for the viewed date
 var attDraft    = {};   // {admissionNumber: status} — 'present'|'absent'|'unmarked', in-memory
 var attLastBusReportGroups = {}; // set by attShowBusReport(), read by attShowBusStudents() drilldown
+var attStatsCurrentAdm = null;   // admissionNumber shown in att-stats-modal, read by the "View Detail" button
+var attCalendarAdm     = null;   // student the calendar modal is currently showing
+var attCalendarDays    = {};     // {date: status} — from /history-detail, for attCalendarAdm
+var attCalendarMinDate = null;   // earliest date school has ANY attendance record for (from the API)
+var attCalendarMaxDate = null;   // latest such date
+var attCalendarMonth   = null;   // Date (1st of month) currently displayed in the grid
+var attDayEditDate     = null;   // date the tap-a-day popover is currently editing
+var attDayEditPrevStatus = null; // that day's status before the edit, for the "Currently: X" label
 var attSynced   = {};   // {admissionNumber: status} — last state actually confirmed saved (for diffing)
 var attFilter   = 'all';
 var attClassFilter = ''; // '' = all classes
@@ -11443,16 +11451,18 @@ function _attInit(){
 // Tap a student's name → session stats, sourced from the permanent Sheet
 // record via the worker's /history endpoint. "Working days" = only the days
 // attendance was actually marked for this student (per their own request).
-async function attShowStats(adm){
+async function attShowStats(adm, silent){
   var s=(S.students||[]).find(function(x){return String(x.admissionNumber)===String(adm);});
   attStatsCurrentAdm=adm; // read by the "View Detail" button to open the calendar for this same student
   var modal=document.getElementById('att-stats-modal');
   var nameEl=document.getElementById('att-stats-name');
   var body=document.getElementById('att-stats-body');
   if(nameEl) nameEl.textContent='📊 '+(s?s.name:'Student');
-  if(body) body.innerHTML='Loading…';
-  if(modal) modal.style.display='flex';
-  if(!attWorkerUrl){ if(body)body.innerHTML='Connect the Attendance Worker in Settings first.'; return; }
+  if(!silent){
+    if(body) body.innerHTML='Loading…';
+    if(modal) modal.style.display='flex';
+  }
+  if(!attWorkerUrl){ if(!silent&&body)body.innerHTML='Connect the Attendance Worker in Settings first.'; return; }
   try{
     var r=await fetch(attWorkerUrl+'/history?admissionNumber='+encodeURIComponent(adm));
     var d=await r.json();
@@ -11471,6 +11481,135 @@ async function attShowStats(adm){
       +'<div style="background:#f1f5f9;border-radius:10px;padding:10px"><div style="font-size:18px;font-weight:800;color:#334155">'+d.totalWorkingDays+'</div><div style="font-size:11px;color:#475569;font-weight:700;letter-spacing:.3px">WORKING DAY'+(d.totalWorkingDays===1?'':'S')+' MARKED</div></div>';
   }catch(e){
     if(body)body.innerHTML='Could not reach the worker.';
+  }
+}
+
+// "View Detail" button on the stats popup → full day-by-day calendar,
+// sourced from the permanent Sheet via /history-detail. Any date the
+// school ran attendance at all (for ANY student) but this one has no row
+// for is rendered as a holiday — see the Apps Script's getStudentHistory_
+// for exactly how that's decided.
+async function attShowCalendar(adm){
+  if(!adm) return;
+  var s=(S.students||[]).find(function(x){return String(x.admissionNumber)===String(adm);});
+  attCalendarAdm=adm;
+  var nameEl=document.getElementById('att-calendar-name');
+  var body=document.getElementById('att-calendar-body');
+  if(nameEl) nameEl.textContent='📅 '+(s?s.name:'Student');
+  if(body) body.innerHTML='Loading…';
+  document.getElementById('att-stats-modal').style.display='none';
+  document.getElementById('att-calendar-modal').style.display='flex';
+  if(!attWorkerUrl){ if(body)body.innerHTML='Connect the Attendance Worker in Settings first.'; return; }
+  try{
+    var r=await fetch(attWorkerUrl+'/history-detail?admissionNumber='+encodeURIComponent(adm));
+    var d=await r.json();
+    if(!d||!d.ok){ if(body)body.innerHTML='Could not load calendar.'; return; }
+    var days=d.days||[];
+    attCalendarDays={};
+    days.forEach(function(x){ attCalendarDays[x.date]=x.status; });
+    if(days.length){
+      attCalendarMinDate=days[0].date;
+      attCalendarMaxDate=days[days.length-1].date;
+      attCalendarMonth=new Date(attCalendarMaxDate+'T00:00:00');
+      attCalendarMonth.setDate(1);
+    } else {
+      attCalendarMinDate=null; attCalendarMaxDate=null;
+      attCalendarMonth=new Date(); attCalendarMonth.setDate(1);
+    }
+    attRenderCalendarMonth();
+  }catch(e){
+    if(body)body.innerHTML='Could not reach the worker.';
+  }
+}
+
+function attCalendarShiftMonth(delta){
+  if(!attCalendarMonth) return;
+  attCalendarMonth.setMonth(attCalendarMonth.getMonth()+delta);
+  attRenderCalendarMonth();
+}
+
+function attRenderCalendarMonth(){
+  var body=document.getElementById('att-calendar-body');
+  var label=document.getElementById('att-calendar-month-label');
+  if(!body||!attCalendarMonth) return;
+  var MONTH_NAMES=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  var y=attCalendarMonth.getFullYear(), m=attCalendarMonth.getMonth();
+  if(label) label.textContent=MONTH_NAMES[m]+' '+y;
+
+  if(!attCalendarMinDate){
+    body.innerHTML='<div style="padding:24px 0;text-align:center;color:#94a3b8;font-size:12px">No attendance recorded yet for this student.</div>';
+    return;
+  }
+
+  var STATUS_COLOR={
+    present:  '#22c55e',
+    absent:   '#ef4444',
+    leave:    '#ef4444',
+    'not-marked': '#fde68a'
+  };
+
+  var firstOfMonth=new Date(y,m,1);
+  var startWeekday=firstOfMonth.getDay(); // 0=Sun
+  var daysInMonth=new Date(y,m+1,0).getDate();
+
+  var html='<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-top:6px">';
+  ['S','M','T','W','T','F','S'].forEach(function(w){
+    html+='<div style="text-align:center;font-size:10px;font-weight:800;color:#94a3b8;padding:4px 0">'+w+'</div>';
+  });
+  for(var i=0;i<startWeekday;i++) html+='<div></div>';
+
+  for(var day=1;day<=daysInMonth;day++){
+    var dateStr=y+'-'+String(m+1).padStart(2,'0')+'-'+String(day).padStart(2,'0');
+    var inRange = dateStr>=attCalendarMinDate && dateStr<=attCalendarMaxDate;
+    var status = attCalendarDays[dateStr]; // undefined if no row → holiday, IF inRange
+    if(!inRange){
+      html+='<div style="text-align:center;font-size:11.5px;color:#e2e8f0;padding:7px 0">'+day+'</div>';
+      continue;
+    }
+    var isHoliday = !status;
+    var bg = isHoliday ? '#e2e8f0' : (STATUS_COLOR[status]||'#e2e8f0');
+    var fg = isHoliday ? '#94a3b8' : '#fff';
+    var clickable = !isHoliday;
+    html+='<div'+(clickable?' onclick="attOpenDayEdit(\''+dateStr+'\')"':'')
+      +' style="text-align:center;font-size:11.5px;font-weight:800;color:'+fg+';background:'+bg+';border-radius:8px;padding:7px 0'+(clickable?';cursor:pointer':'')+'">'+day+'</div>';
+  }
+  html+='</div>';
+  body.innerHTML=html;
+}
+
+// Tap a colored (non-holiday) day → small popover to correct that day's
+// status via the worker's /correct-day, which edits ONLY that Sheet row's
+// Status cell (see attendance-sheet-webapp.gs correctStatus_) — today's
+// live Firebase/bus-tally/biometric data is never touched by this.
+function attOpenDayEdit(dateStr){
+  var status=attCalendarDays[dateStr];
+  attDayEditDate=dateStr;
+  attDayEditPrevStatus=status;
+  var LABELS={present:'Present',absent:'Absent',leave:'Absent/Leave','not-marked':'Not Marked'};
+  document.getElementById('att-day-edit-date').textContent=dateStr;
+  document.getElementById('att-day-edit-current').textContent='Currently: '+(LABELS[status]||status);
+  document.getElementById('att-day-edit-modal').style.display='flex';
+}
+
+async function attCorrectDay(newStatus){
+  var dateStr=attDayEditDate, adm=attCalendarAdm;
+  if(!dateStr||!adm) return;
+  if(newStatus===attDayEditPrevStatus){ document.getElementById('att-day-edit-modal').style.display='none'; return; }
+  document.getElementById('att-day-edit-modal').style.display='none';
+  if(!attWorkerUrl) return;
+  try{
+    var r=await fetch(attWorkerUrl+'/correct-day',{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({date:dateStr, admissionNumber:adm, status:newStatus})
+    });
+    var d=await r.json();
+    if(!d||!d.ok){ if(typeof toast==='function')toast(d&&d.error?d.error:'Could not save correction'); return; }
+    attCalendarDays[dateStr]=newStatus;
+    attRenderCalendarMonth();
+    if(typeof toast==='function')toast('Updated '+dateStr);
+    attShowStats(adm, true); // silently refresh percent/present/absent numbers in the background
+  }catch(e){
+    if(typeof toast==='function')toast('Could not reach the worker');
   }
 }
 
