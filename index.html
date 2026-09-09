@@ -3659,7 +3659,14 @@ window.addEventListener('load',function(){
   checkNav();
   if(typeof _recInit==='function')_recInit();
   if(typeof _refInit==='function')_refInit();
-  if(typeof _attInit==='function')_attInit();
+  // NOTE: intentionally NOT calling _attInit() here. _attInit() drives the
+  // full Attendance list load and shows the centered loading popup — that
+  // should only happen when the user actually opens the Attendance screen
+  // (see showScreen(), which calls _attInit() when name==='att'). On plain
+  // page load we only need today's "X present" count for the Home card, and
+  // refreshHomeAttStat() fetches that quietly with no popup and without
+  // touching attToday/attDraft.
+  if(typeof refreshHomeAttStat==='function')refreshHomeAttStat();
 });
 </script>
 
