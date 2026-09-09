@@ -814,7 +814,7 @@ body{color:var(--text);font-family:var(--sans);min-height:100vh}
             </div>
             <div class="ac-foot">
               <span class="ac-stat" id="home-rec-stat">— passes today</span>
-              <span class="ac-open" style="color:#2563eb;border-color:#2563eb">Open →</span>
+              <span class="ac-open" style="color:#2563eb;border-color:#93c5fd;background:#eff6ff">Open →</span>
             </div>
           </div>
           <div class="app-card" onclick="goTo('ref')">
@@ -824,7 +824,7 @@ body{color:var(--text);font-family:var(--sans);min-height:100vh}
             </div>
             <div class="ac-foot">
               <span class="ac-stat" id="home-ref-stat">— entries this FY</span>
-              <span class="ac-open" style="color:#b5883e;border-color:#b5883e">Open →</span>
+              <span class="ac-open" style="color:#ca8a04;border-color:#fde68a;background:#fffbeb">Open →</span>
             </div>
           </div>
           <div class="app-card" onclick="goTo('att')">
@@ -834,7 +834,7 @@ body{color:var(--text);font-family:var(--sans);min-height:100vh}
             </div>
             <div class="ac-foot">
               <span class="ac-stat" id="home-att-stat">— students</span>
-              <span class="ac-open" style="color:#7c3aed;border-color:#7c3aed">Open →</span>
+              <span class="ac-open" style="color:#7c3aed;border-color:#c4b5fd;background:#f5f3ff">Open →</span>
             </div>
           </div>
           <div class="app-card" onclick="goTo('due')">
@@ -844,7 +844,7 @@ body{color:var(--text);font-family:var(--sans);min-height:100vh}
             </div>
             <div class="ac-foot">
               <span class="ac-stat" id="home-due-stat">— students due</span>
-              <span class="ac-open" style="color:#ca8a04;border-color:#fde047;background:#fefce8">Open →</span>
+              <span class="ac-open" style="color:#16a34a;border-color:#86efac;background:#f0fdf4">Open →</span>
             </div>
           </div>
         </div>
@@ -3495,7 +3495,21 @@ Reason: {reason}"></textarea>
 #pw-prompt-ok:hover{opacity:.88;transform:translateY(-1px)}
 #pw-prompt-cancel{background:var(--card,#f7f5ff);border:1.5px solid var(--bdr,#e0d9f5);border-radius:9px;padding:11px 18px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;color:var(--sub,#6b5b95);transition:all .2s}
 #pw-prompt-cancel:hover{border-color:var(--brand,#7c5cbf);color:var(--brand,#7c5cbf)}
+
+/* ATTENDANCE — centered loading overlay while today's real statuses are fetched */
+#att-loading-ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:9500;align-items:center;justify-content:center;padding:20px}
+#att-loading-ov.open{display:flex;animation:fadeIn .18s ease}
+#att-loading-box{background:#fff;border-radius:16px;padding:26px 30px;box-shadow:0 16px 48px rgba(0,0,0,.25);display:flex;flex-direction:column;align-items:center;gap:12px;font-family:'Plus Jakarta Sans',sans-serif}
+#att-loading-spin{width:34px;height:34px;border:3.5px solid #fbcfe8;border-top-color:#db2777;border-radius:50%;animation:attSpin .7s linear infinite}
+@keyframes attSpin{to{transform:rotate(360deg)}}
+#att-loading-txt{font-size:13px;font-weight:700;color:#0f172a;text-align:center}
 </style>
+<div id="att-loading-ov">
+  <div id="att-loading-box">
+    <div id="att-loading-spin"></div>
+    <div id="att-loading-txt">Loading today's attendance…</div>
+  </div>
+</div>
 <div id="pw-prompt-ov">
   <div id="pw-prompt-box">
     <div id="pw-prompt-title">🔑 Password Required</div>
@@ -3598,7 +3612,31 @@ function updateHomeStats(){
   try{var today=new Date().toISOString().split('T')[0];var cnt=(window.S&&window.S.passes||[]).filter(function(p){return p.date===today;}).length;document.getElementById('home-rec-stat').textContent=cnt+' passes today';}catch(e){}
   try{var fyCnt=(window.R&&window.R.entries||[]).length;document.getElementById('home-ref-stat').textContent=fyCnt+' entries this FY';}catch(e){}
   try{var dueStat=document.getElementById('home-due-stat');if(dueStat){var saved=localStorage.getItem('dl_data_v1');var cnt2=saved?JSON.parse(saved).length:(window.dlData?window.dlData.length:0);dueStat.textContent=cnt2+' students due';}}catch(e){}
-  try{var attStat=document.getElementById('home-att-stat');if(attStat){var _p=Object.keys(window.attToday||{}).filter(function(k){return window.attToday[k]&&window.attToday[k].status==='present';}).length;attStat.textContent=_p+' present today';}}catch(e){}
+  refreshHomeAttStat();
+}
+// Attendance's saved statuses live on the worker (not local memory), so unlike
+// Gatepass/Due List/Reference Register — which read straight from data already
+// in memory — the home count needs one network read to know today's numbers.
+// Once loaded, it's kept in sync purely "as you go": every time attendance is
+// marked & saved, or today's list is (re)loaded, we push the fresh count to the
+// home card directly — no repeating background timer.
+var _attTodayLoaded=false;
+async function refreshHomeAttStat(){
+  var attStat=document.getElementById('home-att-stat'); if(!attStat)return;
+  if(_attTodayLoaded){
+    try{var _p=Object.keys(window.attToday||{}).filter(function(k){return window.attToday[k]&&window.attToday[k].status==='present';}).length;attStat.textContent=_p+' present today';}catch(e){}
+    return;
+  }
+  var url=(typeof attWorkerUrl!=='undefined'&&attWorkerUrl)?attWorkerUrl:(localStorage.getItem('att_worker_url')||'');
+  if(!url)return;
+  try{
+    var d=(typeof todayStr==='function')?todayStr():new Date().toISOString().split('T')[0];
+    var r=await fetch(url+'/status?date='+d);
+    var j=r.ok?await r.json():null;
+    var recs=(j&&j.attendance&&typeof j.attendance==='object')?j.attendance:{};
+    var p=Object.keys(recs).filter(function(k){return recs[k]&&recs[k].status==='present';}).length;
+    attStat.textContent=p+' present today';
+  }catch(e){/* leave last known value on network failure */}
 }
 function checkNav(){document.getElementById('bottom-nav').style.display=window.innerWidth<=768?'flex':'none';}
 window.addEventListener('resize',checkNav);
@@ -11119,14 +11157,35 @@ async function attLoadForDate(date){
 
   attToday={}; attDraft={}; attSynced={};
   attUpdMarkRestBtns();
-  if(!attWorkerUrl){ attRenderList(); return; }
+  // Render immediately with whatever we have (unmarked list) so the screen
+  // never sits blank waiting on the network — then silently refresh once the
+  // real saved statuses arrive from the worker.
+  attRenderList();
+  if(!attWorkerUrl){ return; }
+  _attShowLoadingToast();
   try{
     var r=await fetch(attWorkerUrl+'/status?date='+date);
     var d=r.ok?await r.json():null;
     var recs=(d&&d.attendance&&typeof d.attendance==='object')?d.attendance:{};
+    if(attViewDate!==date){ _attHideLoadingToast(); return; } // user already switched dates while this was in flight
     attToday=recs;
+    attDraft={}; attSynced={}; // reseed from the freshly-fetched saved statuses
+    if(date===todayStr()){ _attTodayLoaded=true; refreshHomeAttStat(); }
   }catch(e){attToday={};}
+  _attHideLoadingToast();
   attRenderList();
+}
+// A persistent (non-auto-hiding) centered loading popup shown while today's
+// real present/absent statuses are being fetched, so it's clear to the user
+// that what's on screen right now (all "unmarked") is a placeholder, not
+// final — and it disappears the instant real data lands, however long that takes.
+function _attShowLoadingToast(){
+  var ov=document.getElementById('att-loading-ov'); if(!ov)return;
+  ov.classList.add('open');
+}
+function _attHideLoadingToast(){
+  var ov=document.getElementById('att-loading-ov'); if(!ov)return;
+  ov.classList.remove('open');
 }
 
 // Colors for each status filter chip — border/text tint when inactive,
@@ -11456,6 +11515,7 @@ async function attSaveDirty(){
       attToday[attSafeKey(p.admissionNumber)]={status:p.status,class:p.class,busNumber:p.busNumber,name:p.name,ts:Date.now()};
     });
     if(typeof toast==='function')toast('Attendance saved');
+    if((attViewDate||todayStr())===todayStr()){ _attTodayLoaded=true; refreshHomeAttStat(); }
   }catch(e){
     if(typeof toast==='function')toast('Save failed — check the worker connection','err');
   }
