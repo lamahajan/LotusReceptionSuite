@@ -11157,11 +11157,14 @@ async function attLoadForDate(date){
 
   attToday={}; attDraft={}; attSynced={};
   attUpdMarkRestBtns();
-  // Render immediately with whatever we have (unmarked list) so the screen
-  // never sits blank waiting on the network — then silently refresh once the
-  // real saved statuses arrive from the worker.
-  attRenderList();
-  if(!attWorkerUrl){ return; }
+  if(!attWorkerUrl){
+    // Offline / no worker configured — nothing to wait on, just show the list.
+    attRenderList();
+    return;
+  }
+  // Show the centered loading popup right away, before the list ever renders,
+  // so opening Attendance shows the popup — not a flash of the placeholder
+  // "unmarked" list — while today's real present/absent statuses are fetched.
   _attShowLoadingToast();
   try{
     var r=await fetch(attWorkerUrl+'/status?date='+date);
@@ -11169,7 +11172,6 @@ async function attLoadForDate(date){
     var recs=(d&&d.attendance&&typeof d.attendance==='object')?d.attendance:{};
     if(attViewDate!==date){ _attHideLoadingToast(); return; } // user already switched dates while this was in flight
     attToday=recs;
-    attDraft={}; attSynced={}; // reseed from the freshly-fetched saved statuses
     if(date===todayStr()){ _attTodayLoaded=true; refreshHomeAttStat(); }
   }catch(e){attToday={};}
   _attHideLoadingToast();
