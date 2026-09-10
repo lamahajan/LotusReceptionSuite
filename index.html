@@ -3609,7 +3609,7 @@ function goTo(name){
 function openMobileDrawer(){document.getElementById('mobile-drawer').classList.add('open');}
 function closeMobileDrawer(){document.getElementById('mobile-drawer').classList.remove('open');}
 function updateHomeStats(){
-  try{var today=new Date().toISOString().split('T')[0];var cnt=(window.S&&window.S.passes||[]).filter(function(p){return p.date===today;}).length;document.getElementById('home-rec-stat').textContent=cnt+' passes today';}catch(e){}
+  try{var today=todayStr();var cnt=(window.S&&window.S.passes||[]).filter(function(p){return p.date===today;}).length;document.getElementById('home-rec-stat').textContent=cnt+' passes today';}catch(e){}
   try{var fyCnt=(window.R&&window.R.entries||[]).length;document.getElementById('home-ref-stat').textContent=fyCnt+' entries this FY';}catch(e){}
   try{var dueStat=document.getElementById('home-due-stat');if(dueStat){var saved=localStorage.getItem('dl_data_v1');var cnt2=saved?JSON.parse(saved).length:(window.dlData?window.dlData.length:0);dueStat.textContent=cnt2+' students due';}}catch(e){}
   refreshHomeAttStat();
@@ -10405,7 +10405,7 @@ function dlFbGetCfg(){
 function dlFbEndpoint(path){
   var cfg = dlFbGetCfg();
   if(!cfg.url) return null;
-  var node = cfg.code ? (cfg.code+'/'+path) : path;
+  var node = cfg.code ? (path ? cfg.code+'/'+path : cfg.code) : path;
   return cfg.url + '/' + node + '.json';
 }
 
@@ -10448,7 +10448,7 @@ window.dlFbApplyInterval = function(){
 };
 
 window.dlFbPushNow = async function(){
-  var ep = dlFbEndpoint('dl_due_data');
+  var ep = dlFbEndpoint('');
   if(!ep){ dlFbSetStatus('⚠️ Firebase not configured','#d97706'); return; }
   if(!window.dlData||!window.dlData.length){ dlFbSetStatus('⚠️ No data to push','#d97706'); return; }
   dlFbSetStatus('⏳ Pushing data…','#1d4ed8');
@@ -10463,7 +10463,7 @@ window.dlFbPushNow = async function(){
 };
 
 window.dlFbFetchNow = async function(silent){
-  var ep = dlFbEndpoint('dl_due_data');
+  var ep = dlFbEndpoint('');
   if(!ep){ if(!silent) dlFbSetStatus('⚠️ Firebase not configured','#d97706'); return; }
   if(!silent) dlFbSetStatus('⏳ Fetching…','#1d4ed8');
   try{
