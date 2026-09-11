@@ -3184,14 +3184,11 @@ Reason: {reason}"></textarea>
               </div>
               <label class="dl-lbl" style="margin-top:0">Database URL</label>
               <input id="dl-fb-url" class="dl-inp" type="text" placeholder="https://your-db.firebaseio.com"/>
-              <label class="dl-lbl">Sync Code</label>
-              <input id="dl-fb-code" class="dl-inp" type="text" placeholder="e.g. LOTUS_DUELIST"/>
-              <label class="dl-lbl">⏱ Auto-Pull Interval</label>
-              <select id="dl-fb-interval" style="width:100%;background:#f5f0e8;border:1.5px solid #e8dcc8;border-radius:9px;padding:9px 10px;font-size:12px;font-weight:700;color:#1a1035;outline:none;cursor:pointer;font-family:inherit;margin-bottom:10px" onchange="dlFbApplyInterval()">
-                <option value="0">🚫 Off</option>
-                <option value="5">5 seconds</option><option value="10">10 seconds</option><option value="15">15 seconds</option>
-                <option value="30" selected>30 seconds</option><option value="60">1 minute</option><option value="120">2 minutes</option>
-              </select>
+              <label class="dl-lbl">Due List Sync Code</label>
+              <input id="dl-fb-code" class="dl-inp" type="text" placeholder="e.g. Lotus_monthdue"/>
+              <div style="font-size:11px;color:#15803d;background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:8px 10px;margin-bottom:10px;line-height:1.5">
+                🟢 Realtime sync — updates push instantly the moment any device changes data. No polling delay.
+              </div>
               <div style="display:grid;grid-template-columns:1fr auto auto;gap:7px">
                 <button onclick="dlFbSaveAndConnect()" style="background:#f97316;color:#fff;border:none;border-radius:9px;padding:10px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">🔗 Save &amp; Connect</button>
                 <button onclick="dlFbPushNow()" style="background:#fff;color:#f97316;border:1.5px solid #f97316;border-radius:9px;padding:10px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit" title="Push local data → Firebase">⬆ Push</button>
@@ -3217,12 +3214,15 @@ Reason: {reason}"></textarea>
               </div>
               <label class="dl-lbl" style="margin-top:0">Cloudflare Worker URL</label>
               <input id="dl-rzp-proxy-url" class="dl-inp" type="text" placeholder="https://rzp-proxy.your-name.workers.dev"/>
-              <label class="dl-lbl">Redirect Page URL</label>
-              <input id="dl-rzp-redirect-url" class="dl-inp" type="text" placeholder="https://yourname.github.io/redirect.html" style="margin-bottom:10px"/>
+              <label class="dl-lbl">Redirect Page URL <span style="font-size:10px;color:#6b7280;font-weight:500">(where you've hosted index.html — the parent payment page)</span></label>
+              <input id="dl-rzp-redirect-url" class="dl-inp" type="text" placeholder="https://yourname.github.io/index.html" style="margin-bottom:6px"/>
+              <div style="font-size:10.5px;color:#6b7280;line-height:1.5;margin-bottom:10px">
+                Parent's WhatsApp link opens this page with the amount + QR attached — it's the page that shows "Payment Successful" after they pay.
+              </div>
               <label class="dl-lbl" style="margin-top:8px">Transaction Firebase URL <span style="font-size:10px;color:#6b7280;font-weight:500">(separate DB for payments)</span></label>
               <input id="dl-txn-fb-url" class="dl-inp" type="text" placeholder="https://your-txn-project-rtdb.firebaseio.com"/>
-              <label class="dl-lbl">Sync Code</label>
-              <input id="dl-txn-fb-secret" class="dl-inp" type="text" placeholder="e.g. LOTUS_TXN" style="margin-bottom:10px"/>
+              <label class="dl-lbl">Transaction Sync Code <span style="font-size:10px;color:#6b7280;font-weight:500">(must match worker's TXN_FIREBASE_CODE)</span></label>
+              <input id="dl-txn-fb-secret" class="dl-inp" type="text" placeholder="e.g. Lotus_transaction" style="margin-bottom:10px"/>
               <label class="dl-lbl">App Token <span style="font-size:10px;color:#6b7280;font-weight:500">(matches worker's APP_TOKEN — stays on this device only)</span></label>
               <input id="dl-app-token" class="dl-inp" type="password" placeholder="shared secret for worker requests" style="margin-bottom:10px"/>
               <button onclick="dlRzpSaveConfig()" style="width:100%;background:#16a34a;color:#fff;border:none;border-radius:9px;padding:10px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">💾 Save Razorpay Config</button>
@@ -10417,34 +10417,14 @@ function dlFbSetStatus(msg, color){
 window.dlFbSaveAndConnect = function(){
   var urlEl = document.getElementById('dl-fb-url');
   var codeEl = document.getElementById('dl-fb-code');
-  var intEl = document.getElementById('dl-fb-interval');
   var url = (urlEl?urlEl.value.trim():'').replace(/\/+$/,'');
   var code = codeEl?codeEl.value.trim():'';
-  var interval = intEl ? intEl.value : '30';
   if(!url){ dlFbSetStatus('⚠️ Enter Firebase URL first','#d97706'); return; }
   localStorage.setItem(DL_FB_URL_KEY, url);
   localStorage.setItem(DL_FB_CODE_KEY, code);
-  localStorage.setItem(DL_FB_INTERVAL_KEY, interval); // always save chosen interval
   dlFbSetStatus('⏳ Connecting…','#1d4ed8');
-  // Restart polling with saved interval
-  if(window._dlFbPollTimer){ clearInterval(window._dlFbPollTimer); window._dlFbPollTimer = null; }
-  dlFbStartPolling();
+  dlFbStartRealtime();
   dlFbFetchNow(false);
-};
-
-// Apply interval change immediately without re-saving URL/code
-window.dlFbApplyInterval = function(){
-  var intEl = document.getElementById('dl-fb-interval');
-  if(!intEl) return;
-  var interval = intEl.value;
-  localStorage.setItem(DL_FB_INTERVAL_KEY, interval);
-  dlFbStartPolling();
-  var cfg = dlFbGetCfg();
-  if(interval === '0'){
-    dlFbSetStatus('⏸ Auto-pull disabled','#6b5b95');
-  } else {
-    dlFbSetStatus('✅ Interval set to '+interval+'s'+(cfg.url?' — polling active':''),'#15803d');
-  }
 };
 
 window.dlFbPushNow = async function(){
@@ -10512,16 +10492,38 @@ window.dlFbFetchNow = async function(silent){
   }
 };
 
-// Start Firebase polling — pull only, push is manual button
-function dlFbStartPolling(){
-  var cfg = dlFbGetCfg();
-  if(window._dlFbPollTimer){ clearInterval(window._dlFbPollTimer); window._dlFbPollTimer = null; }
-  if(!cfg.url) return;
-  // Read saved interval; if nothing saved yet, default to 30s
-  var savedInterval = parseInt(localStorage.getItem(DL_FB_INTERVAL_KEY)||'30', 10);
-  if(isNaN(savedInterval) || savedInterval <= 0) return; // Off
-  console.log('[DL Firebase] Polling every', savedInterval, 'sec');
-  window._dlFbPollTimer = setInterval(function(){ dlFbFetchNow(true); }, savedInterval * 1000);
+// ── Realtime sync via Firebase REST streaming (Server-Sent Events) ──
+// EventSource sends "Accept: text/event-stream" automatically, which Firebase's
+// REST API recognizes and keeps the connection open, pushing a "put"/"patch"
+// event the instant data changes anywhere — no polling delay, no wasted reads
+// while nothing has changed. Browsers auto-reconnect EventSource on drop.
+var _dlFbEventSource = null;
+
+function dlFbStopRealtime(){
+  if(_dlFbEventSource){ try{ _dlFbEventSource.close(); }catch(e){} _dlFbEventSource = null; }
+}
+
+function dlFbStartRealtime(){
+  dlFbStopRealtime();
+  var ep = dlFbEndpoint('');
+  if(!ep) return;
+  try{
+    _dlFbEventSource = new EventSource(ep);
+    var onChange = function(){ dlFbFetchNow(true); };
+    _dlFbEventSource.addEventListener('put', onChange);
+    _dlFbEventSource.addEventListener('patch', onChange);
+    _dlFbEventSource.onopen = function(){
+      dlFbSetStatus('🟢 Realtime sync connected','#15803d');
+    };
+    _dlFbEventSource.onerror = function(){
+      // EventSource retries on its own; just reflect it in the status line.
+      dlFbSetStatus('⚠️ Realtime sync reconnecting…','#d97706');
+    };
+    console.log('[DL Firebase] Realtime listener started:', ep);
+  } catch(e){
+    console.warn('[DL Firebase] EventSource failed, falling back to a single fetch:', e.message);
+    dlFbFetchNow(true);
+  }
 }
 
 // Load Firebase URL/code into settings fields when modal opens
@@ -10532,13 +10534,8 @@ function dlFbStartPolling(){
     var cfg = dlFbGetCfg();
     var urlEl = document.getElementById('dl-fb-url');
     var codeEl = document.getElementById('dl-fb-code');
-    var intEl = document.getElementById('dl-fb-interval');
     if(urlEl) urlEl.value = cfg.url||'';
     if(codeEl) codeEl.value = cfg.code||'';
-    if(intEl){
-      var savedInt = localStorage.getItem(DL_FB_INTERVAL_KEY)||'30';
-      intEl.value = savedInt;
-    }
     var connected = !!cfg.url;
     if(connected){
       var ts = new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',hour12:true});
@@ -10547,13 +10544,11 @@ function dlFbStartPolling(){
   };
 })();
 
-// Start polling on load + immediate eager fetch so data is ready before screen opens
+// Start realtime listener on load + immediate eager fetch so data is ready before screen opens
 document.addEventListener('DOMContentLoaded', function(){
-  dlFbStartPolling();
-  // Trigger an immediate fetch — do not wait for polling
-  // This gets data into localStorage before the screen opens
   var _cfg = dlFbGetCfg();
   if(_cfg.url){
+    dlFbStartRealtime();
     dlFbFetchNow(true); // silent=true, runs in background
   }
 });
