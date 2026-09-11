@@ -3063,7 +3063,6 @@ Reason: {reason}"></textarea>
           <div style="width:38px;height:38px;background:rgba(181,136,62,.12);border:1.5px solid rgba(181,136,62,.3);border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:18px">⚙️</div>
           <div style="flex:1">
             <div style="font-size:15px;font-weight:800;color:#1a1208">Due List Settings</div>
-            <div style="font-size:11px;color:#a89f92;margin-top:1px">Data sync, WhatsApp &amp; Payments</div>
           </div>
           <button onclick="dlCloseSettings()" style="background:#f0ece4;border:none;cursor:pointer;width:32px;height:32px;border-radius:9px;font-size:16px;color:#6a6055;display:flex;align-items:center;justify-content:center;transition:all .15s" onmouseover="this.style.background='#e0d9cc'" onmouseout="this.style.background='#f0ece4'">✕</button>
         </div>
@@ -3071,8 +3070,7 @@ Reason: {reason}"></textarea>
         <!-- DL LOCK SCREEN -->
         <div id="dl-settings-lock" style="display:none;padding:32px 24px;text-align:center">
           <div style="font-size:36px;margin-bottom:12px">🔒</div>
-          <div style="font-size:15px;font-weight:800;color:#1a1208;margin-bottom:5px">Settings Protected</div>
-          <div style="font-size:12px;color:#7a5c2e;margin-bottom:16px">Enter password to access Due List settings</div>
+          <div style="font-size:15px;font-weight:800;color:#1a1208;margin-bottom:16px">Settings Protected</div>
           <div style="display:flex;gap:8px;max-width:300px;margin:0 auto">
             <input id="dl-settings-pw-input" type="password" placeholder="Enter password…" class="dl-inp" style="flex:1;margin-bottom:0" onkeydown="if(event.key==='Enter')dlCheckSettingsPw()">
             <button onclick="dlCheckSettingsPw()" style="background:#b5883e;color:#fff;border:none;border-radius:9px;padding:9px 14px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap">Unlock</button>
@@ -3089,7 +3087,6 @@ Reason: {reason}"></textarea>
               <span class="dl-acc-hdr-icon">📂</span>
               <div class="dl-acc-hdr-info">
                 <div class="dl-acc-hdr-title">Excel File</div>
-                <div class="dl-acc-hdr-sub">Pin file or upload manually</div>
               </div>
               <span class="dl-acc-arrow">▼</span>
             </button>
@@ -3153,11 +3150,11 @@ Reason: {reason}"></textarea>
                 <div style="display:flex;gap:8px">
                   <label id="dl-mode-single-lbl" onclick="dlSetClassMode('single')" style="flex:1;display:flex;align-items:center;gap:8px;background:#f5f0e8;border:1.5px solid #e8dcc8;border-radius:10px;padding:9px 12px;cursor:pointer;transition:all .15s">
                     <div id="dl-mode-single-dot" style="width:16px;height:16px;border-radius:50%;border:2px solid #c8b89a;background:#fff;flex-shrink:0;display:flex;align-items:center;justify-content:center"></div>
-                    <div><div style="font-size:12px;font-weight:800;color:#1a1208">Single</div><div style="font-size:10px;color:#9a7c4a">One class at a time</div></div>
+                    <div style="font-size:12px;font-weight:800;color:#1a1208">Single</div>
                   </label>
                   <label id="dl-mode-multi-lbl" onclick="dlSetClassMode('multi')" style="flex:1;display:flex;align-items:center;gap:8px;background:#f5f0e8;border:1.5px solid #e8dcc8;border-radius:10px;padding:9px 12px;cursor:pointer;transition:all .15s">
                     <div id="dl-mode-multi-dot" style="width:16px;height:16px;border-radius:50%;border:2px solid #c8b89a;background:#fff;flex-shrink:0;display:flex;align-items:center;justify-content:center"></div>
-                    <div><div style="font-size:12px;font-weight:800;color:#1a1208">Multi</div><div style="font-size:10px;color:#9a7c4a">Multiple classes</div></div>
+                    <div style="font-size:12px;font-weight:800;color:#1a1208">Multi</div>
                   </label>
                 </div>
               </div>
@@ -3174,21 +3171,14 @@ Reason: {reason}"></textarea>
               <span class="dl-acc-hdr-icon">🔥</span>
               <div class="dl-acc-hdr-info">
                 <div class="dl-acc-hdr-title">Firebase Sync</div>
-                <div class="dl-acc-hdr-sub">Multi-device real-time sync</div>
               </div>
               <span class="dl-acc-arrow">▼</span>
             </button>
             <div class="dl-acc-body">
-              <div style="font-size:11px;color:#9a3412;background:#fff7ed;border:1px solid #fdba74;border-radius:8px;padding:8px 10px;margin-top:10px;margin-bottom:10px;line-height:1.5">
-                Upload Excel from any device → data syncs to all devices via Firebase.
-              </div>
-              <label class="dl-lbl" style="margin-top:0">Database URL</label>
+              <label class="dl-lbl" style="margin-top:10px">Database URL</label>
               <input id="dl-fb-url" class="dl-inp" type="text" placeholder="https://your-db.firebaseio.com"/>
               <label class="dl-lbl">Due List Sync Code</label>
-              <input id="dl-fb-code" class="dl-inp" type="text" placeholder="e.g. Lotus_monthdue"/>
-              <div style="font-size:11px;color:#15803d;background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:8px 10px;margin-bottom:10px;line-height:1.5">
-                🟢 Realtime sync — updates push instantly the moment any device changes data. No polling delay.
-              </div>
+              <input id="dl-fb-code" class="dl-inp" type="text" placeholder="e.g. Lotus_monthdue" style="margin-bottom:10px"/>
               <div style="display:grid;grid-template-columns:1fr auto auto;gap:7px">
                 <button onclick="dlFbSaveAndConnect()" style="background:#f97316;color:#fff;border:none;border-radius:9px;padding:10px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">🔗 Save &amp; Connect</button>
                 <button onclick="dlFbPushNow()" style="background:#fff;color:#f97316;border:1.5px solid #f97316;border-radius:9px;padding:10px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit" title="Push local data → Firebase">⬆ Push</button>
@@ -3204,26 +3194,19 @@ Reason: {reason}"></textarea>
               <span class="dl-acc-hdr-icon">💳</span>
               <div class="dl-acc-hdr-info">
                 <div class="dl-acc-hdr-title">Razorpay Payments</div>
-                <div class="dl-acc-hdr-sub">Auto QR with WhatsApp messages</div>
               </div>
               <span class="dl-acc-arrow">▼</span>
             </button>
             <div class="dl-acc-body">
-              <div style="font-size:11px;color:#166534;background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:8px 10px;margin-top:10px;margin-bottom:10px;line-height:1.5">
-                QR generates automatically when you send WhatsApp. Payments tracked in Transactions tab.
-              </div>
-              <label class="dl-lbl" style="margin-top:0">Cloudflare Worker URL</label>
+              <label class="dl-lbl" style="margin-top:10px">Cloudflare Worker URL</label>
               <input id="dl-rzp-proxy-url" class="dl-inp" type="text" placeholder="https://rzp-proxy.your-name.workers.dev"/>
-              <label class="dl-lbl">Redirect Page URL <span style="font-size:10px;color:#6b7280;font-weight:500">(where you've hosted index.html — the parent payment page)</span></label>
-              <input id="dl-rzp-redirect-url" class="dl-inp" type="text" placeholder="https://yourname.github.io/index.html" style="margin-bottom:6px"/>
-              <div style="font-size:10.5px;color:#6b7280;line-height:1.5;margin-bottom:10px">
-                Parent's WhatsApp link opens this page with the amount + QR attached — it's the page that shows "Payment Successful" after they pay.
-              </div>
-              <label class="dl-lbl" style="margin-top:8px">Transaction Firebase URL <span style="font-size:10px;color:#6b7280;font-weight:500">(separate DB for payments)</span></label>
+              <label class="dl-lbl">Redirect Page URL</label>
+              <input id="dl-rzp-redirect-url" class="dl-inp" type="text" placeholder="https://yourname.github.io/index.html"/>
+              <label class="dl-lbl" style="margin-top:8px">Transaction Firebase URL</label>
               <input id="dl-txn-fb-url" class="dl-inp" type="text" placeholder="https://your-txn-project-rtdb.firebaseio.com"/>
-              <label class="dl-lbl">Transaction Sync Code <span style="font-size:10px;color:#6b7280;font-weight:500">(must match worker's TXN_FIREBASE_CODE)</span></label>
+              <label class="dl-lbl">Transaction Sync Code</label>
               <input id="dl-txn-fb-secret" class="dl-inp" type="text" placeholder="e.g. Lotus_transaction" style="margin-bottom:10px"/>
-              <label class="dl-lbl">App Token <span style="font-size:10px;color:#6b7280;font-weight:500">(matches worker's APP_TOKEN — stays on this device only)</span></label>
+              <label class="dl-lbl">App Token</label>
               <input id="dl-app-token" class="dl-inp" type="password" placeholder="shared secret for worker requests" style="margin-bottom:10px"/>
               <button onclick="dlRzpSaveConfig()" style="width:100%;background:#16a34a;color:#fff;border:none;border-radius:9px;padding:10px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">💾 Save Razorpay Config</button>
               <div id="dl-rzp-status" style="font-size:11px;color:#166534;margin-top:7px;min-height:16px;font-weight:600"></div>
@@ -3236,7 +3219,6 @@ Reason: {reason}"></textarea>
               <span class="dl-acc-hdr-icon">📲</span>
               <div class="dl-acc-hdr-info">
                 <div class="dl-acc-hdr-title">WhatsApp Templates</div>
-                <div class="dl-acc-hdr-sub">Meta API credentials &amp; message templates</div>
               </div>
               <span class="dl-acc-arrow">▼</span>
             </button>
@@ -3270,7 +3252,6 @@ Reason: {reason}"></textarea>
               <span class="dl-acc-hdr-icon">✅</span>
               <div class="dl-acc-hdr-info">
                 <div class="dl-acc-hdr-title">Processed Transactions</div>
-                <div class="dl-acc-hdr-sub">Grouping, visibility &amp; auto-delete</div>
               </div>
               <span class="dl-acc-arrow">▼</span>
             </button>
@@ -3279,15 +3260,15 @@ Reason: {reason}"></textarea>
               <div style="display:flex;flex-direction:column;gap:7px;margin-bottom:12px">
                 <label style="display:flex;align-items:center;gap:10px;background:#f5f0e8;border:1.5px solid #e8dcc8;border-radius:9px;padding:9px 12px;cursor:pointer">
                   <input type="radio" name="dl-processed-mode" value="show" id="dl-proc-show" style="accent-color:#b5883e;width:15px;height:15px" onchange="dlSaveProcessedSettings()">
-                  <div><div style="font-size:12px;font-weight:700;color:#1a1208">Show All</div><div style="font-size:10.5px;color:#a89f92">Processed transactions appear normally mixed with others</div></div>
+                  <div style="font-size:12px;font-weight:700;color:#1a1208">Show All</div>
                 </label>
                 <label style="display:flex;align-items:center;gap:10px;background:#f5f0e8;border:1.5px solid #e8dcc8;border-radius:9px;padding:9px 12px;cursor:pointer">
                   <input type="radio" name="dl-processed-mode" value="group" id="dl-proc-group" style="accent-color:#b5883e;width:15px;height:15px" onchange="dlSaveProcessedSettings()">
-                  <div><div style="font-size:12px;font-weight:700;color:#1a1208">Group by Processed</div><div style="font-size:10.5px;color:#a89f92">Processed transactions grouped at the bottom under a separator</div></div>
+                  <div style="font-size:12px;font-weight:700;color:#1a1208">Group by Processed</div>
                 </label>
                 <label style="display:flex;align-items:center;gap:10px;background:#f5f0e8;border:1.5px solid #e8dcc8;border-radius:9px;padding:9px 12px;cursor:pointer">
                   <input type="radio" name="dl-processed-mode" value="hide" id="dl-proc-hide" style="accent-color:#b5883e;width:15px;height:15px" onchange="dlSaveProcessedSettings()">
-                  <div><div style="font-size:12px;font-weight:700;color:#1a1208">Hide Processed</div><div style="font-size:10.5px;color:#a89f92">Processed transactions hidden from the list entirely</div></div>
+                  <div style="font-size:12px;font-weight:700;color:#1a1208">Hide Processed</div>
                 </label>
               </div>
               <div style="font-size:10px;font-weight:800;color:#8a6428;text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px">Sort Order</div>
@@ -3305,10 +3286,7 @@ Reason: {reason}"></textarea>
               <div style="background:#fff8e6;border:1.5px solid #fcd34d;border-radius:9px;padding:10px 12px">
                 <label style="display:flex;align-items:center;gap:9px;cursor:pointer">
                   <input type="checkbox" id="dl-proc-autodel" style="accent-color:#b5883e;width:15px;height:15px" onchange="dlSaveProcessedSettings()">
-                  <div>
-                    <div style="font-size:12px;font-weight:700;color:#92400e">Auto-delete after 15 days</div>
-                    <div style="font-size:10.5px;color:#b45309;margin-top:1px">Transactions marked as Processed will be permanently deleted from Firebase 15 days after being processed</div>
-                  </div>
+                  <div style="font-size:12px;font-weight:700;color:#92400e">Auto-delete after 15 days</div>
                 </label>
               </div>
             </div>
@@ -3320,13 +3298,11 @@ Reason: {reason}"></textarea>
               <span class="dl-acc-hdr-icon">🔒</span>
               <div class="dl-acc-hdr-info">
                 <div class="dl-acc-hdr-title">Security &amp; Data</div>
-                <div class="dl-acc-hdr-sub">Password lock, clear &amp; reset</div>
               </div>
               <span class="dl-acc-arrow">▼</span>
             </button>
             <div class="dl-acc-body">
-              <div style="font-size:10px;font-weight:800;color:#8a6428;text-transform:uppercase;letter-spacing:.8px;margin-top:10px;margin-bottom:6px">Settings Password</div>
-              <div style="font-size:11px;color:#a89f92;margin-bottom:8px">Leave blank to disable password protection on this settings modal.</div>
+              <div style="font-size:10px;font-weight:800;color:#8a6428;text-transform:uppercase;letter-spacing:.8px;margin-top:10px;margin-bottom:8px">Settings Password</div>
               <div style="display:flex;gap:8px;margin-bottom:8px">
                 <input id="dl-pw-new" class="dl-inp" type="password" placeholder="New password" style="flex:1;margin-bottom:0">
                 <input id="dl-pw-confirm" class="dl-inp" type="password" placeholder="Confirm" style="flex:1;margin-bottom:0">
@@ -3343,7 +3319,6 @@ Reason: {reason}"></textarea>
                 <button onclick="dlResetToDefault()" style="flex:1;background:#fff;color:#c0392b;border:1.5px solid #c0392b;border-radius:9px;padding:9px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit" onmouseover="this.style.background='#fee2e2'" onmouseout="this.style.background='#fff'">↩️ Reset Default</button>
               </div>
               <button onclick="clearAppStorage('duelist')" style="width:100%;background:#fff;color:#b5883e;border:1.5px solid #b5883e;border-radius:9px;padding:9px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:6px;transition:background .15s" onmouseover="this.style.background='#fdf8ee'" onmouseout="this.style.background='#fff'">🧹 Clear Due List Local Storage</button>
-              <div style="font-size:10.5px;color:#a89f92;margin-top:6px;line-height:1.5">Firebase data will remain intact. Only local settings, column mapping, and cached data will be cleared. Page will reload.</div>
             </div>
           </div>
 
