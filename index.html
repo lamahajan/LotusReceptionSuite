@@ -10429,8 +10429,26 @@ window.dlFbFetchNow = async function(silent){
       data = Object.values(raw);
     }
 
+    // FIX: when a record is deleted directly from the Firebase array (e.g. from
+    // the console, or any single-child DELETE), Firebase leaves that array index
+    // as null instead of shrinking the array — so raw.length stays the same
+    // (e.g. still 452) even though one record is gone. Strip those holes out so
+    // the count actually drops (452 → 451) and dlRender doesn't choke on a null
+    // student object.
+    if(data){ data = data.filter(function(x){ return x!=null; }); }
+
     if(!data || !data.length){
+      // Node truly empty (all records removed) — reflect that locally too,
+      // instead of silently keeping stale old data around.
+      dlData = [];
+      window.dlData = [];
+      try{ localStorage.setItem(DL_STORE_KEY, JSON.stringify([])); }catch(ex){}
+      if(typeof updateHomeStats==='function') updateHomeStats();
+      var dueScreenEmpty = document.getElementById('screen-due');
+      if(dueScreenEmpty && dueScreenEmpty.classList.contains('active')){ dlBuildClassBar(); dlRender(); }
+      else { window._dlFbHasNewData = true; }
       if(!silent) dlFbSetStatus('⚠️ Firebase empty — push data first','#d97706');
+      else dlFbSetStatus('✅ Synced 0 records','#15803d');
       return;
     }
 
