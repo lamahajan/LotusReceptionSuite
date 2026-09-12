@@ -3901,7 +3901,10 @@ function renderAll(){popBusSel();updBadge();const a=document.querySelector('.tb.
 // Mobile browsers can silently suspend an open EventSource in a backgrounded tab —
 // restart the stream when the app comes back to the foreground, just in case.
 document.addEventListener('visibilitychange',()=>{
-  if(document.visibilityState==='visible'&&cfg.url&&cfg.code&&(!_gpES||_gpES.readyState===2))startSync();
+  // Always restart on foreground — a backgrounded EventSource can go silently dead
+  // while still reporting readyState OPEN, so gating on readyState===2 misses it
+  // and stale (e.g. already-deleted) data keeps showing until a hard reload.
+  if(document.visibilityState==='visible'&&cfg.url&&cfg.code)startSync();
 });
 
 // ═══ UTILS ═══
@@ -10315,10 +10318,14 @@ window.dlFbSaveConnect=function(){
 // restart the stream when the app comes back to the foreground.
 document.addEventListener('visibilitychange',function(){
   if(document.visibilityState==='visible'){
+    // Always restart both streams on foreground — same reasoning as the Gatepass
+    // stream above: a "dead but still OPEN" EventSource silently misses deletes/
+    // edits made in Firebase while the app was backgrounded or closed. Forcing a
+    // reconnect re-fetches a fresh full snapshot every time the app is reopened.
     var cfg=dlFbCfg();
-    if(cfg.url&&cfg.code&&(!_dlFbES||_dlFbES.readyState===2)) dlFbStartSync();
+    if(cfg.url&&cfg.code) dlFbStartSync();
     var tcfg=dlTxnFbCfg();
-    if(tcfg.url&&tcfg.code&&(!_dlTxnFbES||_dlTxnFbES.readyState===2)) dlTxnFbStartSync();
+    if(tcfg.url&&tcfg.code) dlTxnFbStartSync();
   }
 });
 
@@ -10437,6 +10444,10 @@ function dlTxnRebuildFromMirror(){
   var list=Object.keys(_dlTxnMirror).map(function(k){
     var t=_dlTxnMirror[k];
     if(!t||typeof t!=='object') return null;
+    // Skip garbage nodes that only have {processed,processedAt} and nothing else —
+    // these are leftover artifacts of the old ghost-card bug (a PATCH landing on
+    // an already-deleted path re-creates the path with just those two fields).
+    if(!t.amount && !t.ts && !t.name && !t.adm) return null;
     var pid=t.payment_id||k;
     _dlTxnKeyByPid[pid]=k; // remember the real Firebase key for this payment_id, needed for writes
     return Object.assign({},t,{payment_id:pid});
@@ -10707,6 +10718,19 @@ window.dlMarkProcessed = function(paymentId){
   var list = dlTxnLoad();
   var idx = list.findIndex(function(t){ return t.payment_id === paymentId; });
   if(idx === -1) return;
+  // Guard: if this payment_id no longer has a matching live key in the Firebase
+  // mirror, the record was deleted server-side but a stale local copy remained
+  // (the sync-restart fix above should stop this recurring). Writing processed
+  // status in that case would PATCH a path that no longer exists, and Firebase
+  // silently *creates* a new node containing only {processed,processedAt} — the
+  // "Student / ₹0 / Invalid Date" ghost card. So refuse and clean up instead.
+  if(!_dlTxnKeyByPid[paymentId]){
+    var cleaned = list.filter(function(t){ return t.payment_id !== paymentId; });
+    try{ localStorage.setItem(DL_TXN_KEY, JSON.stringify(cleaned)); }catch(e){}
+    dlTxnRender();
+    if(typeof toast==='function') toast('⚠️ This transaction no longer exists on the server — removed');
+    return;
+  }
   var nowProcessed, processedAt;
   if(list[idx].processed){
     // Toggle off
@@ -10874,14 +10898,19 @@ window.dlTxnRender = function(){
     var pc  = txnPal[nm.charCodeAt(0)%txnPal.length];
     var student = (window.dlData||[]).find(function(s){ return String(s.adm)===String(t.adm); });
     var mob = String((student&&student.mob)||'').replace(/^91/,'').replace(/^\+91/,'');
+    var method = (t.method||'').trim();
+    var methodBadge = method
+      ? '<span style="font-size:10px;background:#ede9fe;color:#6d28d9;padding:1px 8px;border-radius:20px;font-weight:700;text-transform:uppercase;letter-spacing:.2px">'+esc(method)+'</span>'
+      : '';
     return '<div onclick="dlTxnOpenDetail(\''+pid+'\')" style="cursor:pointer;background:#fff;border-radius:14px;padding:12px 14px;display:flex;align-items:center;gap:10px;border:1.5px solid '+(isProc?'#86efac':'#f1f5f9')+';'+cardOpacity+'">'
       +'<div style="width:40px;height:40px;border-radius:12px;background:'+pc[1]+';display:flex;align-items:center;justify-content:center;color:'+pc[0]+';font-size:14px;font-weight:800;flex-shrink:0">'+ini+'</div>'
       +'<div style="flex:1;min-width:0">'
-      +'<div style="font-size:13.5px;font-weight:700;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+nm+'</div>'
+      +'<div style="font-size:13.5px;font-weight:700;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc(nm)+'</div>'
       +'<div style="display:flex;gap:5px;align-items:center;margin-top:3px;flex-wrap:wrap">'
-      +(t.adm?'<span style="font-size:10px;color:#94a3b8;font-family:\'Outfit\',sans-serif">#'+t.adm+'</span>':'')
-      +(t.cls?'<span style="font-size:10px;background:#f1f5f9;color:#475569;padding:1px 8px;border-radius:20px;font-weight:600">'+t.cls+'</span>':'')
-      +(mob?'<a href="tel:'+mob+'" onclick="event.stopPropagation()" style="font-size:10px;color:#94a3b8;font-family:\'Outfit\',sans-serif;text-decoration:none">'+mob+'</a>':'')
+      +(t.adm?'<span style="font-size:10px;color:#94a3b8;font-family:\'Outfit\',sans-serif">#'+esc(t.adm)+'</span>':'')
+      +(t.cls?'<span style="font-size:10px;background:#f1f5f9;color:#475569;padding:1px 8px;border-radius:20px;font-weight:600">'+esc(t.cls)+'</span>':'')
+      +methodBadge
+      +(mob?'<a href="tel:'+esc(mob)+'" onclick="event.stopPropagation()" style="font-size:10px;color:#94a3b8;font-family:\'Outfit\',sans-serif;text-decoration:none">'+esc(mob)+'</a>':'')
       +'</div>'
       +'</div>'
       +'<div style="text-align:right;flex-shrink:0;min-width:68px">'
