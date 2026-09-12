@@ -8971,8 +8971,6 @@ function importAllSettings(input){
 'use strict';
 
 var DL_STORE_KEY='dl_data_v1';
-var DL_MAP_KEY='dl_col_map_v1';
-var DL_SHEET_KEY='dl_sheet_v1';
 var DL_MODE_KEY='dl_class_mode_v1'; // 'single' | 'multi'
 
 // ── Class sort order ──
@@ -8991,12 +8989,8 @@ function clsLabel(c){
   return s;
 }
 
-// ── Embedded fallback data (from Messaging.xlsm) ──
-var EMBEDDED=[]
-
 // ── State ──
 var dlData=[];
-var dlHeaders=[];
 
 // ── Load saved data or use embedded ──
 function dlLoadData(){
@@ -9016,12 +9010,10 @@ function dlLoadData(){
 }
 
 function dlUseEmbedded(){
-  // EMBEDDED is empty — no hardcoded data. Data comes from Firebase or file upload only.
+  // No hardcoded fallback — data comes live from Firebase or master-Excel push only.
   dlData=[];
   window.dlData=dlData;
 }
-
-function dlSetSyncBar(){}
 
 // ── Save Settings (WhatsApp config; patched below to also persist WA settings) ──
 window.dlSaveMapping=function(){
