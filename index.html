@@ -3584,7 +3584,7 @@ window.addEventListener('load',function(){
   function updateHomeGreeting(hour){
     var part = hour<5 ? 'Night' : hour<12 ? 'Morning' : hour<17 ? 'Afternoon' : hour<21 ? 'Evening' : 'Night';
     var el=document.getElementById('home-greeting');
-    if(el)el.textContent='Hi, Good '+part+', School Suite';
+    if(el)el.textContent='Hi Good '+part+', School Suite';
   }
   function updateHomeClock(){
     var d=new Date();
