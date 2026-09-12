@@ -9931,8 +9931,12 @@ function dlFbRebuildFromMirror(){
   dlData=list; window.dlData=list;
   try{ localStorage.setItem(DL_STORE_KEY, JSON.stringify(list)); }catch(e){}
   if(typeof updateHomeStats==='function') updateHomeStats();
-  var dueScreen=document.getElementById('screen-due');
-  if(dueScreen && dueScreen.classList.contains('active')){ dlBuildClassBar(); dlRender(); }
+  // Always repaint immediately — same as Gate Pass's renderAll(), which never
+  // gates on "is this screen currently visible". Painting into a hidden #dl-list
+  // is cheap, and this is what makes data land the instant it's needed instead
+  // of only when goTo('due') happens to run next.
+  if(typeof dlBuildClassBar==='function') dlBuildClassBar();
+  if(typeof dlRender==='function') dlRender();
 }
 function dlFbStopSync(){
   if(_dlFbES){ try{ _dlFbES.close(); }catch(e){} _dlFbES=null; }
@@ -9968,18 +9972,25 @@ window.dlFbSaveConnect=function(){
 };
 // Mobile browsers can silently suspend an open EventSource in a backgrounded tab —
 // restart the stream when the app comes back to the foreground.
+function _dlResumeSync(){
+  // Always restart both streams on foreground — same reasoning as the Gatepass
+  // stream above: a "dead but still OPEN" EventSource silently misses deletes/
+  // edits made in Firebase while the app was backgrounded or closed. Forcing a
+  // reconnect re-fetches a fresh full snapshot every time the app is reopened.
+  var cfg=dlFbCfg();
+  if(cfg.url&&cfg.code) dlFbStartSync();
+  var tcfg=dlTxnFbCfg();
+  if(tcfg.url&&tcfg.code) dlTxnFbStartSync();
+}
 document.addEventListener('visibilitychange',function(){
-  if(document.visibilityState==='visible'){
-    // Always restart both streams on foreground — same reasoning as the Gatepass
-    // stream above: a "dead but still OPEN" EventSource silently misses deletes/
-    // edits made in Firebase while the app was backgrounded or closed. Forcing a
-    // reconnect re-fetches a fresh full snapshot every time the app is reopened.
-    var cfg=dlFbCfg();
-    if(cfg.url&&cfg.code) dlFbStartSync();
-    var tcfg=dlTxnFbCfg();
-    if(tcfg.url&&tcfg.code) dlTxnFbStartSync();
-  }
+  if(document.visibilityState==='visible') _dlResumeSync();
 });
+// visibilitychange alone isn't always reliable when a PWA is minimized to the
+// home screen (notably some standalone/iOS webviews swallow it) — 'focus' and
+// 'pageshow' (bfcache restore) act as a backstop so a genuinely dead stream
+// still gets reconnected instead of needing a manual reload.
+window.addEventListener('focus',_dlResumeSync);
+window.addEventListener('pageshow',function(e){ if(e.persisted) _dlResumeSync(); });
 
 // ── Bulk Replace: upload xlsm → "Due List" sheet → adm/name/mob/cls/balance,
 //    full PUT overwrite of {code}.json (old data, including due/recv, is cleared) ──
