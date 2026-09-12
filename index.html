@@ -2969,7 +2969,7 @@ Reason: {reason}"></textarea>
       <option value="name">A–Z</option>
     </select>
     <!-- Transactions toolbar: search + clear all (hidden when Due List tab active) -->
-    <div id="dl-txn-toolbar" style="display:none;flex:1 1 100%;align-items:center;gap:7px">
+    <div id="dl-txn-toolbar" style="display:none;flex:1 1 220px;min-width:160px;align-items:center;gap:7px">
       <div style="flex:1;display:flex;align-items:center;background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:9px;padding:5px 10px;gap:5px">
         <span style="font-size:12px;color:#94a3b8">🔍</span>
         <input id="dl-txn-search" oninput="dlTxnRender()" placeholder="Search name / adm…"
@@ -3030,6 +3030,36 @@ Reason: {reason}"></textarea>
       <div style="font-size:42px;margin-bottom:12px">💳</div>
       <div style="font-size:14px;font-weight:700;color:#64748b;margin-bottom:4px">No Transactions Yet</div>
       <div style="font-size:12px;color:#94a3b8">Payments will appear here automatically after QR scan</div>
+    </div>
+  </div>
+
+  <!-- TRANSACTION DETAIL MODAL -->
+  <div id="dl-txn-detail-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.52);z-index:1050;align-items:center;justify-content:center;padding:16px" onclick="if(event.target===this)dlTxnCloseDetail()">
+    <div style="background:#fff;border-radius:18px;width:100%;max-width:380px;max-height:88vh;overflow-y:auto;padding:20px;font-family:'Plus Jakarta Sans',sans-serif">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+        <div style="font-size:15px;font-weight:800;color:#0f172a">Transaction Details</div>
+        <button onclick="dlTxnCloseDetail()" style="background:#f1f5f9;border:none;border-radius:8px;width:28px;height:28px;font-size:14px;cursor:pointer;color:#64748b">✕</button>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+        <div id="dl-txnd-avatar" style="width:48px;height:48px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;flex-shrink:0">--</div>
+        <div style="flex:1;min-width:0">
+          <div id="dl-txnd-name" style="font-size:15px;font-weight:800;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div>
+          <div id="dl-txnd-sub" style="font-size:11px;color:#94a3b8;margin-top:2px"></div>
+        </div>
+      </div>
+      <div style="background:#f0fdf4;border:1.5px solid #86efac;border-radius:12px;padding:14px;text-align:center;margin-bottom:16px">
+        <div id="dl-txnd-amount" style="font-size:26px;font-weight:800;color:#16a34a;font-family:'Outfit',sans-serif"></div>
+        <div id="dl-txnd-status" style="font-size:11px;font-weight:700;margin-top:4px"></div>
+      </div>
+      <div style="display:grid;gap:9px;margin-bottom:18px">
+        <div style="display:flex;justify-content:space-between;gap:10px;font-size:12px"><span style="color:#94a3b8;flex-shrink:0">Payment ID</span><span id="dl-txnd-pid" style="font-weight:700;color:#0f172a;font-family:monospace;font-size:11px;text-align:right;word-break:break-all"></span></div>
+        <div style="display:flex;justify-content:space-between;font-size:12px"><span style="color:#94a3b8">Method</span><span id="dl-txnd-method" style="font-weight:700;color:#0f172a"></span></div>
+        <div style="display:flex;justify-content:space-between;font-size:12px"><span style="color:#94a3b8">Date &amp; Time</span><span id="dl-txnd-time" style="font-weight:700;color:#0f172a"></span></div>
+        <div style="display:flex;justify-content:space-between;font-size:12px"><span style="color:#94a3b8">Admission No</span><span id="dl-txnd-adm" style="font-weight:700;color:#0f172a"></span></div>
+        <div style="display:flex;justify-content:space-between;font-size:12px"><span style="color:#94a3b8">Class</span><span id="dl-txnd-cls" style="font-weight:700;color:#0f172a"></span></div>
+        <div style="display:flex;justify-content:space-between;font-size:12px"><span style="color:#94a3b8">Mobile</span><span id="dl-txnd-mob" style="font-weight:700;color:#0f172a"></span></div>
+      </div>
+      <button id="dl-txnd-toggle" onclick="dlTxnToggleFromDetail()" style="width:100%;border:none;border-radius:10px;padding:12px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit"></button>
     </div>
   </div>
 
@@ -8773,7 +8803,7 @@ const SETTINGS_EXPORT_KEYS=[
   // Due List
   'dl_col_map_v1','dl_sheet_v1','dl_class_mode_v1','dl_wa_settings','dl_auto_reload','dl_pinned_sheet','dl_settings_pw','dl_fb_url','dl_fb_code','dl_txn_fb_url','dl_txn_fb_code',
   // Attendance
-  'att_worker_url','att_settings_pw',
+  'att_worker_url','att_settings_pw','att_calendar_editable',
   // WA Inbox
   'wai_cfg_v1','wai_fb_url','wai_fb_code','wai_inbox_pw',
   // Theme / UI
@@ -8786,7 +8816,7 @@ const APP_STORAGE_KEYS = {
   register: ['ref_cfg','ref_data','ref_fb_url','ref_fb_code','ref_fb_stu_url','ref_fb_stu_code','ref_fs_cfg','ref_od_cfg','ref_tg_cfg','ref_wix_cfg','ref_students','ref_extra_fys'],
   theme:    ['lis_theme','lis_sb'],
   duelist:  ['dl_data_v1','dl_col_map_v1','dl_sheet_v1','dl_class_mode_v1','dl_wa_settings','dl_auto_reload','dl_pinned_sheet','dl_settings_pw','dl_fb_url','dl_fb_code','dl_push_fb_url','dl_txn_fb_url','dl_txn_fb_code','dl_settings'],
-  attendance: ['att_worker_url','att_settings_pw'],
+  attendance: ['att_worker_url','att_settings_pw','att_calendar_editable'],
 };
 function clearAppStorage(app){
   const stEl=document.getElementById('global-clear-status');
@@ -10392,6 +10422,7 @@ document.addEventListener('DOMContentLoaded', function(){
 var DL_TXN_FB_URL_KEY  = 'dl_txn_fb_url';
 var DL_TXN_FB_CODE_KEY = 'dl_txn_fb_code';
 var _dlTxnMirror = {};
+var _dlTxnKeyByPid = {}; // payment_id -> actual Firebase child key (may differ from payment_id)
 var _dlTxnFbES   = null;
 
 function dlTxnFbCfg(){
@@ -10402,9 +10433,13 @@ function dlTxnFbSetDot(st){
   if(d){ var colors={ok:'#16a34a',err:'#dc2626',ing:'#2563eb',off:'#9ca3af'}; d.style.background=colors[st]||'#9ca3af'; }
 }
 function dlTxnRebuildFromMirror(){
+  _dlTxnKeyByPid={};
   var list=Object.keys(_dlTxnMirror).map(function(k){
     var t=_dlTxnMirror[k];
-    return t&&typeof t==='object' ? Object.assign({},t,{payment_id:t.payment_id||k}) : null;
+    if(!t||typeof t!=='object') return null;
+    var pid=t.payment_id||k;
+    _dlTxnKeyByPid[pid]=k; // remember the real Firebase key for this payment_id, needed for writes
+    return Object.assign({},t,{payment_id:pid});
   }).filter(Boolean);
   list.sort(function(a,b){ return String(b.time||'').localeCompare(String(a.time||'')); });
   try{ localStorage.setItem(DL_TXN_KEY, JSON.stringify(list)); }catch(e){}
@@ -10672,18 +10707,94 @@ window.dlMarkProcessed = function(paymentId){
   var list = dlTxnLoad();
   var idx = list.findIndex(function(t){ return t.payment_id === paymentId; });
   if(idx === -1) return;
+  var nowProcessed, processedAt;
   if(list[idx].processed){
     // Toggle off
     delete list[idx].processed;
     delete list[idx].processedAt;
+    nowProcessed = false; processedAt = null;
   } else {
+    processedAt = Date.now();
     list[idx].processed = true;
-    list[idx].processedAt = Date.now();
+    list[idx].processedAt = processedAt;
+    nowProcessed = true;
   }
   try{ localStorage.setItem(DL_TXN_KEY, JSON.stringify(list)); }catch(e){}
   dlTxnRender();
+  // Push the new processed status back to Firebase so it isn't only local
+  dlTxnPushProcessed(paymentId, nowProcessed, processedAt);
   // Schedule Firebase auto-delete check
   dlCheckProcessedAutoDelete();
+};
+
+// Write processed/processedAt fields back to the transaction's node in Firebase.
+// Uses the real Firebase child key (may differ from payment_id) so the write
+// lands on the same record the webhook created, instead of creating a new one.
+function dlTxnPushProcessed(paymentId, isProcessed, processedAt){
+  var cfg = dlTxnFbCfg();
+  if(!cfg.url || !cfg.code || !paymentId) return;
+  var key = _dlTxnKeyByPid[paymentId] || paymentId;
+  var url = cfg.url + '/' + cfg.code + '/' + encodeURIComponent(key) + '.json';
+  var body = isProcessed
+    ? { processed:true, processedAt: processedAt||Date.now() }
+    : { processed:null, processedAt:null }; // null deletes the field in Firebase RTDB
+  fetch(url,{ method:'PATCH', body: JSON.stringify(body) }).catch(function(){});
+}
+
+// ── Transaction detail popup ──
+var _dlTxnDetailPid = null;
+function dlTxnSetText(id,val){ var el=document.getElementById(id); if(el) el.textContent=val; }
+window.dlTxnOpenDetail = function(pid){
+  var list = dlTxnLoad();
+  var t = list.find(function(x){ return String(x.payment_id)===String(pid); });
+  if(!t) return;
+  _dlTxnDetailPid = pid;
+
+  var d = new Date(t.ts);
+  var dateStr = d.toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'});
+  var timeStr = d.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',hour12:true});
+  var amt = '₹'+(Number(t.amount||0)/100).toLocaleString('en-IN');
+  var method = (t.method||'upi').toUpperCase();
+  var nm = t.name||t.adm||'Student';
+  var ini = nm.split(' ').slice(0,2).map(function(w){return w[0]||'';}).join('').toUpperCase();
+  var txnPal=[['#6366f1','#ede9fe'],['#0891b2','#cffafe'],['#059669','#d1fae5'],['#d97706','#fef3c7'],['#dc2626','#fee2e2'],['#7c3aed','#f3e8ff'],['#0284c7','#e0f2fe'],['#be185d','#fce7f3']];
+  var pc = txnPal[nm.charCodeAt(0)%txnPal.length];
+  var student = (window.dlData||[]).find(function(s){ return String(s.adm)===String(t.adm); });
+  var mob = String((student&&student.mob)||'').replace(/^91/,'').replace(/^\+91/,'');
+  var isProc = !!t.processed;
+
+  var av=document.getElementById('dl-txnd-avatar');
+  if(av){ av.textContent=ini; av.style.background=pc[1]; av.style.color=pc[0]; }
+  dlTxnSetText('dl-txnd-name', nm);
+  dlTxnSetText('dl-txnd-sub', (t.adm?'#'+t.adm:'')+(t.cls?' · '+t.cls:''));
+  dlTxnSetText('dl-txnd-amount', amt);
+  var stEl=document.getElementById('dl-txnd-status');
+  if(stEl){ stEl.textContent = isProc?'✅ Processed':'⏳ Not Processed'; stEl.style.color = isProc?'#16a34a':'#d97706'; }
+  dlTxnSetText('dl-txnd-pid', t.payment_id||'—');
+  dlTxnSetText('dl-txnd-method', method);
+  dlTxnSetText('dl-txnd-time', dateStr+' · '+timeStr);
+  dlTxnSetText('dl-txnd-adm', t.adm||'—');
+  dlTxnSetText('dl-txnd-cls', t.cls||'—');
+  var mobEl=document.getElementById('dl-txnd-mob');
+  if(mobEl) mobEl.innerHTML = mob ? '<a href="tel:'+mob+'" style="color:#0f172a;text-decoration:none;font-weight:700">'+mob+'</a>' : '—';
+
+  var tgl=document.getElementById('dl-txnd-toggle');
+  if(tgl){
+    if(isProc){ tgl.textContent='↩️ Mark as Unprocessed'; tgl.style.background='#fff'; tgl.style.color='#64748b'; tgl.style.border='1.5px solid #cbd5e1'; }
+    else { tgl.textContent='✅ Mark as Processed'; tgl.style.background='#25D366'; tgl.style.color='#fff'; tgl.style.border='none'; }
+  }
+  var m=document.getElementById('dl-txn-detail-modal');
+  if(m) m.style.display='flex';
+};
+window.dlTxnCloseDetail=function(){
+  var m=document.getElementById('dl-txn-detail-modal');
+  if(m) m.style.display='none';
+  _dlTxnDetailPid=null;
+};
+window.dlTxnToggleFromDetail=function(){
+  if(!_dlTxnDetailPid) return;
+  dlMarkProcessed(_dlTxnDetailPid);
+  dlTxnOpenDetail(_dlTxnDetailPid); // refresh popup with new state
 };
 
 // Check and auto-delete processed txns older than 15 days from Firebase
@@ -10701,11 +10812,12 @@ function dlCheckProcessedAutoDelete(){
     // Remove from localStorage
     var updated = dlTxnLoad().filter(function(x){ return x.payment_id !== t.payment_id; });
     try{ localStorage.setItem(DL_TXN_KEY, JSON.stringify(updated)); }catch(e){}
-    // Remove from Firebase if available
+    // Remove from Firebase (same RTDB node the txn sync reads from)
     try{
-      var fbConf = JSON.parse(localStorage.getItem('dl_firebase_conf')||'{}');
-      if(fbConf.projectId && fbConf.apiKey && t.payment_id){
-        var fbUrl = 'https://firestore.googleapis.com/v1/projects/'+fbConf.projectId+'/databases/(default)/documents/transactions/'+t.payment_id+'?key='+fbConf.apiKey;
+      var cfg = dlTxnFbCfg();
+      if(cfg.url && cfg.code && t.payment_id){
+        var key = _dlTxnKeyByPid[t.payment_id] || t.payment_id;
+        var fbUrl = cfg.url + '/' + cfg.code + '/' + encodeURIComponent(key) + '.json';
         fetch(fbUrl,{method:'DELETE'}).catch(function(){});
       }
     }catch(e){}
@@ -10754,8 +10866,6 @@ window.dlTxnRender = function(){
     var dateStr = d.toLocaleDateString('en-IN',{day:'2-digit',month:'short'});
     var timeStr = d.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',hour12:true});
     var amt     = '₹'+(Number(t.amount||0)/100).toLocaleString('en-IN');
-    var method  = (t.method||'upi').toUpperCase();
-    var mColor  = method==='UPI'?'#8b5cf6':method==='CARD'?'#2563eb':'#0891b2';
     var isProc  = !!t.processed;
     var cardOpacity = isProc ? 'opacity:.72;' : '';
     var pid = (t.payment_id||'').replace(/['"]/g,'');
@@ -10764,10 +10874,7 @@ window.dlTxnRender = function(){
     var pc  = txnPal[nm.charCodeAt(0)%txnPal.length];
     var student = (window.dlData||[]).find(function(s){ return String(s.adm)===String(t.adm); });
     var mob = String((student&&student.mob)||'').replace(/^91/,'').replace(/^\+91/,'');
-    var procBtn = isProc
-      ? '<button onclick="dlMarkProcessed(\''+pid+'\')" style="flex-shrink:0;background:#25D366;color:#fff;border:none;border-radius:7px;padding:5px 12px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap">Processed</button>'
-      : '<button onclick="dlMarkProcessed(\''+pid+'\')" style="flex-shrink:0;background:#fff;color:#64748b;border:1.5px solid #cbd5e1;border-radius:7px;padding:5px 12px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap">Processed</button>';
-    return '<div style="background:#fff;border-radius:14px;padding:12px 14px;display:flex;align-items:center;gap:10px;border:1.5px solid '+(isProc?'#86efac':'#f1f5f9')+';'+cardOpacity+'">'
+    return '<div onclick="dlTxnOpenDetail(\''+pid+'\')" style="cursor:pointer;background:#fff;border-radius:14px;padding:12px 14px;display:flex;align-items:center;gap:10px;border:1.5px solid '+(isProc?'#86efac':'#f1f5f9')+';'+cardOpacity+'">'
       +'<div style="width:40px;height:40px;border-radius:12px;background:'+pc[1]+';display:flex;align-items:center;justify-content:center;color:'+pc[0]+';font-size:14px;font-weight:800;flex-shrink:0">'+ini+'</div>'
       +'<div style="flex:1;min-width:0">'
       +'<div style="font-size:13.5px;font-weight:700;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+nm+'</div>'
@@ -10775,13 +10882,10 @@ window.dlTxnRender = function(){
       +(t.adm?'<span style="font-size:10px;color:#94a3b8;font-family:\'Outfit\',sans-serif">#'+t.adm+'</span>':'')
       +(t.cls?'<span style="font-size:10px;background:#f1f5f9;color:#475569;padding:1px 8px;border-radius:20px;font-weight:600">'+t.cls+'</span>':'')
       +(mob?'<a href="tel:'+mob+'" onclick="event.stopPropagation()" style="font-size:10px;color:#94a3b8;font-family:\'Outfit\',sans-serif;text-decoration:none">'+mob+'</a>':'')
-      +'<span style="font-size:10px;border-radius:20px;padding:1px 8px;font-weight:700;color:#fff;background:'+mColor+'">'+method+'</span>'
       +'</div>'
       +'</div>'
-      +'<div style="text-align:right;flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;gap:4px">'
-      +'<div style="font-size:15px;font-weight:800;color:#16a34a;font-family:\'Outfit\',sans-serif;letter-spacing:-.5px">'+amt+'</div>'
-      +'<div style="font-size:9.5px;color:#94a3b8">'+dateStr+' · '+timeStr+'</div>'
-      +procBtn
+      +'<div style="text-align:right;flex-shrink:0;min-width:68px">'
+      +'<div style="font-size:16px;font-weight:800;color:#16a34a;font-family:\'Outfit\',sans-serif;letter-spacing:-.5px">'+amt+'</div>'
       +'</div>'
       +'</div>';
   }
