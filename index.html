@@ -9921,19 +9921,28 @@ var _dlFbES   = null; // open EventSource stream
 function dlFbCfg(){
   return { url:(localStorage.getItem(DL_FB_URL_KEY)||'').trim(), code:(localStorage.getItem(DL_FB_CODE_KEY)||'').trim() };
 }
+var _dlLastOkTs=null; // timestamp of last successful sync event, drives the ticking "Xs ago" display
 function dlFbSetDot(st){
   var d=document.getElementById('dl-fb-dot');
   if(d){ var colors={ok:'#16a34a',err:'#dc2626',ing:'#2563eb',off:'#9ca3af'}; d.style.background=colors[st]||'#9ca3af'; }
-  var ld=document.getElementById('dl-live-dot'), lt=document.getElementById('dl-live-time');
+  var ld=document.getElementById('dl-live-dot');
   if(ld){ var colors2={ok:'#16a34a',err:'#dc2626',ing:'#2563eb',off:'#9ca3af'}; ld.style.background=colors2[st]||'#9ca3af'; }
-  if(lt){
-    if(st==='ok') lt.textContent=new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:true});
-    else if(st==='err') lt.textContent='err';
-    else if(st==='ing') lt.textContent='…';
-    else lt.textContent='off';
-  }
+  if(st==='ok') _dlLastOkTs=Date.now();
+  if(st==='off') _dlLastOkTs=null;
+  _dlTickLiveTime(); // update immediately, don't wait for the next 1s tick
   console.log('[DueList FB] status →',st,new Date().toLocaleTimeString());
 }
+// Ticks every second so a frozen/dead stream is visibly obvious — if this
+// number keeps climbing past ~20-25s without resetting to 0, the stream
+// genuinely isn't receiving events (the watchdog above should then kick in).
+function _dlTickLiveTime(){
+  var lt=document.getElementById('dl-live-time');
+  if(!lt) return;
+  if(_dlLastOkTs==null){ lt.textContent=(_dlFbES&&_dlFbES.readyState===0)?'…':'off'; return; }
+  var secs=Math.floor((Date.now()-_dlLastOkTs)/1000);
+  lt.textContent=secs<2?'now':secs+'s ago';
+}
+setInterval(_dlTickLiveTime,1000);
 function dlFbSetStatusText(t,color){
   var s=document.getElementById('dl-fb-status');
   if(s){ s.textContent=t; if(color) s.style.color=color; }
@@ -9968,10 +9977,19 @@ function dlFbStartSync(){
   var onEvt=function(ev){
     try{
       var d=JSON.parse(ev.data);
-      console.log('[DueList FB] event:',ev.type,'path:',d.path,new Date().toLocaleTimeString());
+      console.log('[DueList FB] event:',ev.type,'path:',d.path,'value:',JSON.stringify(d.data),new Date().toLocaleTimeString());
       _applyRTPatch(_dlFbById, d.path, d.data, ev.type==='patch');
       dlFbRebuildFromMirror();
       dlFbSetDot('ok');
+      // Debug aid: after every event, print what the mirror + rendered dlData
+      // actually hold for admission 10003 specifically — lets us directly
+      // compare "what Firebase sent" vs "what's now in dlData" vs "what's
+      // stuck on screen" in one place.
+      try{
+        var mir=_dlFbById['10003'];
+        var rec=dlData.find(function(x){return x.adm==='10003';});
+        console.log('[DueList FB] 10003 mirror.balance=',mir&&mir.balance,' dlData.balance=',rec&&rec.balance);
+      }catch(e2){}
     }catch(e){ console.warn('[DueList FB] event parse error',e); }
   };
   _dlFbES.addEventListener('put',onEvt);
