@@ -2925,6 +2925,13 @@ Reason: {reason}"></textarea>
       <div style="font-size:15px;font-weight:800;color:#8b5cf6;font-family:'Outfit',sans-serif;line-height:1" id="dl-stat-amount">₹0</div>
       <div style="font-size:8px;font-weight:700;color:#c4c9d4;text-transform:uppercase;letter-spacing:.8px">Outstanding</div>
     </div>
+    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;margin-right:2px" title="Firebase live sync status">
+      <div style="display:flex;align-items:center;gap:4px">
+        <span id="dl-live-dot" style="width:8px;height:8px;border-radius:50%;background:#9ca3af;display:inline-block;transition:background .2s"></span>
+        <span id="dl-live-time" style="font-size:9.5px;font-weight:700;color:#94a3b8;font-family:'Outfit',sans-serif">—</span>
+      </div>
+      <div style="font-size:8px;font-weight:700;color:#c4c9d4;text-transform:uppercase;letter-spacing:.6px">Live</div>
+    </div>
     <button onclick="dlOpenSettings()" style="background:#f1f5f9;border:1.5px solid #e2e8f0;border-radius:9px;padding:6px 10px;cursor:pointer;font-size:13px" title="Settings">⚙️</button>
   </div>
 
@@ -9917,6 +9924,15 @@ function dlFbCfg(){
 function dlFbSetDot(st){
   var d=document.getElementById('dl-fb-dot');
   if(d){ var colors={ok:'#16a34a',err:'#dc2626',ing:'#2563eb',off:'#9ca3af'}; d.style.background=colors[st]||'#9ca3af'; }
+  var ld=document.getElementById('dl-live-dot'), lt=document.getElementById('dl-live-time');
+  if(ld){ var colors2={ok:'#16a34a',err:'#dc2626',ing:'#2563eb',off:'#9ca3af'}; ld.style.background=colors2[st]||'#9ca3af'; }
+  if(lt){
+    if(st==='ok') lt.textContent=new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:true});
+    else if(st==='err') lt.textContent='err';
+    else if(st==='ing') lt.textContent='…';
+    else lt.textContent='off';
+  }
+  console.log('[DueList FB] status →',st,new Date().toLocaleTimeString());
 }
 function dlFbSetStatusText(t,color){
   var s=document.getElementById('dl-fb-status');
@@ -9946,19 +9962,21 @@ function dlFbStartSync(){
   var cfg=dlFbCfg();
   if(!cfg.url||!cfg.code){ dlFbSetDot('off'); return; }
   dlFbSetDot('ing');
+  console.log('[DueList FB] opening EventSource →',cfg.url+'/'+cfg.code+'.json',new Date().toLocaleTimeString());
   _dlFbById={};
   _dlFbES=new EventSource(cfg.url+'/'+cfg.code+'.json');
   var onEvt=function(ev){
     try{
       var d=JSON.parse(ev.data);
+      console.log('[DueList FB] event:',ev.type,'path:',d.path,new Date().toLocaleTimeString());
       _applyRTPatch(_dlFbById, d.path, d.data, ev.type==='patch');
       dlFbRebuildFromMirror();
       dlFbSetDot('ok');
-    }catch(e){}
+    }catch(e){ console.warn('[DueList FB] event parse error',e); }
   };
   _dlFbES.addEventListener('put',onEvt);
   _dlFbES.addEventListener('patch',onEvt);
-  _dlFbES.onerror=function(){ dlFbSetDot('err'); }; // EventSource retries the connection on its own — status flips back on next event
+  _dlFbES.onerror=function(){ console.warn('[DueList FB] stream error / disconnected',new Date().toLocaleTimeString(),'readyState:',_dlFbES&&_dlFbES.readyState); dlFbSetDot('err'); };
 }
 window.dlFbSaveConnect=function(){
   var uEl=document.getElementById('dl-fb-url'), cEl=document.getElementById('dl-fb-code');
@@ -9972,25 +9990,46 @@ window.dlFbSaveConnect=function(){
 };
 // Mobile browsers can silently suspend an open EventSource in a backgrounded tab —
 // restart the stream when the app comes back to the foreground.
-function _dlResumeSync(){
+function _dlResumeSync(reason){
   // Always restart both streams on foreground — same reasoning as the Gatepass
   // stream above: a "dead but still OPEN" EventSource silently misses deletes/
   // edits made in Firebase while the app was backgrounded or closed. Forcing a
   // reconnect re-fetches a fresh full snapshot every time the app is reopened.
+  console.log('[DueList FB] resume trigger:',reason,new Date().toLocaleTimeString());
   var cfg=dlFbCfg();
   if(cfg.url&&cfg.code) dlFbStartSync();
   var tcfg=dlTxnFbCfg();
   if(tcfg.url&&tcfg.code) dlTxnFbStartSync();
 }
 document.addEventListener('visibilitychange',function(){
-  if(document.visibilityState==='visible') _dlResumeSync();
+  if(document.visibilityState==='visible') _dlResumeSync('visibilitychange');
 });
 // visibilitychange alone isn't always reliable when a PWA is minimized to the
 // home screen (notably some standalone/iOS webviews swallow it) — 'focus' and
 // 'pageshow' (bfcache restore) act as a backstop so a genuinely dead stream
 // still gets reconnected instead of needing a manual reload.
-window.addEventListener('focus',_dlResumeSync);
-window.addEventListener('pageshow',function(e){ if(e.persisted) _dlResumeSync(); });
+window.addEventListener('focus',function(){ _dlResumeSync('focus'); });
+window.addEventListener('pageshow',function(e){ if(e.persisted) _dlResumeSync('pageshow-persisted'); });
+
+// Watchdog: some installed/TWA-style PWA contexts don't reliably fire
+// visibilitychange/focus/pageshow at all when the app is minimized and
+// resumed. This runs independent of those events and catches a stream
+// that's silently CLOSED (or was simply never opened despite having
+// saved credentials) without waiting on any browser lifecycle event.
+setInterval(function(){
+  var cfg=dlFbCfg();
+  if(!cfg.url||!cfg.code) return;
+  var rs=_dlFbES?_dlFbES.readyState:null; // 0=connecting,1=open,2=closed,null=none
+  if(rs===2||rs===null){
+    console.log('[DueList FB] watchdog: stream dead (readyState='+rs+'), reconnecting',new Date().toLocaleTimeString());
+    dlFbStartSync();
+  }
+  var tcfg=dlTxnFbCfg();
+  if(tcfg.url&&tcfg.code){
+    var trs=_dlTxnFbES?_dlTxnFbES.readyState:null;
+    if(trs===2||trs===null) dlTxnFbStartSync();
+  }
+},20000);
 
 // ── Bulk Replace: upload xlsm → "Due List" sheet → adm/name/mob/cls/balance,
 //    full PUT overwrite of {code}.json (old data, including due/recv, is cleared) ──
