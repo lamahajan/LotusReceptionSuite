@@ -10125,6 +10125,11 @@ function dlTxnRebuildFromMirror(){
   var list=Object.keys(_dlTxnMirror).map(function(k){
     var t=_dlTxnMirror[k];
     if(!t||typeof t!=='object') return null;
+    // TXN node holds two kinds of children side by side: pay_xxx (captured
+    // payments) and order_xxx (pending Razorpay orders created for the
+    // website pay page, not yet paid). This tab is for captured payments
+    // only — skip anything that isn't a pay_ key.
+    if(k.indexOf('pay_')!==0) return null;
     // Skip garbage nodes that only have {processed,processedAt} and nothing else —
     // these are leftover artifacts of the old ghost-card bug (a PATCH landing on
     // an already-deleted path re-creates the path with just those two fields).
