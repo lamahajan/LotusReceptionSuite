@@ -9155,6 +9155,10 @@ var dlSelectedClasses=new Set(['all']);
 
 // ── Build class filter bar ──
 window.dlBuildClassBar=function dlBuildClassBar(){
+  // Firebase live-sync (dlFbRebuildFromMirror) updates window.dlData from a
+  // separate script scope that can't reach this closure's own dlData var
+  // directly — resync here so a Firebase edit shows up without a page reload.
+  if(window.dlData&&window.dlData!==dlData)dlData=window.dlData;
   var bar=document.getElementById('dl-class-bar');if(!bar)return;
   var counts={};
   dlData.forEach(function(s){counts[s.cls]=(counts[s.cls]||0)+1;});
@@ -9235,6 +9239,9 @@ function dlUpdateStats(list){
 
 // ── Main render ──
 window.dlRender=function(){
+  // Same resync as dlBuildClassBar — without this, dlRender silently paints
+  // this closure's own stale dlData even after a live Firebase update.
+  if(window.dlData&&window.dlData!==dlData)dlData=window.dlData;
   var q=(document.getElementById('dl-search')||{}).value||'';q=q.trim().toLowerCase();
   var sort=(document.getElementById('dl-sort')||{}).value||'class';
   var cls=(document.getElementById('dl-cls-filter')||{value:''}).value;
@@ -9288,10 +9295,6 @@ window.dlRender=function(){
   }else{
     list.forEach(function(s){html+=dlCardHTML(s);});
   }
-  try{
-    var dbgRec=list.find(function(x){return x.adm==='10003';});
-    console.log('[DueList RENDER] dlRender() about to paint. 10003 in filtered list:',dbgRec&&dbgRec.balance,' dlData(global) 10003:',dlData.find(function(x){return x.adm==='10003';}).balance,new Date().toLocaleTimeString());
-  }catch(e3){}
   area.innerHTML=html;
 };
 
@@ -9977,15 +9980,6 @@ function dlFbStartSync(){
       _applyRTPatch(_dlFbById, d.path, d.data, ev.type==='patch');
       dlFbRebuildFromMirror();
       dlFbSetDot('ok');
-      // Debug aid: after every event, print what the mirror + rendered dlData
-      // actually hold for admission 10003 specifically — lets us directly
-      // compare "what Firebase sent" vs "what's now in dlData" vs "what's
-      // stuck on screen" in one place.
-      try{
-        var mir=_dlFbById['10003'];
-        var rec=dlData.find(function(x){return x.adm==='10003';});
-        console.log('[DueList FB] 10003 mirror.balance=',mir&&mir.balance,' dlData.balance=',rec&&rec.balance);
-      }catch(e2){}
     }catch(e){ console.warn('[DueList FB] event parse error',e); }
   };
   _dlFbES.addEventListener('put',onEvt);
