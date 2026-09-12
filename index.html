@@ -2925,13 +2925,6 @@ Reason: {reason}"></textarea>
       <div style="font-size:15px;font-weight:800;color:#8b5cf6;font-family:'Outfit',sans-serif;line-height:1" id="dl-stat-amount">₹0</div>
       <div style="font-size:8px;font-weight:700;color:#c4c9d4;text-transform:uppercase;letter-spacing:.8px">Outstanding</div>
     </div>
-    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;margin-right:2px" title="Firebase live sync status">
-      <div style="display:flex;align-items:center;gap:4px">
-        <span id="dl-live-dot" style="width:8px;height:8px;border-radius:50%;background:#9ca3af;display:inline-block;transition:background .2s"></span>
-        <span id="dl-live-time" style="font-size:9.5px;font-weight:700;color:#94a3b8;font-family:'Outfit',sans-serif">—</span>
-      </div>
-      <div style="font-size:8px;font-weight:700;color:#c4c9d4;text-transform:uppercase;letter-spacing:.6px">Live</div>
-    </div>
     <button onclick="dlOpenSettings()" style="background:#f1f5f9;border:1.5px solid #e2e8f0;border-radius:9px;padding:6px 10px;cursor:pointer;font-size:13px" title="Settings">⚙️</button>
   </div>
 
@@ -9920,27 +9913,10 @@ var _dlFbES   = null; // open EventSource stream
 function dlFbCfg(){
   return { url:(localStorage.getItem(DL_FB_URL_KEY)||'').trim(), code:(localStorage.getItem(DL_FB_CODE_KEY)||'').trim() };
 }
-var _dlLastOkTs=null; // timestamp of last successful sync event, drives the ticking "Xs ago" display
 function dlFbSetDot(st){
   var d=document.getElementById('dl-fb-dot');
   if(d){ var colors={ok:'#16a34a',err:'#dc2626',ing:'#2563eb',off:'#9ca3af'}; d.style.background=colors[st]||'#9ca3af'; }
-  var ld=document.getElementById('dl-live-dot');
-  if(ld){ var colors2={ok:'#16a34a',err:'#dc2626',ing:'#2563eb',off:'#9ca3af'}; ld.style.background=colors2[st]||'#9ca3af'; }
-  if(st==='ok') _dlLastOkTs=Date.now();
-  if(st==='off') _dlLastOkTs=null;
-  _dlTickLiveTime(); // update immediately, don't wait for the next 1s tick
 }
-// Ticks every second so a frozen/dead stream is visibly obvious — if this
-// number keeps climbing past ~20-25s without resetting to 0, the stream
-// genuinely isn't receiving events (the watchdog above should then kick in).
-function _dlTickLiveTime(){
-  var lt=document.getElementById('dl-live-time');
-  if(!lt) return;
-  if(_dlLastOkTs==null){ lt.textContent=(_dlFbES&&_dlFbES.readyState===0)?'…':'off'; return; }
-  var secs=Math.floor((Date.now()-_dlLastOkTs)/1000);
-  lt.textContent=secs<2?'now':secs+'s ago';
-}
-setInterval(_dlTickLiveTime,1000);
 function dlFbSetStatusText(t,color){
   var s=document.getElementById('dl-fb-status');
   if(s){ s.textContent=t; if(color) s.style.color=color; }
