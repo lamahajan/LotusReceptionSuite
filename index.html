@@ -3081,119 +3081,46 @@ Reason: {reason}"></textarea>
         <!-- DL SETTINGS CONTENT -->
         <div id="dl-settings-content" style="overflow-y:auto;flex:1;padding:14px 16px 6px">
 
-          <!-- ── 1. EXCEL FILE ── -->
+          <!-- ── 1. FIREBASE SYNC (event-based, 2-way) ── -->
           <div class="dl-acc open">
-            <button class="dl-acc-hdr" onclick="this.closest('.dl-acc').classList.toggle('open')">
-              <span class="dl-acc-hdr-icon">📂</span>
-              <div class="dl-acc-hdr-info">
-                <div class="dl-acc-hdr-title">Excel File</div>
-              </div>
-              <span class="dl-acc-arrow">▼</span>
-            </button>
-            <div class="dl-acc-body">
-              <!-- Pin -->
-              <button id="dl-pin-btn" onclick="dlPinFile()"
-                style="width:100%;background:linear-gradient(135deg,#16a34a,#22c55e);color:#fff;border:none;border-radius:10px;padding:11px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;display:flex;align-items:center;justify-content:center;gap:8px;transition:all .2s;margin-bottom:6px;margin-top:10px">
-                📌 Pin Excel File (Auto-Sync)
-              </button>
-              <div id="dl-pinned-info" style="display:none;background:#f0fdf4;border:1.5px solid #86efac;border-radius:10px;padding:11px 13px;margin-bottom:8px">
-                <div style="display:flex;align-items:center;gap:8px">
-                  <span style="font-size:18px">📄</span>
-                  <div style="flex:1;min-width:0">
-                    <div id="dl-pinned-name" style="font-size:12px;font-weight:800;color:#15803d;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">file.xlsx</div>
-                    <div id="dl-pinned-lastload" style="font-size:10px;color:#16a34a;margin-top:1px">Last loaded: —</div>
-                  </div>
-                  <button onclick="dlUnpinFile()" style="background:#fee2e2;border:1px solid #fca5a5;border-radius:7px;padding:4px 8px;font-size:11px;font-weight:700;color:#dc2626;cursor:pointer;flex-shrink:0">✕ Unpin</button>
-                </div>
-                <div id="dl-auto-section" style="margin-top:10px;padding-top:10px;border-top:1px solid #bbf7d0;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-                  <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;font-weight:700;color:#15803d">
-                    <input type="checkbox" id="dl-auto-reload-on" onchange="dlToggleAutoReload()" style="accent-color:#16a34a;width:15px;height:15px">
-                    Auto-reload every
-                  </label>
-                  <select id="dl-reload-interval" onchange="dlToggleAutoReload()" style="background:#fff;border:1px solid #86efac;border-radius:7px;padding:4px 8px;font-size:12px;font-weight:700;color:#15803d;outline:none">
-                    <option value="5">5 sec</option><option value="10">10 sec</option><option value="30">30 sec</option>
-                    <option value="60">1 min</option><option value="120">2 min</option><option value="180">3 min</option>
-                    <option value="300" selected>5 min</option><option value="600">10 min</option><option value="900">15 min</option>
-                    <option value="1200">20 min</option><option value="1800">30 min</option><option value="3600">1 hr</option><option value="7200">2 hr</option>
-                  </select>
-                  <span id="dl-auto-status" style="display:none;font-size:10px;font-weight:700;color:#16a34a;background:#dcfce7;padding:2px 8px;border-radius:10px">🟢 Active</span>
-                </div>
-              </div>
-              <!-- Manual upload -->
-              <input type="file" id="dl-file-inp" accept=".xlsx,.xlsm,.xls,.csv" style="display:none" onchange="dlHandleFile(this)"/>
-              <button onclick="document.getElementById('dl-file-inp').click()"
-                style="width:100%;background:#f5f0e8;color:#8a6428;border:1.5px dashed #c8b89a;border-radius:10px;padding:10px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;display:flex;align-items:center;justify-content:center;gap:7px;transition:all .2s"
-                onmouseover="this.style.background='#ede8dc'" onmouseout="this.style.background='#f5f0e8'">
-                📂 Upload Excel File (Manual)
-              </button>
-              <div id="dl-file-status" style="font-size:11.5px;color:#7a5c2e;margin-top:7px;font-weight:600;min-height:16px;text-align:center"></div>
-
-              <!-- Column mapping + Sheet name -->
-              <div style="margin-top:12px;padding-top:12px;border-top:1px solid #ede8dc">
-                <div style="font-size:10px;font-weight:800;color:#8a6428;text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px">Column Mapping</div>
-                <div style="display:grid;gap:5px">
-                  <div style="display:flex;align-items:center;gap:8px;background:#f5f0e8;border-radius:8px;padding:7px 10px;border:1px solid #e8dcc8"><span style="font-size:10.5px;font-weight:700;color:#7a5c2e;width:88px;flex-shrink:0">Admission No</span><select id="dl-col-adm" style="flex:1;background:#fff;border:1px solid #e0d4be;border-radius:6px;padding:4px 6px;font-size:11px;font-family:inherit;outline:none"></select></div>
-                  <div style="display:flex;align-items:center;gap:8px;background:#f5f0e8;border-radius:8px;padding:7px 10px;border:1px solid #e8dcc8"><span style="font-size:10.5px;font-weight:700;color:#7a5c2e;width:88px;flex-shrink:0">Student Name</span><select id="dl-col-name" style="flex:1;background:#fff;border:1px solid #e0d4be;border-radius:6px;padding:4px 6px;font-size:11px;font-family:inherit;outline:none"></select></div>
-                  <div style="display:flex;align-items:center;gap:8px;background:#f5f0e8;border-radius:8px;padding:7px 10px;border:1px solid #e8dcc8"><span style="font-size:10.5px;font-weight:700;color:#7a5c2e;width:88px;flex-shrink:0">Class</span><select id="dl-col-cls" style="flex:1;background:#fff;border:1px solid #e0d4be;border-radius:6px;padding:4px 6px;font-size:11px;font-family:inherit;outline:none"></select></div>
-                  <div style="display:flex;align-items:center;gap:8px;background:#f5f0e8;border-radius:8px;padding:7px 10px;border:1px solid #e8dcc8"><span style="font-size:10.5px;font-weight:700;color:#7a5c2e;width:88px;flex-shrink:0">Mobile No</span><select id="dl-col-mob" style="flex:1;background:#fff;border:1px solid #e0d4be;border-radius:6px;padding:4px 6px;font-size:11px;font-family:inherit;outline:none"></select></div>
-                  <div style="display:flex;align-items:center;gap:8px;background:#f5f0e8;border-radius:8px;padding:7px 10px;border:1px solid #e8dcc8"><span style="font-size:10.5px;font-weight:700;color:#7a5c2e;width:88px;flex-shrink:0">Total Due</span><select id="dl-col-due" style="flex:1;background:#fff;border:1px solid #e0d4be;border-radius:6px;padding:4px 6px;font-size:11px;font-family:inherit;outline:none"></select></div>
-                  <div style="display:flex;align-items:center;gap:8px;background:#f5f0e8;border-radius:8px;padding:7px 10px;border:1px solid #e8dcc8"><span style="font-size:10.5px;font-weight:700;color:#7a5c2e;width:88px;flex-shrink:0">Received</span><select id="dl-col-recv" style="flex:1;background:#fff;border:1px solid #e0d4be;border-radius:6px;padding:4px 6px;font-size:11px;font-family:inherit;outline:none"></select></div>
-                  <div style="display:flex;align-items:center;gap:8px;background:#f5f0e8;border-radius:8px;padding:7px 10px;border:1px solid #e8dcc8"><span style="font-size:10.5px;font-weight:700;color:#7a5c2e;width:88px;flex-shrink:0">Balance</span><select id="dl-col-bal" style="flex:1;background:#fff;border:1px solid #e0d4be;border-radius:6px;padding:4px 6px;font-size:11px;font-family:inherit;outline:none"></select></div>
-                </div>
-                <div style="font-size:10px;font-weight:800;color:#8a6428;text-transform:uppercase;letter-spacing:.8px;margin:10px 0 4px">Sheet Name</div>
-                <input id="dl-sheet-name" class="dl-inp" type="text" value="Due List" placeholder="Due List" style="margin-bottom:0"/>
-              </div>
-
-              <!-- Class Filter Mode -->
-              <div style="margin-top:12px;padding-top:12px;border-top:1px solid #ede8dc">
-                <div style="font-size:10px;font-weight:800;color:#8a6428;text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px">🏷️ Class Filter Mode</div>
-                <div style="display:flex;gap:8px">
-                  <label id="dl-mode-single-lbl" onclick="dlSetClassMode('single')" style="flex:1;display:flex;align-items:center;gap:8px;background:#f5f0e8;border:1.5px solid #e8dcc8;border-radius:10px;padding:9px 12px;cursor:pointer;transition:all .15s">
-                    <div id="dl-mode-single-dot" style="width:16px;height:16px;border-radius:50%;border:2px solid #c8b89a;background:#fff;flex-shrink:0;display:flex;align-items:center;justify-content:center"></div>
-                    <div style="font-size:12px;font-weight:800;color:#1a1208">Single</div>
-                  </label>
-                  <label id="dl-mode-multi-lbl" onclick="dlSetClassMode('multi')" style="flex:1;display:flex;align-items:center;gap:8px;background:#f5f0e8;border:1.5px solid #e8dcc8;border-radius:10px;padding:9px 12px;cursor:pointer;transition:all .15s">
-                    <div id="dl-mode-multi-dot" style="width:16px;height:16px;border-radius:50%;border:2px solid #c8b89a;background:#fff;flex-shrink:0;display:flex;align-items:center;justify-content:center"></div>
-                    <div style="font-size:12px;font-weight:800;color:#1a1208">Multi</div>
-                  </label>
-                </div>
-              </div>
-              <!-- Save column mapping -->
-              <button onclick="dlSaveMapping()" style="width:100%;margin-top:12px;background:#b5883e;color:#fff;border:none;border-radius:10px;padding:11px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;transition:all .2s" onmouseover="this.style.background='#8a6428'" onmouseout="this.style.background='#b5883e'">
-                💾 Save Column Settings
-              </button>
-            </div>
-          </div>
-
-          <!-- ── 2. FIREBASE SYNC ── -->
-          <div class="dl-acc">
             <button class="dl-acc-hdr" onclick="this.closest('.dl-acc').classList.toggle('open')">
               <span class="dl-acc-hdr-icon">🔥</span>
               <div class="dl-acc-hdr-info">
                 <div class="dl-acc-hdr-title">Firebase Sync</div>
+                <div class="dl-acc-hdr-sub">Due List lives here now — adm/name/mob/cls/balance only</div>
               </div>
               <span class="dl-acc-arrow">▼</span>
             </button>
             <div class="dl-acc-body">
               <label class="dl-lbl" style="margin-top:10px">Database URL</label>
-              <input id="dl-fb-url" class="dl-inp" type="text" placeholder="https://your-db.firebaseio.com"/>
-              <label class="dl-lbl">Due List Sync Code</label>
-              <input id="dl-fb-code" class="dl-inp" type="text" placeholder="e.g. Lotus_monthdue" style="margin-bottom:10px"/>
-              <div style="display:grid;grid-template-columns:1fr auto auto;gap:7px">
-                <button onclick="dlFbSaveAndConnect()" style="background:#f97316;color:#fff;border:none;border-radius:9px;padding:10px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">🔗 Save &amp; Connect</button>
-                <button onclick="dlFbPushNow()" style="background:#fff;color:#f97316;border:1.5px solid #f97316;border-radius:9px;padding:10px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit" title="Push local data → Firebase">⬆ Push</button>
-                <button onclick="dlFbFetchNow()" style="background:#fff;color:#f97316;border:1.5px solid #f97316;border-radius:9px;padding:10px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit" title="Pull latest ← Firebase">⬇ Pull</button>
+              <input id="dl-fb-url" class="dl-inp" type="text" placeholder="https://your-db.firebasedatabase.app"/>
+              <label class="dl-lbl">Sync Code</label>
+              <input id="dl-fb-code" class="dl-inp" type="text" placeholder="e.g. DUELIST" style="margin-bottom:10px"/>
+              <div style="display:flex;align-items:center;gap:8px">
+                <button onclick="dlFbSaveConnect()" style="flex:1;background:#f97316;color:#fff;border:none;border-radius:9px;padding:10px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">🔗 Save &amp; Connect</button>
+                <span id="dl-fb-dot" style="width:10px;height:10px;border-radius:50%;background:#9ca3af;flex-shrink:0"></span>
               </div>
               <div id="dl-fb-status" style="font-size:11px;color:#9a3412;margin-top:8px;min-height:16px;font-weight:600"></div>
+
+              <div style="margin-top:14px;padding-top:12px;border-top:1px solid #fed7aa">
+                <div style="font-size:10px;font-weight:800;color:#9a3412;text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px">Bulk Replace (from master Excel)</div>
+                <input type="file" id="dl-push-file-inp" accept=".xlsm,.xlsx,.xls" style="display:none" onchange="dlPushFileChange(this)"/>
+                <button onclick="document.getElementById('dl-push-file-inp').click()" style="width:100%;background:#fff;color:#f97316;border:1.5px solid #f97316;border-radius:10px;padding:11px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;display:flex;align-items:center;justify-content:center;gap:8px">
+                  ⬆️ Upload xlsm &amp; Full Replace
+                </button>
+                <div id="dl-push-status" style="font-size:11px;color:#9a3412;margin-top:8px;min-height:16px;font-weight:600"></div>
+                <div style="font-size:10px;color:#a89f92;margin-top:6px;line-height:1.5">Reads the "Due List" sheet and completely replaces the synced data with adm/name/mob/cls/balance for every row. Old data (including any due/recv) is cleared first — use this only for a full reset.</div>
+              </div>
             </div>
           </div>
 
-          <!-- ── 3. RAZORPAY PAYMENTS ── -->
+          <!-- ── 2. RAZORPAY PAYMENTS ── -->
           <div class="dl-acc">
             <button class="dl-acc-hdr" onclick="this.closest('.dl-acc').classList.toggle('open')">
               <span class="dl-acc-hdr-icon">💳</span>
               <div class="dl-acc-hdr-info">
                 <div class="dl-acc-hdr-title">Razorpay Payments</div>
+                <div class="dl-acc-hdr-sub">QR collection + live transaction sync</div>
               </div>
               <span class="dl-acc-arrow">▼</span>
             </button>
@@ -3202,14 +3129,24 @@ Reason: {reason}"></textarea>
               <input id="dl-rzp-proxy-url" class="dl-inp" type="text" placeholder="https://rzp-proxy.your-name.workers.dev"/>
               <label class="dl-lbl">Redirect Page URL</label>
               <input id="dl-rzp-redirect-url" class="dl-inp" type="text" placeholder="https://yourname.github.io/index.html"/>
-              <label class="dl-lbl" style="margin-top:8px">Transaction Firebase URL</label>
-              <input id="dl-txn-fb-url" class="dl-inp" type="text" placeholder="https://your-txn-project-rtdb.firebaseio.com"/>
-              <label class="dl-lbl">Transaction Sync Code</label>
-              <input id="dl-txn-fb-secret" class="dl-inp" type="text" placeholder="e.g. Lotus_transaction" style="margin-bottom:10px"/>
-              <label class="dl-lbl">App Token</label>
+              <label class="dl-lbl" style="margin-top:8px">App Token</label>
               <input id="dl-app-token" class="dl-inp" type="password" placeholder="shared secret for worker requests" style="margin-bottom:10px"/>
               <button onclick="dlRzpSaveConfig()" style="width:100%;background:#16a34a;color:#fff;border:none;border-radius:9px;padding:10px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">💾 Save Razorpay Config</button>
               <div id="dl-rzp-status" style="font-size:11px;color:#166534;margin-top:7px;min-height:16px;font-weight:600"></div>
+
+              <div style="margin-top:14px;padding-top:12px;border-top:1px solid #dcfce7">
+                <div style="font-size:10px;font-weight:800;color:#166534;text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px">Transaction Sync</div>
+                <label class="dl-lbl">Transaction Database URL</label>
+                <input id="dl-txn-fb-url" class="dl-inp" type="text" placeholder="https://your-txn-db.firebasedatabase.app"/>
+                <label class="dl-lbl">Transaction Sync Code</label>
+                <input id="dl-txn-fb-code" class="dl-inp" type="text" placeholder="e.g. Lotus_transaction" style="margin-bottom:10px"/>
+                <div style="display:flex;align-items:center;gap:8px">
+                  <button onclick="dlTxnFbSaveConfig()" style="flex:1;background:#16a34a;color:#fff;border:none;border-radius:9px;padding:10px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">🔗 Save &amp; Connect</button>
+                  <span id="dl-txn-fb-dot" style="width:10px;height:10px;border-radius:50%;background:#9ca3af;flex-shrink:0"></span>
+                </div>
+                <div id="dl-txn-fb-status" style="font-size:11px;color:#166534;margin-top:7px;min-height:16px;font-weight:600"></div>
+                <div style="font-size:10px;color:#a89f92;margin-top:4px;line-height:1.5">Payments captured by the worker land here and stream live into the Processed Transactions tab.</div>
+              </div>
             </div>
           </div>
 
@@ -3219,6 +3156,7 @@ Reason: {reason}"></textarea>
               <span class="dl-acc-hdr-icon">📲</span>
               <div class="dl-acc-hdr-info">
                 <div class="dl-acc-hdr-title">WhatsApp Templates</div>
+                <div class="dl-acc-hdr-sub">Reminder message text &amp; send settings</div>
               </div>
               <span class="dl-acc-arrow">▼</span>
             </button>
@@ -3252,6 +3190,7 @@ Reason: {reason}"></textarea>
               <span class="dl-acc-hdr-icon">✅</span>
               <div class="dl-acc-hdr-info">
                 <div class="dl-acc-hdr-title">Processed Transactions</div>
+                <div class="dl-acc-hdr-sub">Display, sort &amp; auto-delete settings</div>
               </div>
               <span class="dl-acc-arrow">▼</span>
             </button>
@@ -3298,6 +3237,7 @@ Reason: {reason}"></textarea>
               <span class="dl-acc-hdr-icon">🔒</span>
               <div class="dl-acc-hdr-info">
                 <div class="dl-acc-hdr-title">Security &amp; Data</div>
+                <div class="dl-acc-hdr-sub">Settings password &amp; local storage cleanup</div>
               </div>
               <span class="dl-acc-arrow">▼</span>
             </button>
@@ -8845,7 +8785,7 @@ const APP_STORAGE_KEYS = {
   gatepass: ['gp_url','gp_code','gp_local','gp_local_mod','gp_wa_cfg','gp_meta_wa_cfg','gp_tg_cfg','gp_force_refresh','gp_qp_thresh','gp_qp_window','gp_signature','gp_stu_url','gp_stu_code','gp_stu_last_fetch_date','gp_od_cfg','gp_ptg_cfg','gp_sibling_enabled','gp_photo_mandatory'],
   register: ['ref_cfg','ref_data','ref_fb_url','ref_fb_code','ref_fb_stu_url','ref_fb_stu_code','ref_fs_cfg','ref_od_cfg','ref_tg_cfg','ref_wix_cfg','ref_students','ref_extra_fys'],
   theme:    ['lis_theme','lis_sb'],
-  duelist:  ['dl_data_v1','dl_col_map_v1','dl_sheet_v1','dl_class_mode_v1','dl_wa_settings','dl_auto_reload','dl_pinned_sheet','dl_settings_pw','dl_fb_url','dl_fb_code','dl_settings'],
+  duelist:  ['dl_data_v1','dl_col_map_v1','dl_sheet_v1','dl_class_mode_v1','dl_wa_settings','dl_auto_reload','dl_pinned_sheet','dl_settings_pw','dl_fb_url','dl_fb_code','dl_push_fb_url','dl_txn_fb_url','dl_txn_fb_code','dl_settings'],
   attendance: ['att_worker_url','att_settings_pw'],
 };
 function clearAppStorage(app){
@@ -9089,11 +9029,6 @@ window.dlHandleFile=function(inp){
         var hasSavedMap=!!localStorage.getItem(DL_MAP_KEY);
         if(!hasSavedMap){ dlOpenSettings(); }
         else if(typeof toast==='function'){ toast('✅ '+parsed.length+' students loaded'); }
-        // Auto-push to Firebase if configured
-        setTimeout(function(){
-          var cfg=dlFbGetCfg();
-          if(cfg.url){ dlFbSetStatus('⏳ Auto-pushing to Firebase…','#1d4ed8'); dlFbPushNow(); }
-        },800);
       }
 
       if(wb.SheetNames.length>1){
@@ -9175,18 +9110,22 @@ function dlGetMap(){
 
 // ── Save mapping from selects ──
 window.dlSaveMapping=function(){
-  var map={
-    adm:parseInt(document.getElementById('dl-col-adm').value)||0,
-    name:parseInt(document.getElementById('dl-col-name').value)||1,
-    cls:parseInt(document.getElementById('dl-col-cls').value)||2,
-    mob:parseInt(document.getElementById('dl-col-mob').value)||3,
-    due:parseInt(document.getElementById('dl-col-due').value)||4,
-    recv:parseInt(document.getElementById('dl-col-recv').value)||5,
-    bal:parseInt(document.getElementById('dl-col-bal').value)||7
-  };
-  var sn=document.getElementById('dl-sheet-name').value.trim()||'Due List';
-  localStorage.setItem(DL_MAP_KEY,JSON.stringify(map));
-  localStorage.setItem(DL_SHEET_KEY,sn);
+  var admEl=document.getElementById('dl-col-adm');
+  if(admEl){
+    var map={
+      adm:parseInt(admEl.value)||0,
+      name:parseInt((document.getElementById('dl-col-name')||{}).value)||1,
+      cls:parseInt((document.getElementById('dl-col-cls')||{}).value)||2,
+      mob:parseInt((document.getElementById('dl-col-mob')||{}).value)||3,
+      due:parseInt((document.getElementById('dl-col-due')||{}).value)||4,
+      recv:parseInt((document.getElementById('dl-col-recv')||{}).value)||5,
+      bal:parseInt((document.getElementById('dl-col-bal')||{}).value)||7
+    };
+    var snEl=document.getElementById('dl-sheet-name');
+    var sn=snEl?(snEl.value.trim()||'Due List'):'Due List';
+    localStorage.setItem(DL_MAP_KEY,JSON.stringify(map));
+    localStorage.setItem(DL_SHEET_KEY,sn);
+  }
   dlCloseSettings();
   if(typeof toast==='function')toast('✅ Settings saved!');
 };
@@ -9575,14 +9514,10 @@ document.head.insertAdjacentHTML('beforeend','<style>#screen-due.active{display:
     if(saved){
       dlData=JSON.parse(saved);window.dlData=dlData;
     } else {
-      // Firebase is configured — do not set empty, fetch is pending
-      var _fbUrl=localStorage.getItem('dl_fb_url')||'';
-      if(!_fbUrl){ dlUseEmbedded(); }
-      // else: dlData=[] stays empty for now — Firebase will fetch it on DOMContentLoaded
+      dlUseEmbedded();
     }
   } catch(e){
-    var _fbUrl2=localStorage.getItem('dl_fb_url')||'';
-    if(!_fbUrl2){ dlUseEmbedded(); }
+    dlUseEmbedded();
   }
 })();
 
@@ -9595,20 +9530,7 @@ window.goTo=function(name){
   if(name==='due'){
     if(!_dlInited){
       _dlInited=true;
-      var _fbCfg=dlFbGetCfg();
-      if(_fbCfg.url){
-        // Firebase configured — load cache first, then fetch fresh data
-        dlLoadData();        // load from localStorage (may be stale or empty)
-        dlBuildClassBar();
-        dlRender();          // show cached/empty immediately
-        dlFbFetchNow(false); // async: will re-render when 675 records arrive
-        return;              // skip duplicate render below
-      } else {
-        dlLoadData(); // no Firebase — use localStorage / embedded only
-      }
-    } else if(window._dlFbHasNewData){
-      window._dlFbHasNewData = false;
-      // Fresh data already in dlData/window.dlData — just re-render
+      dlLoadData(); // localStorage / embedded only — no cross-device sync
     }
     dlBuildClassBar();
     dlRender();
@@ -9620,7 +9542,6 @@ window.goTo=function(name){
 // FILE SYSTEM ACCESS API — PIN & AUTO-RELOAD
 // ═══════════════════════════════════════
 var dlPinnedHandle = null;
-var dlAutoTimer    = null;
 var DL_IDB_NAME    = 'dl_fs_db';
 
 // ── IndexedDB: save/load/clear handle ──
@@ -9666,26 +9587,6 @@ function dlUpdatePinnedUI(){
   }
 }
 
-// ── Apply auto-reload timer ──
-function dlApplyAutoReload(){
-  if(dlAutoTimer){ clearInterval(dlAutoTimer); dlAutoTimer=null; }
-  var on  = document.getElementById('dl-auto-reload-on');
-  var sel = document.getElementById('dl-reload-interval');
-  var st  = document.getElementById('dl-auto-status');
-  if(!dlPinnedHandle||!on||!on.checked){ if(st) st.style.display='none'; return; }
-  var ms  = (sel?parseInt(sel.value)||300:300)*1000;
-  dlAutoTimer = setInterval(function(){ dlReloadPinned(true); }, ms);
-  if(st){ st.style.display='inline-block'; }
-  // Persist setting
-  try{ localStorage.setItem('dl_auto_reload', JSON.stringify({on:true,interval:sel?sel.value:'300'})); }catch(e){}
-}
-
-window.dlToggleAutoReload = function(){
-  dlApplyAutoReload();
-  var on=document.getElementById('dl-auto-reload-on');
-  if(typeof toast==='function') toast(on&&on.checked?'🟢 Auto-reload enabled':'Auto-reload off');
-};
-
 // ── Pin file ──
 window.dlPinFile = async function(){
   if(!window.showOpenFilePicker){
@@ -9700,14 +9601,6 @@ window.dlPinFile = async function(){
     dlPinnedHandle = handles[0];
     dlSaveHandleToIDB(dlPinnedHandle);
     dlUpdatePinnedUI();
-    // Restore auto-reload setting
-    try{
-      var saved=JSON.parse(localStorage.getItem('dl_auto_reload')||'{}');
-      var onEl=document.getElementById('dl-auto-reload-on');
-      var ivEl=document.getElementById('dl-reload-interval');
-      if(onEl&&saved.on) onEl.checked=true;
-      if(ivEl&&saved.interval) ivEl.value=saved.interval;
-    }catch(e){}
     await dlReloadPinned(false);
     if(typeof toast==='function') toast('📌 File pinned: '+dlPinnedHandle.name,'ok');
   }catch(e){ if(e.name!=='AbortError') console.warn('dlPinFile:',e); }
@@ -9774,17 +9667,6 @@ window.dlReloadPinned = async function(silent){
       dlBuildClassBar(); dlRender();
       dlHideLoadBanner();
       if(!silent&&typeof toast==='function') toast(parsed.length+' students loaded');
-      // Auto-push to Firebase after pinned reload — only if data changed
-      setTimeout(function(){
-        var cfg=dlFbGetCfg();
-        if(cfg.url&&window.dlData&&window.dlData.length){
-          var newHash = window.dlData.length+'|'+(window.dlData[0]&&window.dlData[0].balance||'');
-          if(newHash !== window._dlLastPushHash){
-            window._dlLastPushHash = newHash;
-            dlFbPushNow();
-          }
-        }
-      },600);
     }
 
     if(needPick && wb.SheetNames.length>1 && !silent){
@@ -9802,10 +9684,8 @@ window.dlReloadPinned = async function(silent){
 // ── Unpin file ──
 window.dlUnpinFile = function(){
   dlPinnedHandle=null;
-  if(dlAutoTimer){ clearInterval(dlAutoTimer); dlAutoTimer=null; }
   dlClearHandleFromIDB();
   dlUpdatePinnedUI();
-  var st=document.getElementById('dl-auto-status'); if(st) st.style.display='none';
   if(typeof toast==='function') toast('Unpinned');
 };
 
@@ -9822,42 +9702,10 @@ function dlHideLoadBanner(){
 }
 
 // ── Auto-restore pinned file on page load ──
-(async function dlAutoRestore(){
-  try{
-    dlLoadHandleFromIDB(async function(handle){
-      if(!handle) return;
-      var perm='granted';
-      try{ perm=await handle.queryPermission({mode:'read'}); }catch(e){}
-      if(perm==='denied'){ dlClearHandleFromIDB(); return; }
-      dlPinnedHandle=handle;
-      dlUpdatePinnedUI();
-      // Restore auto-reload UI state
-      try{
-        var saved=JSON.parse(localStorage.getItem('dl_auto_reload')||'{}');
-        var onEl=document.getElementById('dl-auto-reload-on');
-        var ivEl=document.getElementById('dl-reload-interval');
-        if(onEl&&saved.on) onEl.checked=true;
-        if(ivEl&&saved.interval) ivEl.value=saved.interval;
-      }catch(e){}
-      if(perm==='granted'){
-        // Silently reload
-        await dlReloadPinned(true);
-        dlApplyAutoReload();
-      } else {
-        // Need user gesture — show banner
-        dlShowLoadBanner(handle.name||'Excel file');
-        function onGesture(){
-          document.removeEventListener('click',onGesture,true);
-          document.removeEventListener('touchstart',onGesture,true);
-          dlHideLoadBanner();
-          dlReloadPinned(true).then(function(){ dlApplyAutoReload(); }).catch(function(){});
-        }
-        document.addEventListener('click',onGesture,true);
-        document.addEventListener('touchstart',onGesture,true);
-      }
-    });
-  }catch(e){}
-})();
+// Pinned-file auto-restore disabled — Due List data now comes from Firebase Sync only
+// (see "Firebase Sync" in settings). Kept as a no-op so any old pinned handle in
+// IndexedDB is simply ignored instead of silently overwriting the synced data.
+(async function dlAutoRestore(){})();
 
 // Close settings modal on outside click
 document.addEventListener('click',function(e){
@@ -10359,185 +10207,257 @@ window.dlCloseProgress=function(){
   dlCancelSelectMode();
 };
 
-// ── Due List Firebase Sync ──
-var DL_FB_URL_KEY = 'dl_fb_url';
+// ═══════════════════════════════════════════════════════
+//  DUE LIST FIREBASE SYNC — event-based (Gatepass-style), 2-way.
+//  Data lives at {url}/{code}.json, one child per admission number:
+//    {code}/{adm} = { adm, name, cls, mob, balance }   (due/recv never synced)
+//
+//  PULL: a single EventSource on {url}/{code}.json streams every
+//        put/patch as it happens — no polling loop, no repeated
+//        full fetches. Deltas are applied onto a local mirror
+//        (_applyRTPatch, shared with Gatepass) and rebuilt into
+//        dlData whenever an event arrives.
+//  PUSH: only the manual "Upload xlsm & Full Replace" button writes
+//        here — it PUTs a brand-new object for the whole node, so
+//        old data (including any due/recv) is cleared first.
+// ═══════════════════════════════════════════════════════
+var DL_FB_URL_KEY  = 'dl_fb_url';
 var DL_FB_CODE_KEY = 'dl_fb_code';
-var DL_FB_INTERVAL_KEY = 'dl_fb_interval';
-var _dlFbListener = null;
+var _dlFbById = {};   // live mirror of {code}, keyed by admission number
+var _dlFbES   = null; // open EventSource stream
 
-function dlFbGetCfg(){
-  var url = (localStorage.getItem(DL_FB_URL_KEY)||'').trim().replace(/\/+$/,'');
-  var code = (localStorage.getItem(DL_FB_CODE_KEY)||'').trim();
-  return {url:url, code:code};
+function dlFbCfg(){
+  return { url:(localStorage.getItem(DL_FB_URL_KEY)||'').trim(), code:(localStorage.getItem(DL_FB_CODE_KEY)||'').trim() };
 }
-
-function dlFbEndpoint(path){
-  var cfg = dlFbGetCfg();
-  if(!cfg.url) return null;
-  var node = cfg.code ? (path ? cfg.code+'/'+path : cfg.code) : path;
-  return cfg.url + '/' + node + '.json';
+function dlFbSetDot(st){
+  var d=document.getElementById('dl-fb-dot');
+  if(d){ var colors={ok:'#16a34a',err:'#dc2626',ing:'#2563eb',off:'#9ca3af'}; d.style.background=colors[st]||'#9ca3af'; }
 }
-
-function dlFbSetStatus(msg, color){
-  var el = document.getElementById('dl-fb-status');
-  if(el){ el.textContent = msg; el.style.color = color||'#9a3412'; }
+function dlFbSetStatusText(t,color){
+  var s=document.getElementById('dl-fb-status');
+  if(s){ s.textContent=t; if(color) s.style.color=color; }
 }
+function dlFbRebuildFromMirror(){
+  var list=Object.keys(_dlFbById).map(function(adm){
+    var r=_dlFbById[adm];
+    if(!r||typeof r!=='object') return null;
+    return { adm:String(r.adm||adm), name:r.name||'', cls:r.cls||'', mob:r.mob||'', due:0, recv:0, balance:Number(r.balance)||0 };
+  }).filter(Boolean);
+  dlData=list; window.dlData=list;
+  try{ localStorage.setItem(DL_STORE_KEY, JSON.stringify(list)); }catch(e){}
+  if(typeof updateHomeStats==='function') updateHomeStats();
+  var dueScreen=document.getElementById('screen-due');
+  if(dueScreen && dueScreen.classList.contains('active')){ dlBuildClassBar(); dlRender(); }
+}
+function dlFbStopSync(){
+  if(_dlFbES){ try{ _dlFbES.close(); }catch(e){} _dlFbES=null; }
+}
+function dlFbStartSync(){
+  dlFbStopSync();
+  var cfg=dlFbCfg();
+  if(!cfg.url||!cfg.code){ dlFbSetDot('off'); return; }
+  dlFbSetDot('ing');
+  _dlFbById={};
+  _dlFbES=new EventSource(cfg.url+'/'+cfg.code+'.json');
+  var onEvt=function(ev){
+    try{
+      var d=JSON.parse(ev.data);
+      _applyRTPatch(_dlFbById, d.path, d.data);
+      dlFbRebuildFromMirror();
+      dlFbSetDot('ok');
+    }catch(e){}
+  };
+  _dlFbES.addEventListener('put',onEvt);
+  _dlFbES.addEventListener('patch',onEvt);
+  _dlFbES.onerror=function(){ dlFbSetDot('err'); }; // EventSource retries on its own
+}
+window.dlFbSaveConnect=function(){
+  var uEl=document.getElementById('dl-fb-url'), cEl=document.getElementById('dl-fb-code');
+  var url=(uEl?uEl.value.trim():'').replace(/\/+$/,'');
+  var code=(cEl?cEl.value.trim():'');
+  if(!url||!code){ dlFbSetStatusText('Fill both fields','#d97706'); return; }
+  localStorage.setItem(DL_FB_URL_KEY,url);
+  localStorage.setItem(DL_FB_CODE_KEY,code);
+  dlFbSetStatusText('✅ Connected! Syncing…','#166534');
+  dlFbStartSync();
+};
+// Mobile browsers can silently suspend an open EventSource in a backgrounded tab —
+// restart the stream when the app comes back to the foreground.
+document.addEventListener('visibilitychange',function(){
+  if(document.visibilityState==='visible'){
+    var cfg=dlFbCfg();
+    if(cfg.url&&cfg.code&&(!_dlFbES||_dlFbES.readyState===2)) dlFbStartSync();
+    var tcfg=dlTxnFbCfg();
+    if(tcfg.url&&tcfg.code&&(!_dlTxnFbES||_dlTxnFbES.readyState===2)) dlTxnFbStartSync();
+  }
+});
 
-window.dlFbSaveAndConnect = function(){
-  var urlEl = document.getElementById('dl-fb-url');
-  var codeEl = document.getElementById('dl-fb-code');
-  var url = (urlEl?urlEl.value.trim():'').replace(/\/+$/,'');
-  var code = codeEl?codeEl.value.trim():'';
-  if(!url){ dlFbSetStatus('⚠️ Enter Firebase URL first','#d97706'); return; }
-  localStorage.setItem(DL_FB_URL_KEY, url);
-  localStorage.setItem(DL_FB_CODE_KEY, code);
-  dlFbSetStatus('⏳ Connecting…','#1d4ed8');
-  dlFbStartRealtime();
-  dlFbFetchNow(false);
+// ── Bulk Replace: upload xlsm → "Due List" sheet → adm/name/mob/cls/balance,
+//    full PUT overwrite of {code}.json (old data, including due/recv, is cleared) ──
+window.dlPushFileChange = function(inp){
+  var file = inp.files[0]; if(!file) return;
+  var cfg = dlFbCfg();
+  var st = document.getElementById('dl-push-status');
+  if(!cfg.url||!cfg.code){ if(st){ st.textContent='⚠️ Save Database URL & Sync Code above first'; st.style.color='#d97706'; } inp.value=''; return; }
+  if(st){ st.textContent='Reading file…'; st.style.color='#1d6fd8'; }
+
+  var reader = new FileReader();
+  reader.onload = function(e){
+    try{
+      if(typeof XLSX==='undefined'){ if(st){ st.textContent='XLSX library not loaded'; st.style.color='#c0392b'; } return; }
+      var wb = XLSX.read(e.target.result, {type:'binary'});
+
+      var sheetName = wb.SheetNames.find(function(n){ return n.trim().toLowerCase()==='due list'; })
+                    || wb.SheetNames.find(function(n){ return n.toLowerCase().indexOf('due')>=0; });
+      if(!sheetName){ if(st){ st.textContent='❌ No "Due List" sheet found in this file'; st.style.color='#c0392b'; } return; }
+
+      var rows = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], {header:1, defval:''});
+      if(rows.length<2){ if(st){ st.textContent='❌ "Due List" sheet is empty'; st.style.color='#c0392b'; } return; }
+
+      var headers = rows[0];
+      function findCol(kws){
+        for(var i=0;i<headers.length;i++){
+          var h=String(headers[i]||'').toLowerCase();
+          if(kws.some(function(k){ return h.indexOf(k)>=0; })) return i;
+        }
+        return -1;
+      }
+      var cAdm  = findCol(['admission','adm']);
+      var cName = findCol(['student name','name']);
+      var cCls  = findCol(['class']);
+      var cMob  = findCol(['mobile','mob']);
+      var cBal  = findCol(['balance']);
+      if(cAdm<0||cName<0||cBal<0){
+        if(st){ st.textContent='❌ Could not find Admission No / Student Name / Balance columns'; st.style.color='#c0392b'; }
+        return;
+      }
+
+      var payload={};
+      var count=0;
+      for(var i=1;i<rows.length;i++){
+        var r=rows[i];
+        var adm=String(r[cAdm]||'').trim();
+        if(!adm) continue;
+        payload[adm] = {
+          adm: adm,
+          name: String(r[cName]||'').trim(),
+          cls: cCls>=0 ? String(r[cCls]||'').trim() : '',
+          mob: cMob>=0 ? String(r[cMob]||'').replace(/\D/g,'') : '',
+          balance: parseFloat(r[cBal])||0
+        };
+        count++;
+      }
+      if(!count){ if(st){ st.textContent='⚠️ No rows with an Admission No found'; st.style.color='#d97706'; } return; }
+
+      if(st){ st.textContent='⏳ Replacing '+count+' records…'; st.style.color='#1d4ed8'; }
+      fetch(cfg.url+'/'+cfg.code+'.json', {
+        method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)
+      }).then(function(pr){
+        if(!pr.ok) throw new Error('HTTP '+pr.status);
+        var ts=new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',hour12:true});
+        if(st){ st.textContent='✅ Replaced at '+ts+' — '+count+' records'; st.style.color='#15803d'; }
+        if(typeof toast==='function') toast('✅ '+count+' records synced to Firebase');
+      }).catch(function(e){
+        if(st){ st.textContent='❌ Sync failed: '+e.message; st.style.color='#dc2626'; }
+      });
+    }catch(ex){
+      if(st){ st.textContent='❌ Error: '+ex.message; st.style.color='#c0392b'; }
+    }
+  };
+  reader.readAsBinaryString(file);
+  inp.value='';
 };
 
-window.dlFbPushNow = async function(){
-  var ep = dlFbEndpoint('');
-  if(!ep){ dlFbSetStatus('⚠️ Firebase not configured','#d97706'); return; }
-  if(!window.dlData||!window.dlData.length){ dlFbSetStatus('⚠️ No data to push','#d97706'); return; }
-  dlFbSetStatus('⏳ Pushing data…','#1d4ed8');
-  try{
-    var r = await fetch(ep, {method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(window.dlData)});
-    if(!r.ok) throw new Error('HTTP '+r.status);
-    var ts = new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',hour12:true});
-    dlFbSetStatus('✅ Pushed '+window.dlData.length+' records at '+ts,'#15803d');
-  } catch(e){
-    dlFbSetStatus('❌ Push failed: '+e.message,'#dc2626');
-  }
-};
-
-window.dlFbFetchNow = async function(silent){
-  var ep = dlFbEndpoint('');
-  if(!ep){ if(!silent) dlFbSetStatus('⚠️ Firebase not configured','#d97706'); return; }
-  if(!silent) dlFbSetStatus('⏳ Fetching…','#1d4ed8');
-  try{
-    var r = await fetch(ep);
-    if(!r.ok) throw new Error('HTTP '+r.status);
-    var raw = await r.json();
-
-    // Firebase can return null (empty node) or an Array or an Object
-    var data = null;
-    if(Array.isArray(raw)){
-      data = raw;
-    } else if(raw && typeof raw === 'object'){
-      // Firebase sometimes returns object with numeric keys — convert
-      data = Object.values(raw);
-    }
-
-    // FIX: when a record is deleted directly from the Firebase array (e.g. from
-    // the console, or any single-child DELETE), Firebase leaves that array index
-    // as null instead of shrinking the array — so raw.length stays the same
-    // (e.g. still 452) even though one record is gone. Strip those holes out so
-    // the count actually drops (452 → 451) and dlRender doesn't choke on a null
-    // student object.
-    if(data){ data = data.filter(function(x){ return x!=null; }); }
-
-    if(!data || !data.length){
-      // Node truly empty (all records removed) — reflect that locally too,
-      // instead of silently keeping stale old data around.
-      dlData = [];
-      window.dlData = [];
-      try{ localStorage.setItem(DL_STORE_KEY, JSON.stringify([])); }catch(ex){}
-      if(typeof updateHomeStats==='function') updateHomeStats();
-      var dueScreenEmpty = document.getElementById('screen-due');
-      if(dueScreenEmpty && dueScreenEmpty.classList.contains('active')){ dlBuildClassBar(); dlRender(); }
-      else { window._dlFbHasNewData = true; }
-      if(!silent) dlFbSetStatus('⚠️ Firebase empty — push data first','#d97706');
-      else dlFbSetStatus('✅ Synced 0 records','#15803d');
-      return;
-    }
-
-    // ── Save to localStorage + window.dlData + dlData ──
-    dlData = data;            // FIX: local var sync (dlRender uses this directly)
-    window.dlData = data;
-    try{ localStorage.setItem(DL_STORE_KEY, JSON.stringify(data)); }catch(ex){}
-    window._dlFbHasNewData = true; // flag for goTo to re-render
-
-    var ts = new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',hour12:true});
-    dlFbSetStatus('✅ Synced '+data.length+' records at '+ts,'#15803d');
-
-    // ── Always update window.dlData and localStorage, render if screen is active ──
-    window._dlInited = true;
-    window._dlFbHasNewData = false; // clear flag — we're rendering fresh now
-    var dueScreen = document.getElementById('screen-due');
-    var isActive  = dueScreen && dueScreen.classList.contains('active');
-    if(isActive){
-      dlBuildClassBar();
-      dlRender();
-    } else {
-      window._dlFbHasNewData = true; // screen not open — flag for when it opens
-    }
-    // If not active: goTo('due') will pick up via _dlFbHasNewData flag
-  } catch(e){
-    if(!silent) dlFbSetStatus('❌ Fetch failed: '+e.message,'#dc2626');
-    else console.warn('[DL Firebase] silent fetch error:', e.message);
-  }
-};
-
-// ── Realtime sync via Firebase REST streaming (Server-Sent Events) ──
-// EventSource sends "Accept: text/event-stream" automatically, which Firebase's
-// REST API recognizes and keeps the connection open, pushing a "put"/"patch"
-// event the instant data changes anywhere — no polling delay, no wasted reads
-// while nothing has changed. Browsers auto-reconnect EventSource on drop.
-var _dlFbEventSource = null;
-
-function dlFbStopRealtime(){
-  if(_dlFbEventSource){ try{ _dlFbEventSource.close(); }catch(e){} _dlFbEventSource = null; }
-}
-
-function dlFbStartRealtime(){
-  dlFbStopRealtime();
-  var ep = dlFbEndpoint('');
-  if(!ep) return;
-  try{
-    _dlFbEventSource = new EventSource(ep);
-    var onChange = function(){ dlFbFetchNow(true); };
-    _dlFbEventSource.addEventListener('put', onChange);
-    _dlFbEventSource.addEventListener('patch', onChange);
-    _dlFbEventSource.onopen = function(){
-      dlFbSetStatus('🟢 Realtime sync connected','#15803d');
-    };
-    _dlFbEventSource.onerror = function(){
-      // EventSource retries on its own; just reflect it in the status line.
-      dlFbSetStatus('⚠️ Realtime sync reconnecting…','#d97706');
-    };
-    console.log('[DL Firebase] Realtime listener started:', ep);
-  } catch(e){
-    console.warn('[DL Firebase] EventSource failed, falling back to a single fetch:', e.message);
-    dlFbFetchNow(true);
-  }
-}
-
-// Load Firebase URL/code into settings fields when modal opens
+// Load saved Database URL / Sync Code into the fields when settings modal opens
 (function(){
-  var _origOpen = window.dlOpenSettings;
-  window.dlOpenSettings = function(){
+  var _origOpen=window.dlOpenSettings;
+  window.dlOpenSettings=function(){
     if(_origOpen) _origOpen.apply(this,arguments);
-    var cfg = dlFbGetCfg();
-    var urlEl = document.getElementById('dl-fb-url');
-    var codeEl = document.getElementById('dl-fb-code');
-    if(urlEl) urlEl.value = cfg.url||'';
-    if(codeEl) codeEl.value = cfg.code||'';
-    var connected = !!cfg.url;
-    if(connected){
-      var ts = new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',hour12:true});
-      dlFbSetStatus('🔥 Firebase configured · '+cfg.url.split('/')[2],'#15803d');
-    }
+    var cfg=dlFbCfg();
+    var uEl=document.getElementById('dl-fb-url'); if(uEl) uEl.value=cfg.url;
+    var cEl=document.getElementById('dl-fb-code'); if(cEl) cEl.value=cfg.code;
+    dlFbSetDot(_dlFbES?'ok':'off');
   };
 })();
 
-// Start realtime listener on load + immediate eager fetch so data is ready before screen opens
 document.addEventListener('DOMContentLoaded', function(){
-  var _cfg = dlFbGetCfg();
-  if(_cfg.url){
-    dlFbStartRealtime();
-    dlFbFetchNow(true); // silent=true, runs in background
-  }
+  dlFbStartSync();
+});
+
+// ═══════════════════════════════════════════════════════
+//  TRANSACTION FIREBASE SYNC — event-based, feeds the
+//  Processed Transactions tab. Data at {txnUrl}/{txnCode}.json,
+//  one child per payment_id, written by the payment webhook.
+// ═══════════════════════════════════════════════════════
+var DL_TXN_FB_URL_KEY  = 'dl_txn_fb_url';
+var DL_TXN_FB_CODE_KEY = 'dl_txn_fb_code';
+var _dlTxnMirror = {};
+var _dlTxnFbES   = null;
+
+function dlTxnFbCfg(){
+  return { url:(localStorage.getItem(DL_TXN_FB_URL_KEY)||'').trim(), code:(localStorage.getItem(DL_TXN_FB_CODE_KEY)||'').trim() };
+}
+function dlTxnFbSetDot(st){
+  var d=document.getElementById('dl-txn-fb-dot');
+  if(d){ var colors={ok:'#16a34a',err:'#dc2626',ing:'#2563eb',off:'#9ca3af'}; d.style.background=colors[st]||'#9ca3af'; }
+}
+function dlTxnRebuildFromMirror(){
+  var list=Object.keys(_dlTxnMirror).map(function(k){
+    var t=_dlTxnMirror[k];
+    return t&&typeof t==='object' ? Object.assign({},t,{payment_id:t.payment_id||k}) : null;
+  }).filter(Boolean);
+  list.sort(function(a,b){ return String(b.time||'').localeCompare(String(a.time||'')); });
+  try{ localStorage.setItem(DL_TXN_KEY, JSON.stringify(list)); }catch(e){}
+  dlTxnRender();
+  if(list.length && typeof dlShowTxnBadge==='function') dlShowTxnBadge();
+}
+function dlTxnFbStopSync(){
+  if(_dlTxnFbES){ try{ _dlTxnFbES.close(); }catch(e){} _dlTxnFbES=null; }
+}
+function dlTxnFbStartSync(){
+  dlTxnFbStopSync();
+  var cfg=dlTxnFbCfg();
+  if(!cfg.url||!cfg.code){ dlTxnFbSetDot('off'); return; }
+  dlTxnFbSetDot('ing');
+  _dlTxnMirror={};
+  _dlTxnFbES=new EventSource(cfg.url+'/'+cfg.code+'.json');
+  var onEvt=function(ev){
+    try{
+      var d=JSON.parse(ev.data);
+      _applyRTPatch(_dlTxnMirror, d.path, d.data);
+      dlTxnRebuildFromMirror();
+      dlTxnFbSetDot('ok');
+    }catch(e){}
+  };
+  _dlTxnFbES.addEventListener('put',onEvt);
+  _dlTxnFbES.addEventListener('patch',onEvt);
+  _dlTxnFbES.onerror=function(){ dlTxnFbSetDot('err'); };
+}
+window.dlTxnFbSaveConfig=function(){
+  var uEl=document.getElementById('dl-txn-fb-url'), cEl=document.getElementById('dl-txn-fb-code');
+  var url=(uEl?uEl.value.trim():'').replace(/\/+$/,'');
+  var code=(cEl?cEl.value.trim():'');
+  var st=document.getElementById('dl-txn-fb-status');
+  if(!url||!code){ if(st){ st.textContent='Fill both fields'; st.style.color='#d97706'; } return; }
+  localStorage.setItem(DL_TXN_FB_URL_KEY,url);
+  localStorage.setItem(DL_TXN_FB_CODE_KEY,code);
+  if(st){ st.textContent='✅ Connected! Syncing…'; st.style.color='#166534'; }
+  dlTxnFbStartSync();
+};
+
+(function(){
+  var _origOpen=window.dlOpenSettings;
+  window.dlOpenSettings=function(){
+    if(_origOpen) _origOpen.apply(this,arguments);
+    var cfg=dlTxnFbCfg();
+    var uEl=document.getElementById('dl-txn-fb-url'); if(uEl) uEl.value=cfg.url;
+    var cEl=document.getElementById('dl-txn-fb-code'); if(cEl) cEl.value=cfg.code;
+    dlTxnFbSetDot(_dlTxnFbES?'ok':'off');
+  };
+})();
+
+document.addEventListener('DOMContentLoaded', function(){
+  dlTxnFbStartSync();
 });
 
 // ── Patch dlSaveMapping to save WA settings too ──
@@ -10560,14 +10480,11 @@ document.addEventListener('DOMContentLoaded',function(){
 
 
 // ═══════════════════════════════════════════════════════
-//  RAZORPAY + TRANSACTION SYSTEM  (Webhook Edition)
-//  No polling — webhook → Firebase → local cache sync
+//  RAZORPAY + TRANSACTION SYSTEM
 // ═══════════════════════════════════════════════════════
 
 var DL_RZP_PROXY_KEY    = 'dl_rzp_proxy_url';
 var DL_RZP_REDIRECT_KEY = 'dl_rzp_redirect_url';
-var DL_TXN_FB_URL_KEY   = 'dl_txn_fb_url';
-var DL_TXN_FB_SEC_KEY   = 'dl_txn_fb_secret';
 var DL_APP_TOKEN_KEY    = 'dl_app_token';      // shared secret sent to worker as X-App-Token
 var DL_TXN_KEY          = 'dl_transactions';   // captured txns cache
 var DL_PENDING_KEY      = 'dl_pending_qrs';    // pending qr_ids list
@@ -10584,13 +10501,9 @@ window.dlApiHeaders = function(extra){
 window.dlRzpSaveConfig = function(){
   var p = (document.getElementById('dl-rzp-proxy-url')||{}).value||'';
   var r = (document.getElementById('dl-rzp-redirect-url')||{}).value||'';
-  var tfb = (document.getElementById('dl-txn-fb-url')||{}).value||'';
-  var tsc = (document.getElementById('dl-txn-fb-secret')||{}).value||'';
   var atk = (document.getElementById('dl-app-token')||{}).value||'';
   localStorage.setItem(DL_RZP_PROXY_KEY, p.trim().replace(/\/+$/,''));
   localStorage.setItem(DL_RZP_REDIRECT_KEY, r.trim().replace(/\/+$/,''));
-  if(tfb) localStorage.setItem(DL_TXN_FB_URL_KEY, tfb.trim().replace(/\/+$/,''));
-  if(tsc) localStorage.setItem(DL_TXN_FB_SEC_KEY, tsc.trim());
   if(atk) localStorage.setItem(DL_APP_TOKEN_KEY, atk.trim());
   var st = document.getElementById('dl-rzp-status');
   if(st){ st.textContent='✅ Saved!'; setTimeout(function(){ st.textContent=''; },2000); }
@@ -10602,13 +10515,9 @@ window.dlRzpSaveConfig = function(){
     if(_origOpen) _origOpen.apply(this,arguments);
     var pEl = document.getElementById('dl-rzp-proxy-url');
     var rEl = document.getElementById('dl-rzp-redirect-url');
-    var tfbEl = document.getElementById('dl-txn-fb-url');
-    var tscEl = document.getElementById('dl-txn-fb-secret');
     var atkEl = document.getElementById('dl-app-token');
     if(pEl)   pEl.value   = localStorage.getItem(DL_RZP_PROXY_KEY)||'';
     if(rEl)   rEl.value   = localStorage.getItem(DL_RZP_REDIRECT_KEY)||'';
-    if(tfbEl) tfbEl.value = localStorage.getItem(DL_TXN_FB_URL_KEY)||'';
-    if(tscEl) tscEl.value = localStorage.getItem(DL_TXN_FB_SEC_KEY)||'';
     if(atkEl) atkEl.value = localStorage.getItem(DL_APP_TOKEN_KEY)||'';
   };
 })();
@@ -10697,60 +10606,6 @@ function dlTxnSaveLocal(txn){
   list.unshift(txn); // newest first
   try{ localStorage.setItem(DL_TXN_KEY, JSON.stringify(list)); }catch(e){}
   dlTxnRender();
-}
-
-// ── TXN Firebase polling — pull new transactions from separate DB ──
-var _dlTxnFbTimer = null;
-
-function dlTxnFbPoll(){
-  var fbUrl    = (localStorage.getItem('dl_txn_fb_url')||'').replace(/\/+$/,'');
-  var fbSync   = (localStorage.getItem('dl_txn_fb_secret')||'').trim();
-  if(!fbUrl) return;
-
-  var node = fbSync ? (fbSync+'/dl_transactions') : 'dl_transactions';
-  fetch(fbUrl+'/'+node+'.json?orderBy="paid_at"&limitToLast=20')
-    .then(function(r){ return r.json(); })
-    .then(function(data){
-      if(!data || typeof data !== 'object') return;
-      var changed = false;
-      var newTxns = [];
-      Object.values(data).forEach(function(txn){
-        if(!txn || !txn.payment_id) return;
-        var existing = dlTxnLoad();
-        if(!existing.find(function(t){ return t.payment_id === txn.payment_id; })){
-          var list = dlTxnLoad();
-          list.unshift(txn);
-          try{ localStorage.setItem(DL_TXN_KEY, JSON.stringify(list)); }catch(e){}
-          changed = true;
-          newTxns.push(txn);
-        }
-      });
-      if(changed){
-        dlTxnRender();
-        dlShowTxnBadge();
-        if(typeof toast === 'function') toast('💰 New payment received!');
-        // Auto-close QR for each new payment
-        newTxns.forEach(function(txn){
-          if(txn.qr_id) dlAutoCloseQr(txn.qr_id);
-        });
-      }
-    })
-    .catch(function(){});
-}
-
-function dlAutoCloseQr(qrId){
-  var proxyUrl = (localStorage.getItem(DL_RZP_PROXY_KEY)||'').replace(/\/+$/,'');
-  if(!proxyUrl || !qrId) return;
-  // 1. Close QR on Razorpay (stop further payments)
-  fetch(proxyUrl+'/close-qr/'+qrId, { method:'POST', headers: dlApiHeaders() }).catch(function(){});
-  // 2. Delete from MAIN Firebase qr_map (clean up — next month fresh QR will be created)
-  fetch(proxyUrl+'/delete-qr/'+qrId, { method:'DELETE', headers: dlApiHeaders() }).catch(function(){});
-}
-
-function dlTxnFbStartPolling(){
-  if(_dlTxnFbTimer) clearInterval(_dlTxnFbTimer);
-  dlTxnFbPoll(); // immediate
-  _dlTxnFbTimer = setInterval(dlTxnFbPoll, 15000); // every 15s
 }
 
 // ── Green badge on Transactions tab ──
@@ -11006,8 +10861,6 @@ window.dlTxnRender = function(){
 // Init
 document.addEventListener('DOMContentLoaded', function(){
   dlTxnRender();
-  dlTxnFbStartPolling();
-
 });
 
 // ═══════════════════════════════════════════════════════
