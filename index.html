@@ -9929,7 +9929,6 @@ function dlFbSetDot(st){
   if(st==='ok') _dlLastOkTs=Date.now();
   if(st==='off') _dlLastOkTs=null;
   _dlTickLiveTime(); // update immediately, don't wait for the next 1s tick
-  console.log('[DueList FB] status →',st,new Date().toLocaleTimeString());
 }
 // Ticks every second so a frozen/dead stream is visibly obvious — if this
 // number keeps climbing past ~20-25s without resetting to 0, the stream
@@ -9970,21 +9969,19 @@ function dlFbStartSync(){
   var cfg=dlFbCfg();
   if(!cfg.url||!cfg.code){ dlFbSetDot('off'); return; }
   dlFbSetDot('ing');
-  console.log('[DueList FB] opening EventSource →',cfg.url+'/'+cfg.code+'.json',new Date().toLocaleTimeString());
   _dlFbById={};
   _dlFbES=new EventSource(cfg.url+'/'+cfg.code+'.json');
   var onEvt=function(ev){
     try{
       var d=JSON.parse(ev.data);
-      console.log('[DueList FB] event:',ev.type,'path:',d.path,'value:',JSON.stringify(d.data),new Date().toLocaleTimeString());
       _applyRTPatch(_dlFbById, d.path, d.data, ev.type==='patch');
       dlFbRebuildFromMirror();
       dlFbSetDot('ok');
-    }catch(e){ console.warn('[DueList FB] event parse error',e); }
+    }catch(e){}
   };
   _dlFbES.addEventListener('put',onEvt);
   _dlFbES.addEventListener('patch',onEvt);
-  _dlFbES.onerror=function(){ console.warn('[DueList FB] stream error / disconnected',new Date().toLocaleTimeString(),'readyState:',_dlFbES&&_dlFbES.readyState); dlFbSetDot('err'); };
+  _dlFbES.onerror=function(){ dlFbSetDot('err'); };
 }
 window.dlFbSaveConnect=function(){
   var uEl=document.getElementById('dl-fb-url'), cEl=document.getElementById('dl-fb-code');
@@ -10003,7 +10000,6 @@ function _dlResumeSync(reason){
   // stream above: a "dead but still OPEN" EventSource silently misses deletes/
   // edits made in Firebase while the app was backgrounded or closed. Forcing a
   // reconnect re-fetches a fresh full snapshot every time the app is reopened.
-  console.log('[DueList FB] resume trigger:',reason,new Date().toLocaleTimeString());
   var cfg=dlFbCfg();
   if(cfg.url&&cfg.code) dlFbStartSync();
   var tcfg=dlTxnFbCfg();
@@ -10029,7 +10025,6 @@ setInterval(function(){
   if(!cfg.url||!cfg.code) return;
   var rs=_dlFbES?_dlFbES.readyState:null; // 0=connecting,1=open,2=closed,null=none
   if(rs===2||rs===null){
-    console.log('[DueList FB] watchdog: stream dead (readyState='+rs+'), reconnecting',new Date().toLocaleTimeString());
     dlFbStartSync();
   }
   var tcfg=dlTxnFbCfg();
