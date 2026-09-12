@@ -9296,6 +9296,10 @@ window.dlRender=function(){
   }else{
     list.forEach(function(s){html+=dlCardHTML(s);});
   }
+  try{
+    var dbgRec=list.find(function(x){return x.adm==='10003';});
+    console.log('[DueList RENDER] dlRender() about to paint. 10003 in filtered list:',dbgRec&&dbgRec.balance,' dlData(global) 10003:',dlData.find(function(x){return x.adm==='10003';}).balance,new Date().toLocaleTimeString());
+  }catch(e3){}
   area.innerHTML=html;
 };
 
