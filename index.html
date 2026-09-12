@@ -2928,13 +2928,6 @@ Reason: {reason}"></textarea>
     <button onclick="dlOpenSettings()" style="background:#f1f5f9;border:1.5px solid #e2e8f0;border-radius:9px;padding:6px 10px;cursor:pointer;font-size:13px" title="Settings">⚙️</button>
   </div>
 
-  <!-- TAP TO LOAD BANNER -->
-  <div id="dl-load-banner" style="display:none;background:#fef9c3;border-bottom:1.5px solid #fde047;padding:8px 14px;align-items:center;gap:8px;flex-shrink:0">
-    <span style="font-size:16px">⚠️</span>
-    <div style="flex:1;font-size:11px;font-weight:700;color:#92400e" id="dl-load-banner-sub">Pinned file — tap anywhere to reload</div>
-    <button onclick="dlReloadPinned(false)" style="background:#f59e0b;color:#fff;border:none;border-radius:7px;padding:5px 11px;font-size:11px;font-weight:700;cursor:pointer">🔄 Load</button>
-  </div>
-
   <!-- TOOLBAR: TABS + SEARCH + SORT -->
   <div id="dl-due-toolbar" style="background:#fff;border-bottom:1px solid #f1f5f9;padding:7px 12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;row-gap:8px;flex-shrink:0">
     <!-- Compact tab segment control -->
@@ -8971,9 +8964,6 @@ function importAllSettings(input){
 (function(){
 'use strict';
 
-// ── Default column mapping ──
-var DL_DEFAULT_MAP={adm:0,name:1,cls:2,mob:3,due:4,recv:5,bal:7};
-var DL_SHEET='Due List';
 var DL_STORE_KEY='dl_data_v1';
 var DL_MAP_KEY='dl_col_map_v1';
 var DL_SHEET_KEY='dl_sheet_v1';
@@ -9028,154 +9018,14 @@ function dlUseEmbedded(){
 
 function dlSetSyncBar(){}
 
-// ── File upload handler ──
-window.dlHandleFile=function(inp){
-  var file=inp.files[0];if(!file)return;
-  var st=document.getElementById('dl-file-status');
-  st.textContent='Reading file…';st.style.color='#1d6fd8';
-  var reader=new FileReader();
-  reader.onload=function(e){
-    try{
-      if(typeof XLSX==='undefined'){st.textContent='XLSX library not loaded';st.style.color='#c0392b';return;}
-      var wb=XLSX.read(e.target.result,{type:'binary'});
-
-      function loadSheet(sheetName){
-        localStorage.setItem(DL_SHEET_KEY,sheetName);
-        var ws=wb.Sheets[sheetName];
-        var rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
-        if(rows.length<2){st.textContent='No data found in sheet "'+sheetName+'"';st.style.color='#c0392b';return;}
-        dlHeaders=rows[0];
-        dlPopulateColSelects(dlHeaders);
-        dlAutoDetectMap(dlHeaders);
-        var map=dlGetMap();
-        var parsed=[];
-        for(var i=1;i<rows.length;i++){
-          var r=rows[i];
-          var bal=parseFloat(r[map.bal])||0;
-          if(bal<=0)continue;
-          parsed.push({
-            adm:r[map.adm]||'',
-            name:String(r[map.name]||''),
-            cls:String(r[map.cls]||''),
-            mob:String(r[map.mob]||'').replace(/^\+/,''),
-            due:parseFloat(r[map.due])||0,
-            recv:parseFloat(r[map.recv])||0,
-            balance:parseFloat(r[map.bal])||0
-          });
-        }
-        if(!parsed.length){st.textContent='No students with due balance found in "'+sheetName+'"';st.style.color='#d97706';return;}
-        dlData=parsed;
-        try{localStorage.setItem(DL_STORE_KEY,JSON.stringify(dlData));window.dlData=dlData;}catch(ex){}
-        st.textContent=parsed.length+' students loaded from "'+sheetName+'"';st.style.color='#2d7a4f';
-        if(typeof updateHomeStats==='function')updateHomeStats();
-        dlBuildClassBar();dlRender();
-        // Only open mapping settings if no saved mapping exists yet
-        var hasSavedMap=!!localStorage.getItem(DL_MAP_KEY);
-        if(!hasSavedMap){ dlOpenSettings(); }
-        else if(typeof toast==='function'){ toast('✅ '+parsed.length+' students loaded'); }
-      }
-
-      if(wb.SheetNames.length>1){
-        dlShowSheetPicker(wb.SheetNames,function(chosen){loadSheet(chosen);});
-      } else {
-        loadSheet(wb.SheetNames[0]);
-      }
-    }catch(ex){st.textContent='Error: '+ex.message;st.style.color='#c0392b';}
-  };
-  reader.readAsBinaryString(file);
-};
-
-function dlShowSheetPicker(sheets,onPick){
-  var old=document.getElementById('dl-sheet-picker');if(old)old.remove();
-  var overlay=document.createElement('div');
-  overlay.id='dl-sheet-picker';
-  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:2000;display:flex;align-items:center;justify-content:center;padding:16px';
-  var html='<div style="background:#fff;border-radius:16px;padding:22px;width:100%;max-width:360px;box-shadow:0 16px 48px rgba(0,0,0,.25);border:1.5px solid #e8dcc8">';
-  html+='<div style="font-size:15px;font-weight:800;color:#1a1208;margin-bottom:4px">Select Sheet</div>';
-  html+='<div style="font-size:12px;color:#7a5c2e;margin-bottom:14px">Your file has multiple sheets. Which sheet contains the fee due data?</div>';
-  html+='<div style="display:flex;flex-direction:column;gap:7px">';
-  sheets.forEach(function(s,idx){
-    html+='<button id="dlsp_'+idx+'" style="width:100%;background:#f5f0e8;border:1.5px solid #e8dcc8;border-radius:10px;padding:11px 14px;font-size:13px;font-weight:700;color:#1a1208;cursor:pointer;font-family:Plus Jakarta Sans,sans-serif;text-align:left;transition:all .15s">'+s+'</button>';
-  });
-  html+='</div></div>';
-  overlay.innerHTML=html;
-  document.body.appendChild(overlay);
-  sheets.forEach(function(s,idx){
-    var btn=document.getElementById('dlsp_'+idx);
-    if(btn){
-      btn.addEventListener('click',function(){
-        overlay.remove();
-        onPick(s);
-      });
-    }
-  });
-}
-
-function dlAutoDetectMap(headers){
-  var h=headers.map(function(x){return String(x||'').toLowerCase();});
-  function find(kws){
-    for(var k=0;k<kws.length;k++){
-      for(var i=0;i<h.length;i++){
-        if(h[i].includes(kws[k]))return i;
-      }
-    }
-    return -1;
-  }
-  var map={
-    adm:find(['adm','roll','enroll','sr no','sr.','id']),
-    name:find(['name','student','pupil']),
-    cls:find(['class','grade','section','std']),
-    mob:find(['mob','phone','contact','whatsapp']),
-    due:find(['total due','total fee','fee due','annual fee','due']),
-    recv:find(['receiv','paid','collected','deposit']),
-    bal:find(['balance','bal','outstanding','remain','pending'])
-  };
-  if(map.name>=0&&map.bal>=0){
-    if(map.adm<0)map.adm=0;
-    if(map.cls<0)map.cls=2;
-    if(map.mob<0)map.mob=3;
-    if(map.due<0)map.due=4;
-    if(map.recv<0)map.recv=5;
-    localStorage.setItem(DL_MAP_KEY,JSON.stringify(map));
-    var ids=['dl-col-adm','dl-col-name','dl-col-cls','dl-col-mob','dl-col-due','dl-col-recv','dl-col-bal'];
-    var keys=['adm','name','cls','mob','due','recv','bal'];
-    ids.forEach(function(id,i){
-      var sel=document.getElementById(id);
-      if(sel)sel.value=map[keys[i]];
-    });
-  }
-}
-
-// ── Get current column mapping ──
-function dlGetMap(){
-  try{var s=localStorage.getItem(DL_MAP_KEY);if(s)return JSON.parse(s);}catch(e){}
-  return DL_DEFAULT_MAP;
-}
-
-// ── Save mapping from selects ──
+// ── Save Settings (WhatsApp config; patched below to also persist WA settings) ──
 window.dlSaveMapping=function(){
-  var admEl=document.getElementById('dl-col-adm');
-  if(admEl){
-    var map={
-      adm:parseInt(admEl.value)||0,
-      name:parseInt((document.getElementById('dl-col-name')||{}).value)||1,
-      cls:parseInt((document.getElementById('dl-col-cls')||{}).value)||2,
-      mob:parseInt((document.getElementById('dl-col-mob')||{}).value)||3,
-      due:parseInt((document.getElementById('dl-col-due')||{}).value)||4,
-      recv:parseInt((document.getElementById('dl-col-recv')||{}).value)||5,
-      bal:parseInt((document.getElementById('dl-col-bal')||{}).value)||7
-    };
-    var snEl=document.getElementById('dl-sheet-name');
-    var sn=snEl?(snEl.value.trim()||'Due List'):'Due List';
-    localStorage.setItem(DL_MAP_KEY,JSON.stringify(map));
-    localStorage.setItem(DL_SHEET_KEY,sn);
-  }
   dlCloseSettings();
   if(typeof toast==='function')toast('✅ Settings saved!');
 };
 
 window.dlClearData=function(){
-  if(!confirm('Clear all loaded student data? This removes the current list but keeps your column mapping and settings.'))return;
+  if(!confirm('Clear all loaded student data? This removes the current list (Firebase sync will repopulate it on next update).'))return;
   localStorage.removeItem(DL_STORE_KEY);
   dlData=[];window.dlData=dlData;
   dlBuildClassBar();dlRender();
@@ -9184,8 +9034,6 @@ window.dlClearData=function(){
 };
 
 window.dlResetToDefault=function(){
-  localStorage.removeItem(DL_MAP_KEY);
-  localStorage.removeItem(DL_SHEET_KEY);
   localStorage.removeItem(DL_STORE_KEY);
   dlUseEmbedded();
   dlBuildClassBar();dlRender();
@@ -9193,24 +9041,6 @@ window.dlResetToDefault=function(){
   if(typeof toast==='function')toast('↩️ Default data restored');
 };
 
-window.dlReloadFile=function(){dlOpenSettings();};
-
-// ── Populate column mapping selects ──
-function dlPopulateColSelects(headers){
-  var ids=['dl-col-adm','dl-col-name','dl-col-cls','dl-col-mob','dl-col-due','dl-col-recv','dl-col-bal'];
-  var map=dlGetMap();
-  var mapVals=[map.adm,map.name,map.cls,map.mob,map.due,map.recv,map.bal];
-  ids.forEach(function(id,idx){
-    var sel=document.getElementById(id);if(!sel)return;
-    sel.innerHTML='';
-    headers.forEach(function(h,i){
-      var o=document.createElement('option');
-      o.value=i;o.textContent='Col '+(i+1)+': '+String(h||'').substring(0,22);
-      if(i===mapVals[idx])o.selected=true;
-      sel.appendChild(o);
-    });
-  });
-}
 
 // ── Settings modal ──
 var dlSettingsUnlocked=false;
@@ -9264,26 +9094,8 @@ window.dlOpenSettings=function(){
     if(lockEl)lockEl.style.display='none';
     if(contEl)contEl.style.display='block';
   }
-  var sn=localStorage.getItem(DL_SHEET_KEY)||'Due List';
-  var el=document.getElementById('dl-sheet-name');if(el)el.value=sn;
   // Apply saved class mode visual
   dlSetClassMode(dlGetClassMode());
-  // populate selects with numbered columns if no headers
-  if(!dlHeaders.length){
-    var placeholders=['Adm No','Student Name','Class','Mobile No','Total Due','Received','Balance'];
-    placeholders.forEach(function(ph,i){
-      ['dl-col-adm','dl-col-name','dl-col-cls','dl-col-mob','dl-col-due','dl-col-recv','dl-col-bal'].forEach(function(id,idx){
-        var map=dlGetMap();
-        var mapArr=[map.adm,map.name,map.cls,map.mob,map.due,map.recv,map.bal];
-        var sel=document.getElementById(id);
-        if(!sel||sel.options.length)return;
-        var o=document.createElement('option');
-        o.value=i;o.textContent='Col '+(i+1)+' ('+ph+')';
-        if(i===mapArr[idx])o.selected=true;
-        sel.appendChild(o);
-      });
-    });
-  }
   // Init processed settings UI
   dlInitProcessedSettingsUI && dlInitProcessedSettingsUI();
 };
@@ -9583,175 +9395,6 @@ window.goTo=function(name){
   }
 };
 
-
-// ═══════════════════════════════════════
-// FILE SYSTEM ACCESS API — PIN & AUTO-RELOAD
-// ═══════════════════════════════════════
-var dlPinnedHandle = null;
-var DL_IDB_NAME    = 'dl_fs_db';
-
-// ── IndexedDB: save/load/clear handle ──
-function dlSaveHandleToIDB(handle){
-  try{
-    var req=indexedDB.open(DL_IDB_NAME,1);
-    req.onupgradeneeded=function(e){ e.target.result.createObjectStore('handles'); };
-    req.onsuccess=function(e){ var tx=e.target.result.transaction('handles','readwrite'); tx.objectStore('handles').put(handle,'pinned'); };
-  }catch(e){}
-}
-function dlClearHandleFromIDB(){
-  try{
-    var req=indexedDB.open(DL_IDB_NAME,1);
-    req.onsuccess=function(e){ var tx=e.target.result.transaction('handles','readwrite'); tx.objectStore('handles').delete('pinned'); };
-  }catch(e){}
-}
-function dlLoadHandleFromIDB(cb){
-  try{
-    var req=indexedDB.open(DL_IDB_NAME,1);
-    req.onupgradeneeded=function(e){ e.target.result.createObjectStore('handles'); };
-    req.onsuccess=function(e){
-      var tx=e.target.result.transaction('handles','readonly');
-      var gr=tx.objectStore('handles').get('pinned');
-      gr.onsuccess=function(){ cb(gr.result||null); };
-      gr.onerror=function(){ cb(null); };
-    };
-    req.onerror=function(){ cb(null); };
-  }catch(e){ cb(null); }
-}
-
-// ── Update UI based on pin state ──
-function dlUpdatePinnedUI(){
-  var pinBtn  = document.getElementById('dl-pin-btn');
-  var pinInfo = document.getElementById('dl-pinned-info');
-  var pinName = document.getElementById('dl-pinned-name');
-  if(dlPinnedHandle){
-    if(pinBtn)  pinBtn.style.display='none';
-    if(pinInfo) pinInfo.style.display='block';
-    if(pinName) pinName.textContent = dlPinnedHandle.name||'Pinned file';
-  } else {
-    if(pinBtn)  pinBtn.style.display='';
-    if(pinInfo) pinInfo.style.display='none';
-  }
-}
-
-// ── Pin file ──
-window.dlPinFile = async function(){
-  if(!window.showOpenFilePicker){
-    alert('📌 Pin feature works in Chrome/Edge only.\nUse manual upload in Firefox.');
-    return;
-  }
-  try{
-    var handles = await window.showOpenFilePicker({
-      types:[{description:'Excel / CSV', accept:{'application/vnd.ms-excel':['.xls'],'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':['.xlsx'],'application/vnd.ms-excel.sheet.macroEnabled.12':['.xlsm'],'text/csv':['.csv']}}],
-      multiple:false
-    });
-    dlPinnedHandle = handles[0];
-    dlSaveHandleToIDB(dlPinnedHandle);
-    dlUpdatePinnedUI();
-    await dlReloadPinned(false);
-    if(typeof toast==='function') toast('📌 File pinned: '+dlPinnedHandle.name,'ok');
-  }catch(e){ if(e.name!=='AbortError') console.warn('dlPinFile:',e); }
-};
-
-// ── Reload pinned file ──
-window.dlReloadPinned = async function(silent){
-  if(!dlPinnedHandle){ if(!silent&&typeof toast==='function') toast('No file pinned','err'); return; }
-  try{
-    var perm='prompt';
-    try{ perm=await dlPinnedHandle.queryPermission({mode:'read'}); }catch(e){}
-    if(perm!=='granted'){
-      if(silent){
-        var cached=localStorage.getItem(DL_STORE_KEY);
-        if(cached){try{dlData=JSON.parse(cached);window.dlData=dlData;dlBuildClassBar();dlRender();}catch(ex){}}
-        return;
-      }
-      try{perm=await dlPinnedHandle.requestPermission({mode:'read'});}catch(e){return;}
-      if(perm!=='granted'){if(typeof toast==='function')toast('⚠️ File access denied','err');return;}
-    }
-  }catch(e){ return; }
-  try{
-    var file = await dlPinnedHandle.getFile();
-    var ab   = await file.arrayBuffer();
-    if(typeof XLSX==='undefined'){ if(!silent&&typeof toast==='function') toast('XLSX lib not loaded','err'); return; }
-    var wb   = XLSX.read(ab,{type:'array'});
-    // pick sheet
-    var sheetKey = 'dl_pinned_sheet';
-    var sheetName = localStorage.getItem(sheetKey);
-    var needPick = !sheetName || wb.SheetNames.indexOf(sheetName)<0;
-
-    function processPinnedSheet(sName){
-      localStorage.setItem(sheetKey, sName);
-      var rows = XLSX.utils.sheet_to_json(wb.Sheets[sName],{header:1,defval:''});
-      if(rows.length<2){ if(!silent&&typeof toast==='function') toast('Sheet is empty','err'); return; }
-      dlHeaders=rows[0];
-      dlPopulateColSelects(dlHeaders);
-      dlAutoDetectMap(dlHeaders);
-      var map = dlGetMap();
-      var parsed = [];
-      for(var i=1;i<rows.length;i++){
-        var r=rows[i];
-        var bal=parseFloat(r[map.bal])||0;
-        if(bal<=0) continue;
-        parsed.push({
-          adm:r[map.adm]||'',
-          name:String(r[map.name]||''),
-          cls:String(r[map.cls]||''),
-          mob:String(r[map.mob]||'').replace(/^\+/,''),
-          due:parseFloat(r[map.due])||0,
-          recv:parseFloat(r[map.recv])||0,
-          balance:parseFloat(r[map.bal])||0
-        });
-      }
-      if(!parsed.length){ if(!silent&&typeof toast==='function') toast('No students with due balance found','err'); return; }
-      dlData=parsed; window.dlData=dlData;
-      try{ localStorage.setItem(DL_STORE_KEY,JSON.stringify(dlData)); }catch(ex){}
-      var ld=document.getElementById('dl-pinned-lastload');
-      var timeStr=new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
-      if(ld) ld.textContent='Last loaded: '+timeStr+' ('+parsed.length+' students)';
-      var fs=document.getElementById('dl-file-status');
-      if(fs){ fs.textContent=parsed.length+' students loaded ('+timeStr+')'; fs.style.color='#16a34a'; }
-      if(typeof updateHomeStats==='function') updateHomeStats();
-      dlBuildClassBar(); dlRender();
-      dlHideLoadBanner();
-      if(!silent&&typeof toast==='function') toast(parsed.length+' students loaded');
-    }
-
-    if(needPick && wb.SheetNames.length>1 && !silent){
-      dlShowSheetPicker(wb.SheetNames, function(chosen){ processPinnedSheet(chosen); });
-    } else {
-      if(needPick) sheetName = wb.SheetNames.find(function(s){ return s.toLowerCase().includes('due'); })||wb.SheetNames[0];
-      processPinnedSheet(sheetName);
-    }
-  }catch(e){
-    if(!silent&&typeof toast==='function') toast('❌ '+e.message,'err');
-    console.warn('dlReloadPinned:',e);
-  }
-};
-
-// ── Unpin file ──
-window.dlUnpinFile = function(){
-  dlPinnedHandle=null;
-  dlClearHandleFromIDB();
-  dlUpdatePinnedUI();
-  if(typeof toast==='function') toast('Unpinned');
-};
-
-// ── Banner helpers ──
-function dlShowLoadBanner(filename){
-  var b=document.getElementById('dl-load-banner');
-  var sub=document.getElementById('dl-load-banner-sub');
-  if(b) b.style.display='flex';
-  if(sub) sub.textContent='📄 '+filename+' pinned — tap anywhere to load latest data';
-}
-function dlHideLoadBanner(){
-  var b=document.getElementById('dl-load-banner');
-  if(b) b.style.display='none';
-}
-
-// ── Auto-restore pinned file on page load ──
-// Pinned-file auto-restore disabled — Due List data now comes from Firebase Sync only
-// (see "Firebase Sync" in settings). Kept as a no-op so any old pinned handle in
-// IndexedDB is simply ignored instead of silently overwriting the synced data.
-(async function dlAutoRestore(){})();
 
 // Close settings modal on outside click
 document.addEventListener('click',function(e){
