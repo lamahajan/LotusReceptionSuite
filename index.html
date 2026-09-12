@@ -3767,7 +3767,12 @@ function _savePushedSig(){try{localStorage.setItem('gp_pushed_sig',JSON.stringif
 _pushedPassSig=_loadPushedSig();
 
 // Apply a Firebase streaming "put"/"patch" event ({path,data}) onto a plain local mirror object.
-function _applyRTPatch(obj,path,data){
+// isMerge=true (i.e. a real "patch" event) means data holds only the child keys that
+// changed at this path and must be MERGED into whatever object is already there —
+// replacing wholesale would wipe sibling fields (name/amount/ts/etc.) that weren't
+// part of this particular update, until the next full sync happened to correct it.
+// A "put" event is a genuine full replace (including deletes, where data===null).
+function _applyRTPatch(obj,path,data,isMerge){
   if(path==='/'){
     Object.keys(obj).forEach(k=>delete obj[k]);
     if(data&&typeof data==='object')Object.assign(obj,data);
@@ -3777,7 +3782,12 @@ function _applyRTPatch(obj,path,data){
   let cur=obj;
   for(let i=0;i<parts.length-1;i++){if(!cur[parts[i]]||typeof cur[parts[i]]!=='object')cur[parts[i]]={};cur=cur[parts[i]];}
   const lastKey=parts[parts.length-1];
-  if(data===null)delete cur[lastKey];else cur[lastKey]=data;
+  if(data===null){delete cur[lastKey];return;}
+  if(isMerge && data && typeof data==='object' && cur[lastKey] && typeof cur[lastKey]==='object'){
+    Object.assign(cur[lastKey],data);
+  }else{
+    cur[lastKey]=data;
+  }
 }
 function _rebuildPassesFromMirror(){
   const _today=new Date().toISOString().slice(0,10),_yesterday=new Date(Date.now()-86400000).toISOString().slice(0,10);
@@ -3816,7 +3826,7 @@ function startSync(){
   const _onPassesEvent=ev=>{
     try{
       const {path,data}=JSON.parse(ev.data);
-      _applyRTPatch(_passesById,path,data);
+      _applyRTPatch(_passesById,path,data,ev.type==='patch');
       _rebuildPassesFromMirror();
       setSS('ok');
       push('passes'); // safety net: sends anything created locally before the stream connected
@@ -9006,6 +9016,7 @@ function dlLoadData(){
     if(window.dlData&&window.dlData.length){dlData=window.dlData;}
     else{dlUseEmbedded();}
   }
+  console.log('[DL DEBUG] dlLoadData() ran — loaded '+dlData.length+' records from localStorage, contains 10015: '+dlData.some(function(s){return String(s.adm)==='10015';}));
   if(typeof updateHomeStats==='function')updateHomeStats();
 }
 
@@ -9415,6 +9426,7 @@ function dlUpdateStats(list){
 
 // ── Main render ──
 window.dlRender=function(){
+  console.log('[DL DEBUG] dlRender() called — dlData has '+dlData.length+' records, contains 10015: '+dlData.some(function(s){return String(s.adm)==='10015';}));
   var q=(document.getElementById('dl-search')||{}).value||'';q=q.trim().toLowerCase();
   var sort=(document.getElementById('dl-sort')||{}).value||'class';
   var cls=(document.getElementById('dl-cls-filter')||{value:''}).value;
@@ -9561,6 +9573,7 @@ window.goTo=function(name){
   _origGoTo&&_origGoTo(name);
   // Then init/render if due screen opened
   if(name==='due'){
+    console.log('[DL DEBUG] goTo("due") called, _dlInited='+_dlInited);
     if(!_dlInited){
       _dlInited=true;
       dlLoadData(); // localStorage / embedded only — no cross-device sync
@@ -10280,7 +10293,8 @@ function dlFbRebuildFromMirror(){
   try{ localStorage.setItem(DL_STORE_KEY, JSON.stringify(list)); }catch(e){}
   if(typeof updateHomeStats==='function') updateHomeStats();
   var dueScreen=document.getElementById('screen-due');
-  if(dueScreen && dueScreen.classList.contains('active')){ dlBuildClassBar(); dlRender(); }
+  console.log('[DL DEBUG] rebuild fired — mirror has '+Object.keys(_dlFbById).length+' records, contains 10015: '+(!!_dlFbById['10015'])+', due screen active: '+!!(dueScreen&&dueScreen.classList.contains('active')));
+  if(dueScreen && dueScreen.classList.contains('active')){ dlBuildClassBar(); dlRender(); console.log('[DL DEBUG] re-rendered — dlData now has '+dlData.length+' records, contains 10015: '+dlData.some(function(s){return String(s.adm)==='10015';})); }
 }
 function dlFbStopSync(){
   if(_dlFbES){ try{ _dlFbES.close(); }catch(e){} _dlFbES=null; }
@@ -10295,7 +10309,7 @@ function dlFbStartSync(){
   var onEvt=function(ev){
     try{
       var d=JSON.parse(ev.data);
-      _applyRTPatch(_dlFbById, d.path, d.data);
+      _applyRTPatch(_dlFbById, d.path, d.data, ev.type==='patch');
       dlFbRebuildFromMirror();
       dlFbSetDot('ok');
     }catch(e){}
@@ -10470,7 +10484,7 @@ function dlTxnFbStartSync(){
   var onEvt=function(ev){
     try{
       var d=JSON.parse(ev.data);
-      _applyRTPatch(_dlTxnMirror, d.path, d.data);
+      _applyRTPatch(_dlTxnMirror, d.path, d.data, ev.type==='patch');
       dlTxnRebuildFromMirror();
       dlTxnFbSetDot('ok');
     }catch(e){}
