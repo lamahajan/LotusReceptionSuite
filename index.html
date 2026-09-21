@@ -5141,7 +5141,7 @@ async function metaWASend(toPhone, messageText, pass){
           {type:'text',parameter_name:'class',text:pass.class||'N/A'},
           {type:'text',parameter_name:'pickedby',text:pass.pickedUpBy||'Guardian'},
           {type:'text',parameter_name:'relation',text:pass.relation||'Guardian'},
-          {type:'text',parameter_name:'datetime',text:(pass.date||'')+' '+((pass.time||'').replace(/\b(am|pm)\b/gi,function(m){return m.toUpperCase();}))},
+          {type:'text',parameter_name:'datetime',text:(pass.date||'')+' at '+((pass.time||'').replace(/\b(am|pm)\b/gi,function(m){return m.toUpperCase();}))},
           {type:'text',parameter_name:'reason',text:pass.reason||'Early departure'}
         ]}]
       }
@@ -5253,7 +5253,7 @@ async function testMetaWACfg(){
   var testPass={studentName:'Test Student',class:'10-A',pickedUpBy:'Ramesh Kumar',relation:'Father',date:new Date().toLocaleDateString('en-IN'),time:new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}),reason:'Doctor visit'};
   var body;
   if(tmplName){
-    body={messaging_product:'whatsapp',to:testPhone,type:'template',template:{name:tmplName,language:{code:langCode},components:[{type:'body',parameters:[{type:'text',parameter_name:'name',text:testPass.studentName},{type:'text',parameter_name:'class',text:testPass.class},{type:'text',parameter_name:'pickedby',text:testPass.pickedUpBy},{type:'text',parameter_name:'relation',text:testPass.relation},{type:'text',parameter_name:'datetime',text:testPass.date+' '+testPass.time},{type:'text',parameter_name:'reason',text:testPass.reason}]}]}};
+    body={messaging_product:'whatsapp',to:testPhone,type:'template',template:{name:tmplName,language:{code:langCode},components:[{type:'body',parameters:[{type:'text',parameter_name:'name',text:testPass.studentName},{type:'text',parameter_name:'class',text:testPass.class},{type:'text',parameter_name:'pickedby',text:testPass.pickedUpBy},{type:'text',parameter_name:'relation',text:testPass.relation},{type:'text',parameter_name:'datetime',text:testPass.date+' at '+testPass.time},{type:'text',parameter_name:'reason',text:testPass.reason}]}]}};
   } else {
     body={messaging_product:'whatsapp',to:testPhone,type:'text',text:{body:'✅ Lotus International School — Meta WA API Test!\nGate Pass system connected.\nTime: '+new Date().toLocaleTimeString('en-IN')}};
   }
