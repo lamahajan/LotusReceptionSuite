@@ -2232,7 +2232,7 @@ Reason: {reason}"></textarea>
           <div id="ref-meta-tmpl-list"></div>
           <div style="background:var(--blue-l);border:1.5px solid var(--blue);border-radius:var(--rs);padding:10px 13px;margin-bottom:10px;font-size:11.5px;color:var(--blue-d)">
             <div style="font-weight:700;margin-bottom:4px">Template Parameters:</div>
-            <div style="font-family:var(--mono);font-size:11px;line-height:1.9">{{1}} name &nbsp;|&nbsp; {{2}} refno &nbsp;|&nbsp; {{3}} doctype<br>{{4}} status &nbsp;|&nbsp; {{5}} date &amp; time</div>
+            <div style="font-family:var(--mono);font-size:11px;line-height:1.9">{{1}} name &nbsp;|&nbsp; {{2}} refno &nbsp;|&nbsp; {{3}} category<br>{{4}} status &nbsp;|&nbsp; {{5}} date &amp; time</div>
           </div>
           <div class="field">
             <label class="lbl">Admin WhatsApp Number <span style="font-weight:400;font-size:10px;color:var(--muted)">(optional — also send alert here)</span></label>
@@ -3202,6 +3202,15 @@ Reason: {reason}"></textarea>
               <div style="font-size:10px;font-weight:800;color:#15803d;text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px">Message Templates</div>
               <div id="wa-tmpl-rows" style="display:flex;flex-direction:column;gap:8px"></div>
               <button onclick="dlAddTmplRow()" style="width:100%;margin-top:8px;background:#f0fdf4;border:1.5px dashed #86efac;border-radius:9px;padding:9px;font-size:12px;font-weight:700;color:#16a34a;cursor:pointer">+ Add Template</button>
+              <div style="background:#eff6ff;border:1.5px solid #93c5fd;border-radius:10px;padding:10px 12px;margin-top:8px;font-size:11.5px;color:#1e40af">
+                <div style="font-weight:700;margin-bottom:4px">Template Parameters:</div>
+                <div style="font-family:var(--mono);font-size:11px;line-height:1.9">
+                  <b>dl_1:</b> {{1}} student name &nbsp;|&nbsp; {{2}} admission no &nbsp;|&nbsp; {{3}} current month &nbsp;|&nbsp; {{4}} amount<br>
+                  <b>dl_2:</b> {{1}} student name &nbsp;|&nbsp; {{2}} admission no &nbsp;|&nbsp; {{3}} days left &nbsp;|&nbsp; {{4}} current month &nbsp;|&nbsp; {{5}} amount<br>
+                  <b>dl_3 / dl_4:</b> {{1}} student name &nbsp;|&nbsp; {{2}} admission no &nbsp;|&nbsp; {{3}} month &nbsp;|&nbsp; {{4}} amount<br>
+                  <b>other names:</b> {{1}} name &nbsp;|&nbsp; {{2}} class &nbsp;|&nbsp; {{3}} balance
+                </div>
+              </div>
               <button onclick="dlSaveMapping()" style="width:100%;margin-top:10px;background:#b5883e;color:#fff;border:none;border-radius:9px;padding:10px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">💾 Save WhatsApp Settings</button>
             </div>
           </div>
@@ -5137,12 +5146,12 @@ async function metaWASend(toPhone, messageText, pass){
         name:MetaWACfg.templateName,
         language:{code:MetaWACfg.langCode||'en_US'},
         components:[{type:'body',parameters:[
-          {type:'text',parameter_name:'name',text:pass.studentName||'Student'},
-          {type:'text',parameter_name:'class',text:pass.class||'N/A'},
-          {type:'text',parameter_name:'pickedby',text:pass.pickedUpBy||'Guardian'},
-          {type:'text',parameter_name:'relation',text:pass.relation||'Guardian'},
-          {type:'text',parameter_name:'datetime',text:(pass.date||'')+' at '+((pass.time||'').replace(/\b(am|pm)\b/gi,function(m){return m.toUpperCase();}))},
-          {type:'text',parameter_name:'reason',text:pass.reason||'Early departure'}
+          {type:'text',text:pass.studentName||'Student'},
+          {type:'text',text:pass.class||'N/A'},
+          {type:'text',text:pass.pickedUpBy||'Guardian'},
+          {type:'text',text:pass.relation||'Guardian'},
+          {type:'text',text:(pass.date||'')+' at '+((pass.time||'').replace(/\b(am|pm)\b/gi,function(m){return m.toUpperCase();}))},
+          {type:'text',text:pass.reason||'Early departure'}
         ]}]
       }
     };
@@ -5209,10 +5218,10 @@ async function metaWASendGateOut(pass){
         name:MetaWACfg.outTemplateName,
         language:{code:MetaWACfg.outLangCode||'en_US'},
         components:[{type:'body',parameters:[
-          {type:'text',parameter_name:'name',text:pass.studentName||'Student'},
-          {type:'text',parameter_name:'class',text:pass.class||'N/A'},
-          {type:'text',parameter_name:'gateout',text:pass.gateOutTime||''},
-          {type:'text',parameter_name:'date',text:pass.date||''}
+          {type:'text',text:pass.studentName||'Student'},
+          {type:'text',text:pass.class||'N/A'},
+          {type:'text',text:pass.gateOutTime||''},
+          {type:'text',text:pass.date||''}
         ]}]
       }
     };
@@ -5253,7 +5262,7 @@ async function testMetaWACfg(){
   var testPass={studentName:'Test Student',class:'10-A',pickedUpBy:'Ramesh Kumar',relation:'Father',date:new Date().toLocaleDateString('en-IN'),time:new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}),reason:'Doctor visit'};
   var body;
   if(tmplName){
-    body={messaging_product:'whatsapp',to:testPhone,type:'template',template:{name:tmplName,language:{code:langCode},components:[{type:'body',parameters:[{type:'text',parameter_name:'name',text:testPass.studentName},{type:'text',parameter_name:'class',text:testPass.class},{type:'text',parameter_name:'pickedby',text:testPass.pickedUpBy},{type:'text',parameter_name:'relation',text:testPass.relation},{type:'text',parameter_name:'datetime',text:testPass.date+' at '+testPass.time},{type:'text',parameter_name:'reason',text:testPass.reason}]}]}};
+    body={messaging_product:'whatsapp',to:testPhone,type:'template',template:{name:tmplName,language:{code:langCode},components:[{type:'body',parameters:[{type:'text',text:testPass.studentName},{type:'text',text:testPass.class},{type:'text',text:testPass.pickedUpBy},{type:'text',text:testPass.relation},{type:'text',text:testPass.date+' at '+testPass.time},{type:'text',text:testPass.reason}]}]}};
   } else {
     body={messaging_product:'whatsapp',to:testPhone,type:'text',text:{body:'✅ Lotus International School — Meta WA API Test!\nGate Pass system connected.\nTime: '+new Date().toLocaleTimeString('en-IN')}};
   }
@@ -7036,11 +7045,11 @@ async function refMetaWASend(toPhone, messageText, en){
         name:tmplName,
         language:{code:RefMetaWACfg.langCode||'en_US'},
         components:[{type:'body',parameters:[
-          {type:'text',parameter_name:'name',text:en.to||'Visitor'},
-          {type:'text',parameter_name:'refno',text:en.refno||'—'},
-          {type:'text',parameter_name:'category',text:en.category||'—'},
-          {type:'text',parameter_name:'status',text:stLbl},
-          {type:'text',parameter_name:'datetime',text:fmtD(en.date)+' '+fmtTS(en.statusChangedAt||en.createdAt||nowTS())}
+          {type:'text',text:en.to||'Visitor'},
+          {type:'text',text:en.refno||'—'},
+          {type:'text',text:en.category||'—'},
+          {type:'text',text:stLbl},
+          {type:'text',text:fmtD(en.date)+' at '+fmtTS(en.statusChangedAt||en.createdAt||nowTS())}
         ]}]
       }
     };
@@ -9813,34 +9822,34 @@ function dlSendBatch(students,phoneId,token,tmplName,idx,sent,failed,qrMap,proxy
   if(tmplName==='dl_1'){
     // studentname, admno, currentmonth, amount
     bodyParams=[
-      {type:'text',parameter_name:'studentname',text:String(s.name||s.adm||'Student')},
-      {type:'text',parameter_name:'admno',text:String(s.adm||'N/A')},
-      {type:'text',parameter_name:'currentmonth',text:currentMonth},
-      {type:'text',parameter_name:'amount',text:String(Math.round(Number(s.balance)))}
+      {type:'text',text:String(s.name||s.adm||'Student')},
+      {type:'text',text:String(s.adm||'N/A')},
+      {type:'text',text:currentMonth},
+      {type:'text',text:String(Math.round(Number(s.balance)))}
     ];
   } else if(tmplName==='dl_2'){
     // stdname, admno, numbertoten, currentmonth, amount
     bodyParams=[
-      {type:'text',parameter_name:'stdname',text:String(s.name||s.adm||'Student')},
-      {type:'text',parameter_name:'admno',text:String(s.adm||'N/A')},
-      {type:'text',parameter_name:'numbertoten',text:String(daysLeft)},
-      {type:'text',parameter_name:'currentmonth',text:currentMonth},
-      {type:'text',parameter_name:'amount',text:String(Math.round(Number(s.balance)))}
+      {type:'text',text:String(s.name||s.adm||'Student')},
+      {type:'text',text:String(s.adm||'N/A')},
+      {type:'text',text:String(daysLeft)},
+      {type:'text',text:currentMonth},
+      {type:'text',text:String(Math.round(Number(s.balance)))}
     ];
   } else if(tmplName==='dl_3'||tmplName==='dl_4'){
     // stdname, admno, month, amount
     bodyParams=[
-      {type:'text',parameter_name:'stdname',text:String(s.name||s.adm||'Student')},
-      {type:'text',parameter_name:'admno',text:String(s.adm||'N/A')},
-      {type:'text',parameter_name:'month',text:currentMonth},
-      {type:'text',parameter_name:'amount',text:String(Math.round(Number(s.balance)))}
+      {type:'text',text:String(s.name||s.adm||'Student')},
+      {type:'text',text:String(s.adm||'N/A')},
+      {type:'text',text:currentMonth},
+      {type:'text',text:String(Math.round(Number(s.balance)))}
     ];
   } else {
     // fallback: generic name, class, balance
     bodyParams=[
-      {type:'text',parameter_name:'name',text:String(s.name||s.adm||'Student')},
-      {type:'text',parameter_name:'class',text:String(s.cls||'N/A')},
-      {type:'text',parameter_name:'balance',text:String(Math.round(Number(s.balance)))}
+      {type:'text',text:String(s.name||s.adm||'Student')},
+      {type:'text',text:String(s.cls||'N/A')},
+      {type:'text',text:String(Math.round(Number(s.balance)))}
     ];
   }
 
