@@ -9488,6 +9488,9 @@ function dlRenderTmplRows(){
       +'<div style="flex:1"><div style="font-size:10px;color:#8a6428;font-weight:700;margin-bottom:3px">Meta Template Name</div>'
       +'<input placeholder="e.g. dl_1" value="'+esc2(t.name||'')+'" oninput="dlWaTemplates['+i+'].name=this.value" '
       +'style="width:100%;background:#fff;border:1px solid #e8dcc8;border-radius:7px;padding:6px 8px;font-size:11.5px;outline:none;box-sizing:border-box"/></div>'
+      +'<div style="width:80px"><div style="font-size:10px;color:#8a6428;font-weight:700;margin-bottom:3px">Language</div>'
+      +'<input placeholder="en_US" value="'+esc2(t.lang||'en_US')+'" oninput="dlWaTemplates['+i+'].lang=this.value" '
+      +'style="width:100%;background:#fff;border:1px solid #e8dcc8;border-radius:7px;padding:6px 8px;font-size:11.5px;outline:none;box-sizing:border-box"/></div>'
       +'</div>'
       +'<div style="display:flex;gap:6px">'
       +'<div style="flex:1"><div style="font-size:10px;color:#8a6428;font-weight:700;margin-bottom:3px">Date From</div>'
@@ -9506,7 +9509,7 @@ function dlRenderTmplRows(){
 }
 
 window.dlAddTmplRow=function(){
-  dlWaTemplates.push({name:'',dateFrom:1,dateTo:8});
+  dlWaTemplates.push({name:'',lang:'en_US',dateFrom:1,dateTo:8});
   dlRenderTmplRows();
 };
 window.dlRemoveTmpl=function(i){
@@ -9872,7 +9875,7 @@ function dlSendBatch(students,phoneId,token,tmplName,idx,sent,failed,qrMap,proxy
     type:'template',
     template:{
       name:tmplName,
-      language:{code:'en'},
+      language:{code:(tmplCfg&&tmplCfg.lang)||'en_US'},
       components:components
     }
   });
