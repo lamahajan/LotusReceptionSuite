@@ -1224,7 +1224,7 @@ Reason: {reason}"></textarea>
                   </label>
                 </label>
                 <input id="meta-wa-out-template" class="inp" placeholder="e.g. gatepass_exited" style="font-family:var(--mono);font-size:12px">
-                <div style="font-size:11px;color:var(--muted);margin-top:3px">Sent to parent when student exits gate. Parameters: {{1}} name &nbsp;|&nbsp; {{2}} class &nbsp;|&nbsp; {{3}} gate out time &nbsp;|&nbsp; {{4}} date</div>
+                <div style="font-size:11px;color:var(--muted);margin-top:3px">Sent to parent when student exits gate. Parameters: {{1}} name &nbsp;|&nbsp; {{2}} class &nbsp;|&nbsp; {{3}} picked by &nbsp;|&nbsp; {{4}} relation &nbsp;|&nbsp; {{5}} date &amp; time &nbsp;|&nbsp; {{6}} reason</div>
               </div>
               <div class="field">
                 <label class="lbl">Language Code (Gate Out)</label>
@@ -5220,8 +5220,10 @@ async function metaWASendGateOut(pass){
         components:[{type:'body',parameters:[
           {type:'text',text:pass.studentName||'Student'},
           {type:'text',text:pass.class||'N/A'},
-          {type:'text',text:pass.gateOutTime||''},
-          {type:'text',text:pass.date||''}
+          {type:'text',text:pass.pickedUpBy||'Guardian'},
+          {type:'text',text:pass.relation||'Guardian'},
+          {type:'text',text:(pass.date||'')+' at '+((pass.gateOutTime||'').replace(/\b(am|pm)\b/gi,function(m){return m.toUpperCase();}))},
+          {type:'text',text:pass.reason||'Early departure'}
         ]}]
       }
     };
