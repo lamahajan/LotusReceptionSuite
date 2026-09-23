@@ -9719,41 +9719,54 @@ function dlCreateQRsAndSend(students,phoneId,token,tmplName,proxyUrl){
   students.forEach(function(s){
     var adm=String(s.adm||s.name);
     var amount=Math.round(Number(s.balance));
+    var name=(s.name||s.adm||'Student');
+    var cls=(s.cls||s.class||'');
     if(!amount||amount<=0){
       // No balance — skip QR
       pending--;
       if(pending<=0) dlSendBatch(students,phoneId,token,tmplName,0,0,0,qrMap,proxyUrl);
       return;
     }
-    // Delete old QR for this student (if any) before creating new one
-    // Check Firebase via proxy for any existing QR with same adm
-    var deletePromise = proxyUrl
-      ? fetch(proxyUrl+'/qr-by-adm/'+encodeURIComponent(adm), { headers: dlApiHeaders() })
-          .then(function(r){ return r.json(); })
-          .then(function(d){
-            if(d.found && d.qr_id){
-              return fetch(proxyUrl+'/delete-qr/'+d.qr_id, { method:'DELETE', headers: dlApiHeaders() }).catch(function(){});
-            }
-          })
-          .catch(function(){})
-      : Promise.resolve();
 
-    deletePromise.then(function(){
-      return fetch(proxyUrl+'/create-qr',{
-        method:'POST',
-        headers: dlApiHeaders({'Content-Type':'application/json'}),
-        body:JSON.stringify({
-          adm: adm,
-          name: (s.name||s.adm||'Student'),
-          cls: (s.cls||s.class||''),
-          amount: amount,
-          description: 'Fee: '+(s.name||s.adm||'')
-        })
-      });
+    // Look up any existing QR for this adm first — reused if it's still
+    // active AND amount/name/class are all unchanged (no point closing a
+    // perfectly valid QR and minting a fresh Razorpay one just to reissue
+    // the exact same thing). Only closes+recreates when something actually
+    // changed (balance updated, name/class edited) or the old QR is gone/closed.
+    var lookupPromise = fetch(proxyUrl+'/qr-by-adm/'+encodeURIComponent(adm), { headers: dlApiHeaders() })
+      .then(function(r){ return r.json(); })
+      .catch(function(){ return null; });
+
+    lookupPromise.then(function(d){
+      var same = d && d.found && d.qr_id && d.status==='pending'
+        && Number(d.amount)===amount*100
+        && String(d.name||'').trim()===name.trim()
+        && String(d.cls||'').trim()===cls.trim();
+
+      if(same){
+        return { qr_id: d.qr_id, image_url: d.image_url, reused: true };
+      }
+
+      var deletePromise = (d && d.found && d.qr_id)
+        ? fetch(proxyUrl+'/delete-qr/'+d.qr_id, { method:'DELETE', headers: dlApiHeaders() }).catch(function(){})
+        : Promise.resolve();
+
+      return deletePromise.then(function(){
+        return fetch(proxyUrl+'/create-qr',{
+          method:'POST',
+          headers: dlApiHeaders({'Content-Type':'application/json'}),
+          body:JSON.stringify({
+            adm: adm,
+            name: name,
+            cls: cls,
+            amount: amount,
+            description: 'Fee: '+name
+          })
+        });
+      }).then(function(r){ return r.json(); });
     })
-    .then(function(r){ return r.json(); })
     .then(function(data){
-      if(data.qr_id){
+      if(data && data.qr_id){
         qrMap[adm]={ qr_id: data.qr_id, image_url: data.image_url };
         // Track for future cleanup
         if(!window._dlPendingQrMap) window._dlPendingQrMap = {};
@@ -10095,6 +10108,25 @@ window.dlPushFileChange = function(inp){
         var ts=new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',hour12:true});
         if(st){ st.textContent='✅ Replaced at '+ts+' — '+count+' records'; st.style.color='#15803d'; }
         if(typeof toast==='function') toast('✅ '+count+' records synced to Firebase');
+
+        // ── Reconcile QRs: a student who paid manually (cash etc.) and got
+        //    dropped from this new sheet may still have an old QR sitting
+        //    open on Razorpay/Firebase — tell the worker to close any QR
+        //    whose adm isn't in this new list. Best-effort, never blocks
+        //    the sync result shown above.
+        var proxyUrl=(localStorage.getItem('dl_rzp_proxy_url')||'').replace(/\/+$/,'');
+        if(proxyUrl){
+          if(st) st.textContent += ' — checking for stale QR codes…';
+          fetch(proxyUrl+'/reconcile-qrs', {
+            method:'POST',
+            headers: dlApiHeaders({'Content-Type':'application/json'}),
+            body: JSON.stringify({ admList: Object.keys(payload) })
+          }).then(function(rr){ return rr.json(); }).then(function(rd){
+            var n = rd && rd.closed_count || 0;
+            if(st) st.textContent='✅ Replaced at '+ts+' — '+count+' records'+(n?(' · closed '+n+' stale QR'+(n===1?'':'s')):'');
+            if(n && typeof toast==='function') toast('🔒 Closed '+n+' stale QR code'+(n===1?'':'s')+' (not in new due list)');
+          }).catch(function(){ /* best-effort — sync itself already succeeded */ });
+        }
       }).catch(function(e){
         if(st){ st.textContent='❌ Sync failed: '+e.message; st.style.color='#dc2626'; }
       });
