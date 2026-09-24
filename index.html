@@ -4720,6 +4720,7 @@ function gpPhotoRequired(relation){
 var gpStuCfg={url:'',code:''};
 var gpStuIv=null;
 var gpStuLocalMod=0;
+var _gpStuMirror={},_gpStuES=null;
 // ─── GP STU SYNC TIMER ───
 var _gpStuTimerIv=null,_gpStuTimerCount=0;
 function _gpStuStartTimer(sec){
@@ -4755,7 +4756,7 @@ function _gpStuStopTimer(){
     gpStuLocalMod=0;
     localStorage.setItem('gp_stu_last_fetch_date',new Date().toISOString().slice(0,10));
     // If sync is running, re-fetch immediately
-    if(gpStuCfg.url&&gpStuCfg.code)gpStuFetchShared();
+    if(gpStuCfg.url&&gpStuCfg.code)gpStuStartSync();
     // Schedule for next midnight
     setTimeout(midnightReset,24*60*60*1000);
   },msToMidnight);
@@ -4765,7 +4766,7 @@ function gpLoadStuCfg(){
   var u=localStorage.getItem('gp_stu_url'),cd=localStorage.getItem('gp_stu_code');
   var urlEl=document.getElementById('gp-stu-url'),codeEl=document.getElementById('gp-stu-code'),stEl=document.getElementById('gp-stu-status');
   if(urlEl)urlEl.value=u||'';if(codeEl)codeEl.value=cd||'';
-  if(u&&cd){gpStuCfg={url:u,code:cd};if(stEl)stEl.textContent='Connected: '+cd;gpStuFetchShared();if(gpStuIv)clearInterval(gpStuIv);gpStuIv=setInterval(gpStuFetchShared,30000);_gpStuStartTimer(30);}
+  if(u&&cd){gpStuCfg={url:u,code:cd};if(stEl)stEl.textContent='Connected: '+cd+' (live sync)';gpStuStartSync();}
   else{if(stEl)stEl.textContent='Not connected';}
   var sub=document.getElementById('gacc-studb-sub');if(sub)sub.textContent=u?'Connected':'Not connected';
 }
@@ -4780,81 +4781,78 @@ async function gpSaveStuCfg(){
     if(!r.ok)throw 0;
     localStorage.setItem('gp_stu_url',url);localStorage.setItem('gp_stu_code',code);
     gpStuCfg={url,code};
-    if(stEl)stEl.textContent='✅ Connected! Syncing…';
+    if(stEl)stEl.textContent='✅ Connected! Live sync…';
     var sub=document.getElementById('gacc-studb-sub');if(sub)sub.textContent='Connected';
-    gpStuFetchShared();if(gpStuIv)clearInterval(gpStuIv);gpStuIv=setInterval(gpStuFetchShared,30000);_gpStuStartTimer(30);
+    gpStuStartSync();
   }catch{if(stEl)stEl.textContent='❌ Connection failed';}
 }
 function gpForceFetchStu(){
   if(!gpStuCfg.url||!gpStuCfg.code){gpToast('Student DB not configured — please save first','err');return;}
-  // Daily cache reset — force fresh fetch today too
   gpStuLocalMod=0;
-  localStorage.removeItem('gp_stu_last_fetch_date');
-  var stEl=document.getElementById('gp-stu-status');if(stEl)stEl.textContent='Force fetching…';
-  var fsEl=document.getElementById('gp-stu-fetch-status');if(fsEl)fsEl.textContent='⏳ Fetching from Firebase…';
-  _gpStuResetTimer(30);
-  gpStuFetchShared().then(function(){
-    var fsEl2=document.getElementById('gp-stu-fetch-status');
-    if(fsEl2)fsEl2.textContent='✅ Force fetch complete — '+new Date().toLocaleTimeString();
-    gpToast('✅ Students force fetched from Firebase');
-  }).catch(function(){
-    var fsEl2=document.getElementById('gp-stu-fetch-status');
-    if(fsEl2)fsEl2.textContent='❌ Fetch failed — check connection';
-  });
+  var stEl=document.getElementById('gp-stu-status');if(stEl)stEl.textContent='Reconnecting…';
+  var fsEl=document.getElementById('gp-stu-fetch-status');if(fsEl)fsEl.textContent='⏳ Reconnecting to Firebase…';
+  try{
+    gpStuStartSync(); // live connection — reconnecting re-delivers a fresh full snapshot
+    if(stEl)stEl.textContent='Connected: '+gpStuCfg.code+' (live sync)';
+    gpToast('✅ Reconnected — fresh snapshot incoming');
+  }catch(e){
+    if(fsEl)fsEl.textContent='❌ Reconnect failed — check connection';
+  }
 }
 function gpDisconnStu(){
   if(!confirm('Disconnect student DB sync?'))return;
   localStorage.removeItem('gp_stu_url');localStorage.removeItem('gp_stu_code');
-  gpStuCfg={url:'',code:''};if(gpStuIv)clearInterval(gpStuIv);_gpStuStopTimer();
+  gpStuCfg={url:'',code:''};gpStuStopSync();_gpStuStopTimer();
   var stEl=document.getElementById('gp-stu-status');if(stEl)stEl.textContent='Disconnected';
   var sub=document.getElementById('gacc-studb-sub');if(sub)sub.textContent='Not connected';
   gpToast('Student sync disconnected','inf');
 }
-async function gpStuFetchShared(){
+// ── Real-time sync (EventSource) — replaces the old 30-second poll. Same reasoning as fbStartSync above.
+//    The old "daily reset" dance (force a fresh fetch at midnight / on first
+//    open each day) doesn't apply anymore — a live connection has no
+//    staleness to guard against, it's continuously current, so gpDailyReset
+//    above is now a harmless no-op left in place rather than ripped out. ──
+function gpStuStopSync(){ if(_gpStuES){ try{_gpStuES.close();}catch(e){} _gpStuES=null; } }
+function gpStuStartSync(){
+  gpStuStopSync();
   if(!gpStuCfg.url||!gpStuCfg.code)return;
-  try{
-    // ── Date change detection: naye din pe force fetch ──
-    const _stuToday=new Date().toISOString().slice(0,10);
-    const _stuLastDate=localStorage.getItem('gp_stu_last_date')||'';
-    const _isNewDay=(_stuLastDate!==_stuToday);
-    if(_isNewDay){gpStuLocalMod=0;localStorage.setItem('gp_stu_last_date',_stuToday);}
-    // ── Step 1: Cheap lastMod check — skip if nothing changed ──
-    const lmr=await fetch(gpStuCfg.url+'/'+gpStuCfg.code+'/lastMod.json');
-    if(lmr.ok){
-      const remMod=await lmr.json();
-      if(!_isNewDay&&remMod&&remMod===gpStuLocalMod)return;
-    }
-    // ── Step 2: Full fetch ──
-    var r=await fetch(gpStuCfg.url+'/'+gpStuCfg.code+'.json');
-    if(!r.ok)return;
-    var d=await r.json();
-    if(!d||!d.students)return;
-    gpStuLocalMod=d.lastMod||0;
-    var rawRemote=Array.isArray(d.students)?d.students:(d.students.__empty?[]:Object.values(d.students));
-    // ── ALWAYS REPLACE — Firebase = single source of truth ──
-    // Local is replaced on every fetch (deletions reflect within 30s)
-    // S.students only set after successful fetch — preserved on failure
-    var normalized=[];
-    rawRemote.forEach(function(rs){
-      var adm=(rs.admNo||rs.admissionNumber||'').trim();
-      if(!adm)return;
-      normalized.push({
-        name:rs.name||'',
-        admissionNumber:adm,
-        class:rs.cls||rs.class||'',
-        fatherName:rs.fatherName||'',
-        motherName:rs.motherName||'',
-        busNumber:rs.busNumber||rs.bus||'',
-        phone:(rs.phone||rs.mobile||rs.contact||'').replace(/[^0-9]/g,''),
-        address:rs.address||rs.addr||''
-      });
+  _gpStuMirror={};
+  _gpStuES=new EventSource(gpStuCfg.url+'/'+gpStuCfg.code+'.json');
+  const onEvt=(ev)=>{
+    try{
+      const d=JSON.parse(ev.data);
+      _applyRTPatch(_gpStuMirror,d.path,d.data,ev.type==='patch');
+      gpStuApplyMirror();
+    }catch(e){}
+  };
+  _gpStuES.addEventListener('put',onEvt);
+  _gpStuES.addEventListener('patch',onEvt);
+  _gpStuES.onerror=()=>{};
+}
+function gpStuApplyMirror(){
+  var d=_gpStuMirror;
+  if(!d||!d.students)return;
+  gpStuLocalMod=d.lastMod||0;
+  var rawRemote=Array.isArray(d.students)?d.students:(d.students.__empty?[]:Object.values(d.students));
+  var normalized=[];
+  rawRemote.forEach(function(rs){
+    var adm=(rs.admNo||rs.admissionNumber||'').trim();
+    if(!adm)return;
+    normalized.push({
+      name:rs.name||'',
+      admissionNumber:adm,
+      class:rs.cls||rs.class||'',
+      fatherName:rs.fatherName||'',
+      motherName:rs.motherName||'',
+      busNumber:rs.busNumber||rs.bus||'',
+      phone:(rs.phone||rs.mobile||rs.contact||'').replace(/[^0-9]/g,''),
+      address:rs.address||rs.addr||''
     });
-    S.students=normalized;
-    saveLocal();renderStu();popBusSel();updBadge();
-    _gpStuResetTimer(30);
-    var fsEl2=document.getElementById('gp-stu-fetch-status');
-    if(fsEl2&&!fsEl2.textContent.includes('Force'))fsEl2.textContent='✅ Synced — '+new Date().toLocaleTimeString();
-  }catch(e){}
+  });
+  S.students=normalized;
+  saveLocal();renderStu();popBusSel();updBadge();
+  var fsEl2=document.getElementById('gp-stu-fetch-status');
+  if(fsEl2&&!fsEl2.textContent.includes('Force'))fsEl2.textContent='✅ Live — '+new Date().toLocaleTimeString();
 }
 async function gpStuPushShared(){
   if(!gpStuCfg.url||!gpStuCfg.code)return;
@@ -5908,7 +5906,9 @@ const R={entries:[],nextSeq:{},overrideSeq:{},lastMod:0};
 let STUDENTS=[];
 let curFY='';
 let fbCfg={url:'',code:''},fbIv=null,fbLocalMod=0;
+let _fbMirror={},_fbES=null;
 let fbStuCfg={url:'',code:''},fbStuIv=null,fbStuLocalMod=0;
+let _fbStuMirror={},_fbStuES=null;
 let waPendingPhone='';
 let stuPage=1,stuFiltered=[];
 const STU_PAGE=30;
@@ -5951,9 +5951,9 @@ function _refInit(){
   RefMetaWACfg={phoneNumberId:CFG.metaPhoneId||'',accessToken:CFG.metaToken||'',enabled:(CFG.waSendMode||'web')==='meta',adminEnabled:!!CFG.metaAdminEnabled,templateName:CFG.metaTemplate||'',langCode:CFG.metaLang||'en_US',adminPhone:CFG.metaAdminPhone||''};
   if(CFG.adminAlertEnabled===undefined)CFG.adminAlertEnabled=true;
   const fu=localStorage.getItem('ref_fb_url'),fc=localStorage.getItem('ref_fb_code');
-  if(fu&&fc){fbCfg={url:fu,code:fc};fbFetchAll();if(fbIv)clearInterval(fbIv);fbIv=setInterval(fbFetchAll,8000);}
+  if(fu&&fc){fbCfg={url:fu,code:fc};fbStartSync();}
   const su=localStorage.getItem('ref_fb_stu_url'),sc=localStorage.getItem('ref_fb_stu_code');
-  if(su&&sc){fbStuCfg={url:su,code:sc};fbStuFetch();if(fbStuIv)clearInterval(fbStuIv);fbStuIv=setInterval(fbStuFetch,15000);_fbStuStartTimer(15);}
+  if(su&&sc){fbStuCfg={url:su,code:sc};fbStuStartSync();}
   loadLocal();curFY=getCurrentFY();applyLabels();renderFYSelect();renderDashboard();
   populateDataLists();document.getElementById('f-date').value=todayStr();renderStatusSelect();renderStudentList();
   const exS=document.getElementById('ex-scope');
@@ -7171,16 +7171,34 @@ async function fbPushPublic(){
 }
 
 // ─── FIREBASE — REGISTER ─────────────────────────────────
-async function fbFetchAll(){
+// ── Real-time sync (EventSource) — replaces the old 8-second poll. Same
+//    protocol GatePass's _gpES already uses: the browser opens one
+//    persistent connection to Firebase's REST streaming endpoint, gets the
+//    full node once on connect ("put" at path "/"), then only ever
+//    receives small put/patch deltas for whatever actually changed —
+//    no more repeated full-node re-fetches every 8s regardless of change. ──
+function fbStopSync(){ if(_fbES){ try{_fbES.close();}catch(e){} _fbES=null; } }
+function fbStartSync(){
+  fbStopSync();
   if(!fbCfg.url||!fbCfg.code)return;
-  try{
-    // ── Step 1: Cheap lastMod check (~50 bytes) — skip full download if unchanged ──
-    const lmr=await fetch(`${fbCfg.url}/${fbCfg.code}/lastMod.json`);
-    if(lmr.ok){const remMod=await lmr.json();if(remMod&&remMod===fbLocalMod)return;}
-    // ── Step 2: Full fetch only when something changed ──
-    const r=await fetch(`${fbCfg.url}/${fbCfg.code}.json`);if(!r.ok)throw 0;const d=await r.json();
-    if(d){const sm=d.lastMod||0;if(sm!==fbLocalMod){const toArr=v=>Array.isArray(v)?v:(v&&v.__empty)?[]:(v!=null?v:null);const ents=toArr(d.entries);if(ents!==null)R.entries=ents;if(d.nextSeq)R.nextSeq=d.nextSeq;if(d.overrideSeq)R.overrideSeq=d.overrideSeq;if(d.reclaimedSeqs)R.reclaimedSeqs=d.reclaimedSeqs;fbLocalMod=sm;saveLocal();renderFYSelect();renderRegister();renderDashboard();populateDataLists();}}
-  }catch(e){}
+  _fbMirror={};
+  _fbES=new EventSource(`${fbCfg.url}/${fbCfg.code}.json`);
+  const onEvt=(ev)=>{
+    try{
+      const d=JSON.parse(ev.data);
+      _applyRTPatch(_fbMirror,d.path,d.data,ev.type==='patch');
+      fbApplyMirror();
+    }catch(e){}
+  };
+  _fbES.addEventListener('put',onEvt);
+  _fbES.addEventListener('patch',onEvt);
+  _fbES.onerror=()=>{}; // EventSource retries the connection on its own
+}
+function fbApplyMirror(){
+  const d=_fbMirror;
+  if(!d)return;
+  const sm=d.lastMod||0;
+  if(sm!==fbLocalMod){const toArr=v=>Array.isArray(v)?v:(v&&v.__empty)?[]:(v!=null?v:null);const ents=toArr(d.entries);if(ents!==null)R.entries=ents;if(d.nextSeq)R.nextSeq=d.nextSeq;if(d.overrideSeq)R.overrideSeq=d.overrideSeq;if(d.reclaimedSeqs)R.reclaimedSeqs=d.reclaimedSeqs;fbLocalMod=sm;saveLocal();renderFYSelect();renderRegister();renderDashboard();populateDataLists();}
 }
 async function fbPush(){
   R.lastMod=Date.now();fbLocalMod=R.lastMod;saveLocal();if(!fbCfg.url||!fbCfg.code)return;
@@ -7189,44 +7207,53 @@ async function fbPush(){
 }
 function loadFBCfg(){document.getElementById('fb-url').value=localStorage.getItem('ref_fb_url')||'';document.getElementById('fb-code').value=localStorage.getItem('ref_fb_code')||'';}
 async function testFBCfg(){const url=document.getElementById('fb-url').value.trim().replace(/\/$/,'');const code=document.getElementById('fb-code').value.trim();if(!url||!code){fbSt('Fill both fields','var(--red)');return;}fbSt('Testing…','var(--amber)');try{const r=await fetch(`${url}/${code}/ping.json`,{method:'PUT',body:JSON.stringify(1)});if(!r.ok)throw 0;fbSt('Connected!','var(--green)');}catch{fbSt('Connection failed','var(--red)');}}
-async function saveFBCfg(){const url=document.getElementById('fb-url').value.trim().replace(/\/$/,'');const code=document.getElementById('fb-code').value.trim();if(!url||!code){fbSt('Fill both fields','var(--red)');return;}fbSt('Saving…','var(--amber)');try{const r=await fetch(`${url}/${code}/ping.json`,{method:'PUT',body:JSON.stringify(1)});if(!r.ok)throw 0;localStorage.setItem('ref_fb_url',url);localStorage.setItem('ref_fb_code',code);fbCfg={url,code};fbSt('Connected!','var(--green)');fbFetchAll();if(fbIv)clearInterval(fbIv);fbIv=setInterval(fbFetchAll,8000);}catch{fbSt('Connection failed','var(--red)');}}
-function disconnFB(){if(!confirm('Disconnect from this database?'))return;localStorage.removeItem('ref_fb_url');localStorage.removeItem('ref_fb_code');fbCfg={url:'',code:''};if(fbIv)clearInterval(fbIv);fbSt('Disconnected','var(--muted)');toast('Database disconnected.','inf');}
+async function saveFBCfg(){const url=document.getElementById('fb-url').value.trim().replace(/\/$/,'');const code=document.getElementById('fb-code').value.trim();if(!url||!code){fbSt('Fill both fields','var(--red)');return;}fbSt('Saving…','var(--amber)');try{const r=await fetch(`${url}/${code}/ping.json`,{method:'PUT',body:JSON.stringify(1)});if(!r.ok)throw 0;localStorage.setItem('ref_fb_url',url);localStorage.setItem('ref_fb_code',code);fbCfg={url,code};fbSt('Connected! (live sync)','var(--green)');fbStartSync();}catch{fbSt('Connection failed','var(--red)');}}
+function disconnFB(){if(!confirm('Disconnect from this database?'))return;localStorage.removeItem('ref_fb_url');localStorage.removeItem('ref_fb_code');fbCfg={url:'',code:''};fbStopSync();fbSt('Disconnected','var(--muted)');toast('Database disconnected.','inf');}
 function fbSt(m,c){const el=document.getElementById('fb-status');el.textContent=m;el.style.color=c;}
 
 // ─── FIREBASE — STUDENTS ─────────────────────────────────
-async function fbStuFetch(){
+// ── Real-time sync (EventSource) — replaces the old 15-second poll. Same reasoning as fbStartSync above. ──
+function fbStuStopSync(){ if(_fbStuES){ try{_fbStuES.close();}catch(e){} _fbStuES=null; } }
+function fbStuStartSync(){
+  fbStuStopSync();
   if(!fbStuCfg.url||!fbStuCfg.code)return;
-  try{
-    // ── Step 1: Cheap lastMod check (~50 bytes) — skip full download if unchanged ──
-    const lmr=await fetch(`${fbStuCfg.url}/${fbStuCfg.code}/lastMod.json`);
-    if(lmr.ok){const remMod=await lmr.json();if(remMod&&remMod===fbStuLocalMod){_fbStuResetTimer(15);return;}}
-    // ── Step 2: Full fetch only when something changed ──
-    const r=await fetch(`${fbStuCfg.url}/${fbStuCfg.code}.json`);if(!r.ok)throw 0;const d=await r.json();
-    if(d){
-      const sm=d.lastMod||0;
-      if(sm!==fbStuLocalMod){
-        const toArr=v=>Array.isArray(v)?v:(v&&v.__empty)?[]:(v!=null?Object.values(v):null);
-        const rawStus=toArr(d.students);
-        if(rawStus!==null){
-          // ── Normalize: Gatepass uses admissionNumber+class; Reference uses admNo+cls ──
-          STUDENTS=rawStus.map(s=>({
-            id:       s.id||uid(),
-            name:     s.name||'',
-            admNo:    s.admNo||s.admissionNumber||'',
-            cls:      s.cls||s.class||'',
-            fatherName: s.fatherName||'',
-            motherName: s.motherName||'',
-            busNumber:  s.busNumber||s.bus||'',
-            phone:      s.phone||s.mobile||s.contact||'',
-            address:    s.address||s.addr||''
-          }));
-        }
-        fbStuLocalMod=sm;saveLocal();renderStudentList();populateDataLists();
-      }
-      _fbStuResetTimer(15);
-      const fsEl=document.getElementById('fb-stu-fetch-status');if(fsEl&&fsEl.textContent.startsWith('⏳'))fsEl.textContent='✅ Synced — '+new Date().toLocaleTimeString();
+  _fbStuMirror={};
+  _fbStuES=new EventSource(`${fbStuCfg.url}/${fbStuCfg.code}.json`);
+  const onEvt=(ev)=>{
+    try{
+      const d=JSON.parse(ev.data);
+      _applyRTPatch(_fbStuMirror,d.path,d.data,ev.type==='patch');
+      fbStuApplyMirror();
+    }catch(e){}
+  };
+  _fbStuES.addEventListener('put',onEvt);
+  _fbStuES.addEventListener('patch',onEvt);
+  _fbStuES.onerror=()=>{};
+}
+function fbStuApplyMirror(){
+  const d=_fbStuMirror;
+  if(!d)return;
+  const sm=d.lastMod||0;
+  if(sm!==fbStuLocalMod){
+    const toArr=v=>Array.isArray(v)?v:(v&&v.__empty)?[]:(v!=null?Object.values(v):null);
+    const rawStus=toArr(d.students);
+    if(rawStus!==null){
+      // ── Normalize: Gatepass uses admissionNumber+class; Reference uses admNo+cls ──
+      STUDENTS=rawStus.map(s=>({
+        id:       s.id||uid(),
+        name:     s.name||'',
+        admNo:    s.admNo||s.admissionNumber||'',
+        cls:      s.cls||s.class||'',
+        fatherName: s.fatherName||'',
+        motherName: s.motherName||'',
+        busNumber:  s.busNumber||s.bus||'',
+        phone:      s.phone||s.mobile||s.contact||'',
+        address:    s.address||s.addr||''
+      }));
     }
-  }catch(e){}
+    fbStuLocalMod=sm;saveLocal();renderStudentList();populateDataLists();
+  }
+  const fsEl=document.getElementById('fb-stu-fetch-status');if(fsEl)fsEl.textContent='✅ Live — '+new Date().toLocaleTimeString();
 }
 // syncRefStudentsToGp removed — Ref ↔ GP sync happens only via Firebase
 async function fbStuPush(){
@@ -7247,8 +7274,8 @@ async function fbStuPush(){
 }
 function loadFBStuCfg(){document.getElementById('fb-stu-url').value=localStorage.getItem('ref_fb_stu_url')||'';document.getElementById('fb-stu-code').value=localStorage.getItem('ref_fb_stu_code')||'';}
 async function testFBStuCfg(){const url=document.getElementById('fb-stu-url').value.trim().replace(/\/$/,'');const code=document.getElementById('fb-stu-code').value.trim();if(!url||!code){fbStuSt('Fill both fields','var(--red)');return;}fbStuSt('Testing…','var(--amber)');try{const r=await fetch(`${url}/${code}/ping.json`,{method:'PUT',body:JSON.stringify(1)});if(!r.ok)throw 0;fbStuSt('Connected!','var(--green)');}catch{fbStuSt('Failed','var(--red)');}}
-async function saveFBStuCfg(){const url=document.getElementById('fb-stu-url').value.trim().replace(/\/$/,'');const code=document.getElementById('fb-stu-code').value.trim();if(!url||!code){fbStuSt('Fill both fields','var(--red)');return;}fbStuSt('Saving…','var(--amber)');try{const r=await fetch(`${url}/${code}/ping.json`,{method:'PUT',body:JSON.stringify(1)});if(!r.ok)throw 0;localStorage.setItem('ref_fb_stu_url',url);localStorage.setItem('ref_fb_stu_code',code);fbStuCfg={url,code};fbStuSt('Connected!','var(--green)');fbStuFetch();if(fbStuIv)clearInterval(fbStuIv);fbStuIv=setInterval(fbStuFetch,15000);_fbStuStartTimer(15);}catch{fbStuSt('Failed','var(--red)');}}
-function disconnFBStu(){if(!confirm('Disconnect the student database?'))return;localStorage.removeItem('ref_fb_stu_url');localStorage.removeItem('ref_fb_stu_code');fbStuCfg={url:'',code:''};if(fbStuIv)clearInterval(fbStuIv);_fbStuStopTimer();fbStuSt('Disconnected','var(--muted)');toast('Student database disconnected.','inf');}
+async function saveFBStuCfg(){const url=document.getElementById('fb-stu-url').value.trim().replace(/\/$/,'');const code=document.getElementById('fb-stu-code').value.trim();if(!url||!code){fbStuSt('Fill both fields','var(--red)');return;}fbStuSt('Saving…','var(--amber)');try{const r=await fetch(`${url}/${code}/ping.json`,{method:'PUT',body:JSON.stringify(1)});if(!r.ok)throw 0;localStorage.setItem('ref_fb_stu_url',url);localStorage.setItem('ref_fb_stu_code',code);fbStuCfg={url,code};fbStuSt('Connected! (live sync)','var(--green)');fbStuStartSync();}catch{fbStuSt('Failed','var(--red)');}}
+function disconnFBStu(){if(!confirm('Disconnect the student database?'))return;localStorage.removeItem('ref_fb_stu_url');localStorage.removeItem('ref_fb_stu_code');fbStuCfg={url:'',code:''};fbStuStopSync();_fbStuStopTimer();fbStuSt('Disconnected','var(--muted)');toast('Student database disconnected.','inf');}
 // ─── STU SYNC TIMER ───
 let _fbStuTimerIv=null,_fbStuTimerCount=0;
 function _fbStuStartTimer(sec){
@@ -7270,14 +7297,13 @@ function _fbStuStopTimer(){
 async function fbForceFetchStu(){
   if(!fbStuCfg.url||!fbStuCfg.code){toast('Student DB not configured — please save first','err');return;}
   fbStuLocalMod=0;
-  const stEl=document.getElementById('fb-stu-status');if(stEl)stEl.textContent='Force fetching…';
-  const fsEl=document.getElementById('fb-stu-fetch-status');if(fsEl)fsEl.textContent='⏳ Fetching from Firebase…';
-  _fbStuResetTimer(15);
+  const stEl=document.getElementById('fb-stu-status');if(stEl)stEl.textContent='Reconnecting…';
+  const fsEl=document.getElementById('fb-stu-fetch-status');if(fsEl)fsEl.textContent='⏳ Reconnecting to Firebase…';
   try{
-    await fbStuFetch();
-    if(fsEl)fsEl.textContent='✅ Force fetch done — '+new Date().toLocaleTimeString();
-    toast('✅ Students force fetched from Firebase');
-  }catch(e){if(fsEl)fsEl.textContent='❌ Fetch failed — check connection';}
+    fbStuStartSync(); // live connection — reconnecting re-delivers a fresh full snapshot
+    if(stEl)stEl.textContent='Connected! (live sync)';
+    toast('✅ Reconnected — fresh snapshot incoming');
+  }catch(e){if(fsEl)fsEl.textContent='❌ Reconnect failed — check connection';}
 }
 function fbStuSt(m,c){const el=document.getElementById('fb-stu-status');el.textContent=m;el.style.color=c;}
 
@@ -8849,6 +8875,8 @@ const SETTINGS_EXPORT_KEYS=[
   'ref_cfg','ref_fs_cfg','ref_od_cfg','ref_wix_cfg','ref_extra_fys',
   // Due List
   'dl_col_map_v1','dl_sheet_v1','dl_class_mode_v1','dl_wa_settings','dl_auto_reload','dl_pinned_sheet','dl_settings_pw','dl_fb_url','dl_fb_code','dl_txn_fb_url','dl_txn_fb_code',
+  'dl_rzp_proxy_url','dl_rzp_redirect_url','dl_app_token',
+  'dl_fcm_config','dl_fcm_vapid',
   // Attendance
   'att_worker_url','att_settings_pw','att_calendar_editable',
   // WA Inbox
@@ -8862,7 +8890,7 @@ const APP_STORAGE_KEYS = {
   gatepass: ['gp_url','gp_code','gp_local','gp_local_mod','gp_wa_cfg','gp_meta_wa_cfg','gp_tg_cfg','gp_force_refresh','gp_qp_thresh','gp_qp_window','gp_signature','gp_stu_url','gp_stu_code','gp_stu_last_fetch_date','gp_od_cfg','gp_ptg_cfg','gp_sibling_enabled','gp_photo_mandatory'],
   register: ['ref_cfg','ref_data','ref_fb_url','ref_fb_code','ref_fb_stu_url','ref_fb_stu_code','ref_fs_cfg','ref_od_cfg','ref_tg_cfg','ref_wix_cfg','ref_students','ref_extra_fys'],
   theme:    ['lis_theme','lis_sb'],
-  duelist:  ['dl_data_v1','dl_col_map_v1','dl_sheet_v1','dl_class_mode_v1','dl_wa_settings','dl_auto_reload','dl_pinned_sheet','dl_settings_pw','dl_fb_url','dl_fb_code','dl_push_fb_url','dl_txn_fb_url','dl_txn_fb_code','dl_settings'],
+  duelist:  ['dl_data_v1','dl_col_map_v1','dl_sheet_v1','dl_class_mode_v1','dl_wa_settings','dl_auto_reload','dl_pinned_sheet','dl_settings_pw','dl_fb_url','dl_fb_code','dl_push_fb_url','dl_txn_fb_url','dl_txn_fb_code','dl_settings','dl_rzp_proxy_url','dl_rzp_redirect_url','dl_app_token','dl_fcm_config','dl_fcm_vapid','dl_fcm_token'],
   attendance: ['att_worker_url','att_settings_pw','att_calendar_editable'],
 };
 function clearAppStorage(app){
