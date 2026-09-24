@@ -17,6 +17,8 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-messaging-compat.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
 <style>
 /* ═══ SHELL THEME ═══ */
@@ -3169,6 +3171,29 @@ Reason: {reason}"></textarea>
                 <div id="dl-txn-fb-status" style="font-size:11px;color:#166534;margin-top:7px;min-height:16px;font-weight:600"></div>
                 <div style="font-size:10px;color:#a89f92;margin-top:4px;line-height:1.5">Payments captured by the worker land here and stream live into the Processed Transactions tab.</div>
               </div>
+            </div>
+          </div>
+
+          <div class="dl-acc">
+            <button class="dl-acc-hdr" onclick="this.closest('.dl-acc').classList.toggle('open')">
+              <span class="dl-acc-hdr-icon">🔔</span>
+              <div class="dl-acc-hdr-info">
+                <div class="dl-acc-hdr-title">Push Notifications</div>
+                <div class="dl-acc-hdr-sub">Get notified the instant a payment comes in</div>
+              </div>
+              <span class="dl-acc-arrow">▼</span>
+            </button>
+            <div class="dl-acc-body">
+              <label class="dl-lbl" style="margin-top:10px">Firebase Config (Firebase console → Project settings → General → Your apps → SDK setup and config — paste the whole snippet's object)</label>
+              <textarea id="dl-fcm-config" class="dl-inp" rows="4" placeholder='{"apiKey":"...","authDomain":"...","projectId":"...","messagingSenderId":"...","appId":"..."}' style="font-family:'JetBrains Mono',monospace;font-size:11px;min-height:70px;resize:vertical"></textarea>
+              <label class="dl-lbl" style="margin-top:8px">VAPID Key (Firebase console → Project settings → Cloud Messaging → Web Push certificates → Generate key pair)</label>
+              <input id="dl-fcm-vapid" class="dl-inp" type="text" placeholder="B...(long key)" style="margin-bottom:10px"/>
+              <button onclick="dlFcmSaveConfig()" style="width:100%;background:#16a34a;color:#fff;border:none;border-radius:9px;padding:10px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">💾 Save Config</button>
+              <div id="dl-fcm-save-status" style="font-size:11px;color:#166534;margin-top:7px;min-height:16px;font-weight:600"></div>
+
+              <button onclick="dlFcmEnable()" id="dl-fcm-enable-btn" style="width:100%;background:#2563eb;color:#fff;border:none;border-radius:9px;padding:10px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;margin-top:10px">🔔 Enable Notifications on this Device</button>
+              <div id="dl-fcm-status" style="font-size:11px;color:#166534;margin-top:7px;min-height:16px;font-weight:600"></div>
+              <div style="font-size:10px;color:#a89f92;margin-top:4px;line-height:1.5">Needs <code>firebase-messaging-sw.js</code> uploaded at your site's root (same folder this page is hosted in). Repeat "Enable Notifications" on every device/browser you want alerts on.</div>
             </div>
           </div>
 
@@ -10305,6 +10330,137 @@ window.dlRzpSaveConfig = function(){
     if(atkEl) atkEl.value = localStorage.getItem(DL_APP_TOKEN_KEY)||'';
   };
 })();
+
+// ═══════════════════════════════════════════════════════
+//  PUSH NOTIFICATIONS (Firebase Cloud Messaging)
+//  One notification per paid transaction (see worker.js's
+//  sendFcmNotification, called from every payment-success branch).
+// ═══════════════════════════════════════════════════════
+
+var DL_FCM_CONFIG_KEY = 'dl_fcm_config';   // Firebase project config JSON, as a string
+var DL_FCM_VAPID_KEY  = 'dl_fcm_vapid';    // Web Push certificate key from Firebase console
+var DL_FCM_TOKEN_KEY  = 'dl_fcm_token';    // this device's own registered FCM token, once enabled
+var _dlFcmApp = null, _dlFcmMessaging = null;
+
+window.dlFcmSaveConfig = function(){
+  var cfgEl = document.getElementById('dl-fcm-config');
+  var vapEl = document.getElementById('dl-fcm-vapid');
+  var st = document.getElementById('dl-fcm-save-status');
+  var raw = (cfgEl && cfgEl.value || '').trim();
+  var vapid = (vapEl && vapEl.value || '').trim();
+
+  if(raw){
+    try{ JSON.parse(raw); } // just validating — stored as the exact string the user pasted
+    catch(e){
+      if(st){ st.textContent='❌ Invalid JSON — paste the whole {…} config object'; st.style.color='#dc2626'; }
+      return;
+    }
+  }
+  localStorage.setItem(DL_FCM_CONFIG_KEY, raw);
+  localStorage.setItem(DL_FCM_VAPID_KEY, vapid);
+  if(st){ st.textContent='✅ Saved!'; st.style.color='#166534'; setTimeout(function(){ st.textContent=''; },2000); }
+};
+
+(function(){
+  var _origOpen2 = window.dlOpenSettings;
+  window.dlOpenSettings = function(){
+    if(_origOpen2) _origOpen2.apply(this,arguments);
+    var cfgEl = document.getElementById('dl-fcm-config');
+    var vapEl = document.getElementById('dl-fcm-vapid');
+    if(cfgEl) cfgEl.value = localStorage.getItem(DL_FCM_CONFIG_KEY)||'';
+    if(vapEl) vapEl.value = localStorage.getItem(DL_FCM_VAPID_KEY)||'';
+  };
+})();
+
+window.dlFcmEnable = async function(){
+  var st = document.getElementById('dl-fcm-status');
+  var btn = document.getElementById('dl-fcm-enable-btn');
+  function fail(msg){ if(st){ st.textContent='❌ '+msg; st.style.color='#dc2626'; } if(btn) btn.disabled=false; }
+  function ok(msg){ if(st){ st.textContent='✅ '+msg; st.style.color='#166534'; } }
+
+  var proxyUrl = (localStorage.getItem(DL_RZP_PROXY_KEY)||'').replace(/\/+$/,'');
+  var cfgRaw   = localStorage.getItem(DL_FCM_CONFIG_KEY)||'';
+  var vapid    = localStorage.getItem(DL_FCM_VAPID_KEY)||'';
+
+  if(!proxyUrl){ fail('Save the Cloudflare Worker URL above first'); return; }
+  if(!cfgRaw || !vapid){ fail('Save Firebase Config + VAPID Key above first'); return; }
+  if(!('serviceWorker' in navigator)){ fail('This browser does not support push notifications'); return; }
+
+  var cfg;
+  try{ cfg = JSON.parse(cfgRaw); }catch(e){ fail('Firebase Config is not valid JSON'); return; }
+
+  if(btn) btn.disabled=true;
+  if(st){ st.textContent='Requesting permission…'; st.style.color='#166534'; }
+
+  try{
+    var perm = await Notification.requestPermission();
+    if(perm !== 'granted'){ fail('Notification permission was denied in the browser'); return; }
+
+    if(!_dlFcmApp){
+      _dlFcmApp = firebase.apps && firebase.apps.length ? firebase.apps[0] : firebase.initializeApp(cfg);
+      _dlFcmMessaging = firebase.messaging();
+      // Foreground handler — SW only shows notifications when the tab is
+      // NOT focused; when it IS, FCM delivers here instead, so show our
+      // own toast so a payment while you're actively looking still alerts.
+      _dlFcmMessaging.onMessage(function(payload){
+        var n = payload.notification || {};
+        if(typeof toast === 'function') toast('🔔 '+(n.title||'Notification')+': '+(n.body||''));
+        else if(n.title) alert(n.title+'\n'+(n.body||''));
+      });
+    }
+
+    if(st) st.textContent='Registering service worker…';
+    var swUrl = './firebase-messaging-sw.js?' + new URLSearchParams(cfg).toString();
+    var reg = await navigator.serviceWorker.register(swUrl);
+
+    if(st) st.textContent='Getting device token…';
+    var token = await _dlFcmMessaging.getToken({ vapidKey: vapid, serviceWorkerRegistration: reg });
+    if(!token){ fail('Could not get a device token — check VAPID key'); return; }
+
+    if(st) st.textContent='Registering with server…';
+    var r = await fetch(proxyUrl+'/register-fcm-token', {
+      method: 'POST',
+      headers: dlApiHeaders({'Content-Type':'application/json'}),
+      body: JSON.stringify({ token: token })
+    });
+    if(!r.ok) throw new Error('HTTP '+r.status);
+
+    localStorage.setItem(DL_FCM_TOKEN_KEY, token);
+    ok('Notifications enabled on this device!');
+    if(btn) btn.disabled=false;
+  }catch(e){
+    fail(e.message || 'Something went wrong');
+  }
+};
+
+// Pings the worker to say "this device is active right now". Marks it
+// eligible for real-time pushes, and if it had payments queued up from
+// while it was away (laptop off, tab closed), triggers ONE summary
+// notification for those instead of a burst — see /fcm-heartbeat in
+// worker.js. Silent no-op if notifications were never enabled on this
+// device, or if the Worker URL isn't configured — never shows an error to
+// the user, this runs automatically in the background.
+window.dlFcmHeartbeat = function(){
+  var token = localStorage.getItem(DL_FCM_TOKEN_KEY);
+  var proxyUrl = (localStorage.getItem(DL_RZP_PROXY_KEY)||'').replace(/\/+$/,'');
+  if(!token || !proxyUrl) return;
+  fetch(proxyUrl+'/fcm-heartbeat', {
+    method: 'POST',
+    headers: dlApiHeaders({'Content-Type':'application/json'}),
+    body: JSON.stringify({ token: token })
+  }).catch(function(){ /* best-effort, no UI feedback needed */ });
+};
+
+// Fire a heartbeat on load, whenever the tab regains focus/visibility
+// (covers "laptop woke up, tab was already open"), and whenever the
+// browser reports it's back online (covers a flaky-wifi reconnect too,
+// not just a full laptop-was-off case).
+window.addEventListener('load', function(){ setTimeout(dlFcmHeartbeat, 1500); });
+document.addEventListener('visibilitychange', function(){
+  if(document.visibilityState === 'visible') dlFcmHeartbeat();
+});
+window.addEventListener('online', dlFcmHeartbeat);
+setInterval(dlFcmHeartbeat, 5*60*1000); // keep last_seen fresh during a long open session
 
 // ═══════════════════════════════════════════════════════
 //  PENDING QR TRACKER
