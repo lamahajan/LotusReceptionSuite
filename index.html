@@ -3280,9 +3280,13 @@ Reason: {reason}"></textarea>
               <div style="font-size:10px;font-weight:800;color:#8a6428;text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px">Auto-Delete</div>
               <div style="background:#fff8e6;border:1.5px solid #fcd34d;border-radius:9px;padding:10px 12px">
                 <label style="display:flex;align-items:center;gap:9px;cursor:pointer">
-                  <input type="checkbox" id="dl-proc-autodel" style="accent-color:#b5883e;width:15px;height:15px" onchange="dlSaveProcessedSettings()">
-                  <div style="font-size:12px;font-weight:700;color:#92400e">Auto-delete after 15 days</div>
+                  <input type="checkbox" id="dl-proc-autodel" style="accent-color:#b5883e;width:15px;height:15px" onchange="dlSaveProcessedSettings();dlToggleAutoDelDaysUI()">
+                  <div style="font-size:12px;font-weight:700;color:#92400e">Auto-delete processed after</div>
                 </label>
+                <div id="dl-proc-autodel-days-wrap" style="display:flex;align-items:center;gap:7px;margin-top:9px;padding-top:9px;border-top:1px solid #fcd34d">
+                  <input type="number" id="dl-proc-autodel-days" value="15" min="1" max="365" step="1" style="width:56px;padding:6px 8px;border:1.5px solid #fcd34d;border-radius:7px;font-size:12px;font-weight:700;color:#92400e;text-align:center" onchange="dlSaveProcessedSettings()">
+                  <div style="font-size:12px;font-weight:700;color:#92400e">days</div>
+                </div>
               </div>
             </div>
           </div>
@@ -10619,15 +10623,25 @@ function dlLoadProcessedSettings(){
 window.dlSaveProcessedSettings = function(){
   var mode = document.querySelector('input[name="dl-processed-mode"]:checked');
   var autoDel = document.getElementById('dl-proc-autodel');
+  var autoDelDaysEl = document.getElementById('dl-proc-autodel-days');
+  var autoDelDays = autoDelDaysEl ? parseInt(autoDelDaysEl.value, 10) : 15;
+  if(!autoDelDays || autoDelDays < 1) autoDelDays = 15;
   var sortMode = document.querySelector('input[name="dl-txn-sort-mode"]:checked');
   var settings = {
     mode: mode ? mode.value : 'show',
     autoDel: autoDel ? autoDel.checked : false,
+    autoDelDays: autoDelDays,
     sort: sortMode ? sortMode.value : 'newest'
   };
   try{ localStorage.setItem(DL_PROC_SETTINGS_KEY, JSON.stringify(settings)); }catch(e){}
   try{ localStorage.setItem(DL_TXN_SORT_KEY, settings.sort); }catch(e){}
   dlTxnRender();
+};
+
+window.dlToggleAutoDelDaysUI = function(){
+  var autoDel = document.getElementById('dl-proc-autodel');
+  var wrap = document.getElementById('dl-proc-autodel-days-wrap');
+  if(wrap) wrap.style.display = (autoDel && autoDel.checked) ? 'flex' : 'none';
 };
 
 function dlInitProcessedSettingsUI(){
@@ -10637,6 +10651,9 @@ function dlInitProcessedSettingsUI(){
   if(radio) radio.checked = true;
   var autoDel = document.getElementById('dl-proc-autodel');
   if(autoDel) autoDel.checked = !!s.autoDel;
+  var autoDelDaysEl = document.getElementById('dl-proc-autodel-days');
+  if(autoDelDaysEl) autoDelDaysEl.value = s.autoDelDays || 15;
+  dlToggleAutoDelDaysUI();
   var sortMode = s.sort || localStorage.getItem(DL_TXN_SORT_KEY) || 'newest';
   var sortRadio = document.getElementById('dl-sort-' + sortMode);
   if(sortRadio) sortRadio.checked = true;
@@ -10750,15 +10767,16 @@ window.dlTxnToggleFromDetail=function(){
   dlTxnOpenDetail(_dlTxnDetailPid); // refresh popup with new state
 };
 
-// Check and auto-delete processed txns older than 15 days from Firebase
+// Check and auto-delete processed txns older than the configured number of days from Firebase
 function dlCheckProcessedAutoDelete(){
   var s = dlLoadProcessedSettings();
   if(!s.autoDel) return;
   var list = dlTxnLoad();
   var now = Date.now();
-  var fifteenDays = 15 * 24 * 60 * 60 * 1000;
+  var days = s.autoDelDays || 15;
+  var thresholdMs = days * 24 * 60 * 60 * 1000;
   var toDelete = list.filter(function(t){
-    return t.processed && t.processedAt && (now - t.processedAt) >= fifteenDays;
+    return t.processed && t.processedAt && (now - t.processedAt) >= thresholdMs;
   });
   if(!toDelete.length) return;
   toDelete.forEach(function(t){
