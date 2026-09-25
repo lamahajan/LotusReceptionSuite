@@ -3047,6 +3047,7 @@ Reason: {reason}"></textarea>
       </div>
       <div style="display:grid;gap:9px;margin-bottom:18px">
         <div style="display:flex;justify-content:space-between;gap:10px;font-size:12px"><span style="color:#94a3b8;flex-shrink:0">Payment ID</span><span id="dl-txnd-pid" style="font-weight:700;color:#0f172a;font-family:monospace;font-size:11px;text-align:right;word-break:break-all"></span></div>
+        <div id="dl-txnd-rrn-row" style="display:none;justify-content:space-between;gap:10px;font-size:12px"><span style="color:#94a3b8;flex-shrink:0">RRN</span><span id="dl-txnd-rrn" style="font-weight:700;color:#0f172a;font-family:monospace;font-size:11px;text-align:right;word-break:break-all"></span></div>
         <div style="display:flex;justify-content:space-between;font-size:12px"><span style="color:#94a3b8">Method</span><span id="dl-txnd-method" style="font-weight:700;color:#0f172a"></span></div>
         <div style="display:flex;justify-content:space-between;font-size:12px"><span style="color:#94a3b8">Date &amp; Time</span><span id="dl-txnd-time" style="font-weight:700;color:#0f172a"></span></div>
         <div style="display:flex;justify-content:space-between;font-size:12px"><span style="color:#94a3b8">Admission No</span><span id="dl-txnd-adm" style="font-weight:700;color:#0f172a"></span></div>
@@ -10741,6 +10742,11 @@ window.dlTxnOpenDetail = function(pid){
   var stEl=document.getElementById('dl-txnd-status');
   if(stEl){ stEl.textContent = isProc?'✅ Processed':'⏳ Not Processed'; stEl.style.color = isProc?'#16a34a':'#d97706'; }
   dlTxnSetText('dl-txnd-pid', t.payment_id||'—');
+  var rrnRow=document.getElementById('dl-txnd-rrn-row');
+  if(rrnRow){
+    if(t.rrn){ rrnRow.style.display='flex'; dlTxnSetText('dl-txnd-rrn', t.rrn); }
+    else rrnRow.style.display='none';
+  }
   dlTxnSetText('dl-txnd-method', method);
   dlTxnSetText('dl-txnd-time', dateStr+' · '+timeStr);
   dlTxnSetText('dl-txnd-adm', t.adm||'—');
