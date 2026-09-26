@@ -3053,6 +3053,7 @@ Reason: {reason}"></textarea>
         <div style="display:flex;justify-content:space-between;font-size:12px"><span style="color:#94a3b8">Admission No</span><span id="dl-txnd-adm" style="font-weight:700;color:#0f172a"></span></div>
         <div style="display:flex;justify-content:space-between;font-size:12px"><span style="color:#94a3b8">Class</span><span id="dl-txnd-cls" style="font-weight:700;color:#0f172a"></span></div>
         <div style="display:flex;justify-content:space-between;font-size:12px"><span style="color:#94a3b8">Mobile</span><span id="dl-txnd-mob" style="font-weight:700;color:#0f172a"></span></div>
+        <div style="display:flex;justify-content:space-between;font-size:12px"><span style="color:#94a3b8">MDB Status</span><span id="dl-txnd-mdb" style="font-weight:700;color:#0f172a"></span></div>
       </div>
       <button id="dl-txnd-toggle" onclick="dlTxnToggleFromDetail()" style="width:100%;border:none;border-radius:10px;padding:12px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit"></button>
     </div>
@@ -3121,6 +3122,8 @@ Reason: {reason}"></textarea>
               <input id="dl-fb-url" class="dl-inp" type="text" placeholder="https://your-db.firebasedatabase.app"/>
               <label class="dl-lbl">Sync Code</label>
               <input id="dl-fb-code" class="dl-inp" type="text" placeholder="e.g. DUELIST" style="margin-bottom:10px"/>
+              <label class="dl-lbl">MDB / ACCDB File Path <span style="font-weight:400;color:#a89f92">(reception PC, read by the local sync tool)</span></label>
+              <input id="dl-mdb-path" class="dl-inp" type="text" placeholder="D:\Unilead\eacademic\1000.CMP\Data.mdb" style="margin-bottom:10px;font-family:'JetBrains Mono',monospace;font-size:11.5px"/>
               <div style="display:flex;align-items:center;gap:8px">
                 <button onclick="dlFbSaveConnect()" style="flex:1;background:#f97316;color:#fff;border:none;border-radius:9px;padding:10px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">🔗 Save &amp; Connect</button>
                 <span id="dl-fb-dot" style="width:10px;height:10px;border-radius:50%;background:#9ca3af;flex-shrink:0"></span>
@@ -9998,11 +10001,19 @@ window.dlCloseProgress=function(){
 // ═══════════════════════════════════════════════════════
 var DL_FB_URL_KEY  = 'dl_fb_url';
 var DL_FB_CODE_KEY = 'dl_fb_code';
+var DL_MDB_PATH_KEY = 'dl_mdb_path';
 var _dlFbById = {};   // live mirror of {code}, keyed by admission number
 var _dlFbES   = null; // open EventSource stream
 
 function dlFbCfg(){
   return { url:(localStorage.getItem(DL_FB_URL_KEY)||'').trim(), code:(localStorage.getItem(DL_FB_CODE_KEY)||'').trim() };
+}
+// Push the MDB/ACCDB path into Firebase under CONFIG (sibling of the Due List
+// code node) so the local offline sync tool can fetch it remotely — same DB,
+// no separate credential needed. Read back via GET {url}/CONFIG.json.
+function dlMdbPathPush(url, path){
+  if(!url) return;
+  fetch(url+'/CONFIG.json',{ method:'PATCH', body: JSON.stringify({ mdbPath: path||'' }) }).catch(function(){});
 }
 function dlFbSetDot(st){
   var d=document.getElementById('dl-fb-dot');
@@ -10051,12 +10062,15 @@ function dlFbStartSync(){
   _dlFbES.onerror=function(){ dlFbSetDot('err'); };
 }
 window.dlFbSaveConnect=function(){
-  var uEl=document.getElementById('dl-fb-url'), cEl=document.getElementById('dl-fb-code');
+  var uEl=document.getElementById('dl-fb-url'), cEl=document.getElementById('dl-fb-code'), mEl=document.getElementById('dl-mdb-path');
   var url=(uEl?uEl.value.trim():'').replace(/\/+$/,'');
   var code=(cEl?cEl.value.trim():'');
+  var mdbPath=(mEl?mEl.value.trim():'');
   if(!url||!code){ dlFbSetStatusText('Fill both fields','#d97706'); return; }
   localStorage.setItem(DL_FB_URL_KEY,url);
   localStorage.setItem(DL_FB_CODE_KEY,code);
+  localStorage.setItem(DL_MDB_PATH_KEY,mdbPath);
+  dlMdbPathPush(url,mdbPath);
   dlFbSetStatusText('✅ Connected! Syncing…','#166534');
   dlFbStartSync();
 };
@@ -10204,6 +10218,7 @@ window.dlPushFileChange = function(inp){
     var cfg=dlFbCfg();
     var uEl=document.getElementById('dl-fb-url'); if(uEl) uEl.value=cfg.url;
     var cEl=document.getElementById('dl-fb-code'); if(cEl) cEl.value=cfg.code;
+    var mEl=document.getElementById('dl-mdb-path'); if(mEl) mEl.value=(localStorage.getItem(DL_MDB_PATH_KEY)||'');
     dlFbSetDot(_dlFbES?'ok':'off');
   };
 })();
@@ -10585,7 +10600,7 @@ function dlTxnSaveLocal(txn){
 function dlShowTxnBadge(){
   var tab = document.getElementById('dl-tb-txn');
   if(!tab) return;
-  var hasUnprocessed = dlTxnLoad().some(function(t){ return !t.processed; });
+  var hasUnprocessed = dlTxnLoad().some(function(t){ return !t.logged_to_mdb; });
   var dot = tab.querySelector('.dl-txn-dot');
   if(hasUnprocessed){
     if(!dot){
@@ -10660,7 +10675,9 @@ function dlInitProcessedSettingsUI(){
   if(sortRadio) sortRadio.checked = true;
 }
 
-// Mark transaction as processed
+// Mark transaction as processed (now a direct alias for "logged to mdb" —
+// grouping/display/sort/badge all key off logged_to_mdb, so this toggle IS
+// the mdb-logged state, not a separate flag that merely mirrors it).
 window.dlMarkProcessed = function(paymentId){
   var list = dlTxnLoad();
   var idx = list.findIndex(function(t){ return t.payment_id === paymentId; });
@@ -10678,39 +10695,69 @@ window.dlMarkProcessed = function(paymentId){
     if(typeof toast==='function') toast('⚠️ This transaction no longer exists on the server — removed');
     return;
   }
-  var nowProcessed, processedAt;
-  if(list[idx].processed){
-    // Toggle off
+  var nowProcessed, loggedAt;
+  if(list[idx].logged_to_mdb){
+    // Toggle off — clears logged_to_mdb too now that the two are unified.
+    // This is the same effect the old separate "Reset MDB Status" action had:
+    // the offline auto-sync tool will re-check (and, if still outstanding,
+    // re-log) this payment on its next run.
     delete list[idx].processed;
     delete list[idx].processedAt;
-    nowProcessed = false; processedAt = null;
+    delete list[idx].logged_to_mdb;
+    delete list[idx].logged_by;
+    delete list[idx].logged_at;
+    nowProcessed = false; loggedAt = null;
   } else {
-    processedAt = Date.now();
+    loggedAt = Date.now();
+    // Ticking "processed" means the admin has already keyed this payment into
+    // the school's Access/mdb fee software by hand.
     list[idx].processed = true;
-    list[idx].processedAt = processedAt;
+    list[idx].processedAt = loggedAt;
+    list[idx].logged_to_mdb = true;
+    list[idx].logged_by = 'manual';
+    list[idx].logged_at = loggedAt;
     nowProcessed = true;
   }
   try{ localStorage.setItem(DL_TXN_KEY, JSON.stringify(list)); }catch(e){}
   dlTxnRender();
-  // Push the new processed status back to Firebase so it isn't only local
-  dlTxnPushProcessed(paymentId, nowProcessed, processedAt);
+  // Push the new status back to Firebase so it isn't only local
+  dlTxnPushProcessed(paymentId, nowProcessed, loggedAt);
   // Schedule Firebase auto-delete check
   dlCheckProcessedAutoDelete();
 };
 
-// Write processed/processedAt fields back to the transaction's node in Firebase.
-// Uses the real Firebase child key (may differ from payment_id) so the write
-// lands on the same record the webhook created, instead of creating a new one.
-function dlTxnPushProcessed(paymentId, isProcessed, processedAt){
+// Write processed/logged_to_mdb fields back to the transaction's node in
+// Firebase. Uses the real Firebase child key (may differ from payment_id) so
+// the write lands on the same record the webhook created, instead of
+// creating a new one.
+function dlTxnPushProcessed(paymentId, isProcessed, loggedAt){
   var cfg = dlTxnFbCfg();
   if(!cfg.url || !cfg.code || !paymentId) return;
   var key = _dlTxnKeyByPid[paymentId] || paymentId;
   var url = cfg.url + '/' + cfg.code + '/' + encodeURIComponent(key) + '.json';
   var body = isProcessed
-    ? { processed:true, processedAt: processedAt||Date.now() }
-    : { processed:null, processedAt:null }; // null deletes the field in Firebase RTDB
+    ? { processed:true, processedAt: loggedAt||Date.now(), logged_to_mdb:true, logged_by:'manual', logged_at: loggedAt||Date.now() }
+    : { processed:null, processedAt:null, logged_to_mdb:null, logged_by:null, logged_at:null }; // null deletes the field in Firebase RTDB
   fetch(url,{ method:'PATCH', body: JSON.stringify(body) }).catch(function(){});
 }
+
+// Now redundant with the main "Mark as Unprocessed" toggle (which also
+// clears logged_to_mdb since the two are unified) — kept only as a console-
+// callable utility in case a narrower reset (without touching `processed`)
+// is ever needed.
+window.dlMarkNotLoggedToMdb = function(paymentId){
+  var list = dlTxnLoad();
+  var idx = list.findIndex(function(t){ return t.payment_id === paymentId; });
+  if(idx === -1 || !_dlTxnKeyByPid[paymentId]) return;
+  delete list[idx].logged_to_mdb; delete list[idx].logged_by; delete list[idx].logged_at;
+  try{ localStorage.setItem(DL_TXN_KEY, JSON.stringify(list)); }catch(e){}
+  dlTxnRender();
+  var cfg = dlTxnFbCfg();
+  if(!cfg.url || !cfg.code) return;
+  var key = _dlTxnKeyByPid[paymentId] || paymentId;
+  var url = cfg.url + '/' + cfg.code + '/' + encodeURIComponent(key) + '.json';
+  fetch(url,{ method:'PATCH', body: JSON.stringify({ logged_to_mdb:null, logged_by:null, logged_at:null }) }).catch(function(){});
+};
 
 // ── Transaction detail popup ──
 var _dlTxnDetailPid = null;
@@ -10732,7 +10779,7 @@ window.dlTxnOpenDetail = function(pid){
   var pc = txnPal[nm.charCodeAt(0)%txnPal.length];
   var student = (window.dlData||[]).find(function(s){ return String(s.adm)===String(t.adm); });
   var mob = String((student&&student.mob)||'').replace(/^91/,'').replace(/^\+91/,'');
-  var isProc = !!t.processed;
+  var isProc = !!t.logged_to_mdb;
 
   var av=document.getElementById('dl-txnd-avatar');
   if(av){ av.textContent=ini; av.style.background=pc[1]; av.style.color=pc[0]; }
@@ -10753,6 +10800,13 @@ window.dlTxnOpenDetail = function(pid){
   dlTxnSetText('dl-txnd-cls', t.cls||'—');
   var mobEl=document.getElementById('dl-txnd-mob');
   if(mobEl) mobEl.innerHTML = mob ? '<a href="tel:'+mob+'" style="color:#0f172a;text-decoration:none;font-weight:700">'+mob+'</a>' : '—';
+
+  var isLogged = !!t.logged_to_mdb;
+  var mdbEl=document.getElementById('dl-txnd-mdb');
+  if(mdbEl){
+    if(isLogged) mdbEl.innerHTML = '<span style="color:#16a34a">✅ Logged</span> <span style="color:#94a3b8;font-weight:600">('+(t.logged_by||'—')+')</span>';
+    else { mdbEl.textContent='⏳ Pending'; mdbEl.style.color='#d97706'; }
+  }
 
   var tgl=document.getElementById('dl-txnd-toggle');
   if(tgl){
@@ -10782,7 +10836,7 @@ function dlCheckProcessedAutoDelete(){
   var days = s.autoDelDays || 15;
   var thresholdMs = days * 24 * 60 * 60 * 1000;
   var toDelete = list.filter(function(t){
-    return t.processed && t.processedAt && (now - t.processedAt) >= thresholdMs;
+    return t.logged_to_mdb && t.logged_at && (now - t.logged_at) >= thresholdMs;
   });
   if(!toDelete.length) return;
   toDelete.forEach(function(t){
@@ -10836,8 +10890,8 @@ window.dlTxnRender = function(){
   var s    = dlLoadProcessedSettings();
   var mode = s.mode || 'show';
 
-  var unprocessed = list.filter(function(t){ return !t.processed; });
-  var processed   = list.filter(function(t){ return t.processed; });
+  var unprocessed = list.filter(function(t){ return !t.logged_to_mdb; });
+  var processed   = list.filter(function(t){ return t.logged_to_mdb; });
 
   var txnPal=[['#6366f1','#ede9fe'],['#0891b2','#cffafe'],['#059669','#d1fae5'],['#d97706','#fef3c7'],['#dc2626','#fee2e2'],['#7c3aed','#f3e8ff'],['#0284c7','#e0f2fe'],['#be185d','#fce7f3']];
 
@@ -10846,7 +10900,7 @@ window.dlTxnRender = function(){
     var dateStr = d.toLocaleDateString('en-IN',{day:'2-digit',month:'short'});
     var timeStr = d.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',hour12:true});
     var amt     = '₹'+(Number(t.amount||0)/100).toLocaleString('en-IN');
-    var isProc  = !!t.processed;
+    var isProc  = !!t.logged_to_mdb;
     var cardOpacity = isProc ? 'opacity:.72;' : '';
     var pid = (t.payment_id||'').replace(/['"]/g,'');
     var nm  = t.name||t.adm||'Student';
