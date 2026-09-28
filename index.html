@@ -9898,7 +9898,14 @@ function dlSendBatch(students,phoneId,token,tmplName,idx,sent,failed,qrMap,proxy
   var daysLeft=10-today.getDate(); // days until 10th
   if(daysLeft<0) daysLeft=0;
 
-  if(tmplName==='dl_1'){
+  // Resolve param-set key: dl_1..dl_4 / due_alert_1..4 (any name ending _N), else by position in list
+  var _pk='';
+  var _m=String(tmplName).match(/(\d)\s*$/);
+  if(_m && +_m[1]>=1 && +_m[1]<=4) _pk='dl_'+_m[1];
+  else {
+    for(var _pi=0;_pi<dlWaTemplates.length;_pi++){ if(dlWaTemplates[_pi].name===tmplName && _pi<4){ _pk='dl_'+(_pi+1); break; } }
+  }
+  if(_pk==='dl_1'){
     // studentname, admno, currentmonth, amount
     bodyParams=[
       {type:'text',text:String(s.name||s.adm||'Student')},
@@ -9906,7 +9913,7 @@ function dlSendBatch(students,phoneId,token,tmplName,idx,sent,failed,qrMap,proxy
       {type:'text',text:currentMonth},
       {type:'text',text:String(Math.round(Number(s.balance)))}
     ];
-  } else if(tmplName==='dl_2'){
+  } else if(_pk==='dl_2'){
     // stdname, admno, numbertoten, currentmonth, amount
     bodyParams=[
       {type:'text',text:String(s.name||s.adm||'Student')},
@@ -9915,7 +9922,7 @@ function dlSendBatch(students,phoneId,token,tmplName,idx,sent,failed,qrMap,proxy
       {type:'text',text:currentMonth},
       {type:'text',text:String(Math.round(Number(s.balance)))}
     ];
-  } else if(tmplName==='dl_3'||tmplName==='dl_4'){
+  } else if(_pk==='dl_3'||_pk==='dl_4'){
     // stdname, admno, month, amount
     bodyParams=[
       {type:'text',text:String(s.name||s.adm||'Student')},
