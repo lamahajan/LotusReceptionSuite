@@ -1212,7 +1212,8 @@ Reason: {reason}"></textarea>
                 <input id="meta-wa-template" class="inp" placeholder="e.g. gatepass_issued" style="font-family:var(--mono);font-size:12px">
                 <div style="font-size:11px;color:var(--muted);margin-top:3px">Leave empty to send plain text (only works within 24hr window)</div>
                 <label class="lbl" style="margin-top:8px">Header Image URL <span style="font-weight:400;font-size:10px;color:var(--muted)">(only if template has an image header)</span></label>
-                <input id="meta-wa-header-img" class="inp" placeholder="https://.../gatepass.png" style="font-family:var(--mono);font-size:12px">
+                <div style="display:flex;gap:6px"><input id="meta-wa-header-img" class="inp" placeholder="https://... URL or uploaded media ID" style="font-family:var(--mono);font-size:12px;flex:1"><button type="button" class="btn" onclick="gpUploadHdr('meta-wa-header-img')" style="white-space:nowrap">⬆ Upload</button></div>
+                <div style="font-size:10px;color:var(--muted);margin-top:3px">Upload puts the image on Meta directly (ID valid ~30 days, re-upload after that). Public URL also works.</div>
               </div>
               <div class="field">
                 <label class="lbl">Language Code</label>
@@ -1229,7 +1230,7 @@ Reason: {reason}"></textarea>
                 </label>
                 <input id="meta-wa-out-template" class="inp" placeholder="e.g. gatepass_exited" style="font-family:var(--mono);font-size:12px">
                 <label class="lbl" style="margin-top:8px">Header Image URL (Gate Out) <span style="font-weight:400;font-size:10px;color:var(--muted)">(only if template has an image header)</span></label>
-                <input id="meta-wa-out-header-img" class="inp" placeholder="https://.../gateout.png" style="font-family:var(--mono);font-size:12px">
+                <div style="display:flex;gap:6px"><input id="meta-wa-out-header-img" class="inp" placeholder="https://... URL or uploaded media ID" style="font-family:var(--mono);font-size:12px;flex:1"><button type="button" class="btn" onclick="gpUploadHdr('meta-wa-out-header-img')" style="white-space:nowrap">⬆ Upload</button></div>
                 <div style="font-size:11px;color:var(--muted);margin-top:3px">Sent to parent when student exits gate. Parameters: {{1}} name &nbsp;|&nbsp; {{2}} class &nbsp;|&nbsp; {{3}} picked by &nbsp;|&nbsp; {{4}} relation &nbsp;|&nbsp; {{5}} date &amp; time &nbsp;|&nbsp; {{6}} reason</div>
               </div>
               <div class="field">
@@ -5177,10 +5178,54 @@ function saveMetaWACfg(){
 }
 
 // Builds the header component for templates that have an IMAGE header in Meta
-function metaHdrComp(url){
-  url=String(url||'').trim();
-  return url?[{type:'header',parameters:[{type:'image',image:{link:url}}]}]:[];
-}
+// Value can be a public https URL, or a numeric Meta media ID (from Upload button)
+window.metaHdrComp=function(v){
+  v=String(v||'').trim();
+  if(!v)return [];
+  var img=/^\d+$/.test(v)?{id:v}:{link:v};
+  return [{type:'header',parameters:[{type:'image',image:img}]}];
+};
+// Uploads an image to Meta (/media) and returns the media ID. Valid ~30 days.
+window.metaUploadImage=async function(file,phoneId,token){
+  if(!file)throw new Error('No file selected');
+  if(!phoneId||!token)throw new Error('Fill Phone Number ID and Access Token first');
+  if(!/^image\/(jpeg|png)$/.test(file.type))throw new Error('Only JPG or PNG allowed');
+  if(file.size>5*1024*1024)throw new Error('Image must be under 5 MB');
+  var fd=new FormData();
+  fd.append('messaging_product','whatsapp');
+  fd.append('type',file.type);
+  fd.append('file',file,file.name);
+  var r=await fetch('https://graph.facebook.com/v25.0/'+encodeURIComponent(phoneId)+'/media',{
+    method:'POST',headers:{'Authorization':'Bearer '+token},body:fd});
+  var d=await r.json();
+  if(!r.ok||!d.id)throw new Error((d.error&&d.error.message)||JSON.stringify(d));
+  return d.id;
+};
+// Opens a file picker, uploads, returns media id (or null if cancelled)
+window.metaPickAndUpload=function(phoneId,token){
+  return new Promise(function(resolve,reject){
+    var inp=document.createElement('input');
+    inp.type='file';inp.accept='image/png,image/jpeg';
+    inp.onchange=function(){
+      if(!inp.files||!inp.files[0]){resolve(null);return;}
+      window.metaUploadImage(inp.files[0],phoneId,token).then(resolve,reject);
+    };
+    inp.click();
+  });
+};
+// Gate-pass settings: upload into the given input
+window.gpUploadHdr=async function(inputId){
+  var el=document.getElementById(inputId);
+  var pid=document.getElementById('meta-wa-phone-id'),tok=document.getElementById('meta-wa-token');
+  try{
+    gpToast('⏳ Uploading image to Meta…');
+    var id=await window.metaPickAndUpload(pid&&pid.value.trim(),tok&&tok.value.trim());
+    if(!id)return;
+    if(el)el.value=id;
+    if(typeof gpSaveWA==='function') gpSaveWA();
+    gpToast('✅ Uploaded (ID '+id+') & saved to cloud');
+  }catch(e){gpToast('❌ Upload failed: '+e.message,'err');}
+};
 
 // Core send — text or template
 async function metaWASend(toPhone, messageText, pass){
@@ -9583,8 +9628,9 @@ function dlRenderTmplRows(){
       +'style="width:100%;background:#fff;border:1px solid #e8dcc8;border-radius:7px;padding:6px 8px;font-size:12px;outline:none;box-sizing:border-box"/></div>'
       +'</div>'
       +'<div style="margin-top:8px"><div style="font-size:10px;color:#8a6428;font-weight:700;margin-bottom:3px">Header Image URL (public https link; leave empty if template has no image header)</div>'
-      +'<input placeholder="https://.../due_alert_1.png" value="'+esc2(t.headerImg||'')+'" oninput="dlWaTemplates['+i+'].headerImg=this.value" '
-      +'style="width:100%;background:#fff;border:1px solid #e8dcc8;border-radius:7px;padding:6px 8px;font-size:11.5px;outline:none;box-sizing:border-box"/></div>'
+      +'<div style="display:flex;gap:6px"><input id="dl-hdr-'+i+'" placeholder="URL or uploaded media ID" value="'+esc2(t.headerImg||'')+'" oninput="dlWaTemplates['+i+'].headerImg=this.value" '
+      +'style="flex:1;min-width:0;background:#fff;border:1px solid #e8dcc8;border-radius:7px;padding:6px 8px;font-size:11.5px;outline:none;box-sizing:border-box"/>'
+      +'<button type="button" onclick="dlUploadHdr('+i+')" style="white-space:nowrap;background:#b5883e;color:#fff;border:none;border-radius:7px;padding:6px 10px;font-size:11px;font-weight:700;cursor:pointer">&#x2B06; Upload</button></div></div>'
       +'<div style="margin-top:8px;display:flex;align-items:center;gap:6px">'
       +'<input type="checkbox" id="dl-tmpl-btn-'+i+'" '+(t.hasButton?'checked':'')+' onchange="dlWaTemplates['+i+'].hasButton=this.checked" style="width:14px;height:14px;accent-color:#b5883e;cursor:pointer"/>'
       +'<label for="dl-tmpl-btn-'+i+'" style="font-size:11px;font-weight:700;color:#8a6428;cursor:pointer">Has URL Button (Pay Now)</label>'
@@ -9593,6 +9639,17 @@ function dlRenderTmplRows(){
   }).join('');
 }
 
+window.dlUploadHdr=async function(i){
+  var pid=document.getElementById('wa-phone-id'),tok=document.getElementById('wa-token');
+  try{
+    var id=await window.metaPickAndUpload(pid&&pid.value.trim(),tok&&tok.value.trim());
+    if(!id)return;
+    dlWaTemplates[i].headerImg=id;
+    var el=document.getElementById('dl-hdr-'+i); if(el) el.value=id;
+    waSaveSettings();
+    alert('Uploaded to Meta and saved to cloud. Media ID: '+id+'\n(valid ~30 days — re-upload after that)');
+  }catch(e){ alert('Upload failed: '+e.message); }
+};
 window.dlAddTmplRow=function(){
   dlWaTemplates.push({name:'',lang:'en_US',dateFrom:1,dateTo:8});
   dlRenderTmplRows();
@@ -9972,7 +10029,7 @@ function dlSendBatch(students,phoneId,token,tmplName,idx,sent,failed,qrMap,proxy
   // Templates created with an IMAGE header in Meta need a header component at send time
   var hdrImg=tmplCfg&&String(tmplCfg.headerImg||'').trim();
   if(hdrImg){
-    components.push({type:'header',parameters:[{type:'image',image:{link:hdrImg}}]});
+    components.push(window.metaHdrComp(hdrImg)[0]);
   }
   components.push({type:'body',parameters:bodyParams});
   var hasBtn = tmplCfg ? (tmplCfg.hasButton !== false) : true; // default ON
@@ -11837,5 +11894,92 @@ if('serviceWorker' in navigator){
   });
 }
 
+</script>
+
+<script>
+// ═══════════════════════════════════════════════════════
+//  WHATSAPP SETTINGS CLOUD SYNC (via Due List Firebase)
+//  Node: {dlFbUrl}/CONFIG/waCloud.json
+//  Synced: header media IDs (gate pass, gate out, every due template)
+//          + due-list template rows (name/lang/dates/button).
+//  NOT synced (secret): Phone Number ID, Access Token.
+//  Last-write-wins using updatedAt.
+// ═══════════════════════════════════════════════════════
+(function(){
+  var TS_KEY='wa_cloud_ts';
+  function fbUrl(){ try{ return (localStorage.getItem('dl_fb_url')||'').trim().replace(/\/+$/,''); }catch(e){ return ''; } }
+  function localTs(){ return +(localStorage.getItem(TS_KEY)||0); }
+  function nodeUrl(){ var u=fbUrl(); return u? u+'/CONFIG/waCloud.json' : ''; }
+
+  function collect(){
+    var g=(typeof gpWACfg!=='undefined'&&gpWACfg)||{};
+    var tpls=(typeof dlWaTemplates!=='undefined'?dlWaTemplates:[]).map(function(t){
+      return {label:t.label||'',name:t.name||'',lang:t.lang||'en_US',
+              dateFrom:+t.dateFrom||0,dateTo:+t.dateTo||0,
+              hasButton:t.hasButton!==false,headerImg:t.headerImg||''};
+    });
+    return {gate:{headerImg:g.metaHeaderImg||'',outHeaderImg:g.metaOutHeaderImg||''},templates:tpls};
+  }
+
+  window.waCloudPush=function(){
+    var url=nodeUrl(); if(!url) return Promise.resolve(false);
+    var payload=collect(); payload.updatedAt=Date.now();
+    return fetch(url,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)})
+      .then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status);
+        localStorage.setItem(TS_KEY,String(payload.updatedAt)); return true; })
+      .catch(function(e){ console.warn('WA cloud push failed:',e.message); return false; });
+  };
+
+  function apply(d){
+    // Due-list templates
+    var arr=d.templates?(Array.isArray(d.templates)?d.templates:Object.keys(d.templates).map(function(k){return d.templates[k];})):[];
+    arr=arr.filter(Boolean);
+    if(typeof dlWaTemplates!=='undefined'){
+      dlWaTemplates.length=0; arr.forEach(function(t){ dlWaTemplates.push(t); });
+      try{
+        var st=JSON.parse(localStorage.getItem(WA_STORE_KEY)||'{}');
+        st.templates=dlWaTemplates; localStorage.setItem(WA_STORE_KEY,JSON.stringify(st));
+      }catch(e){}
+      if(typeof dlRenderTmplRows==='function') dlRenderTmplRows();
+      if(typeof dlPopulateTmplSelect==='function') dlPopulateTmplSelect();
+    }
+    // Gate pass media IDs
+    if(d.gate && typeof gpWACfg!=='undefined'){
+      gpWACfg.metaHeaderImg=d.gate.headerImg||'';
+      gpWACfg.metaOutHeaderImg=d.gate.outHeaderImg||'';
+      try{ localStorage.setItem('gp_wa_cfg',JSON.stringify(gpWACfg)); }catch(e){}
+      if(typeof MetaWACfg!=='undefined'){
+        MetaWACfg.headerImg=gpWACfg.metaHeaderImg; MetaWACfg.outHeaderImg=gpWACfg.metaOutHeaderImg;
+      }
+      var a=document.getElementById('meta-wa-header-img'); if(a) a.value=gpWACfg.metaHeaderImg;
+      var b=document.getElementById('meta-wa-out-header-img'); if(b) b.value=gpWACfg.metaOutHeaderImg;
+    }
+  }
+
+  window.waCloudPull=function(){
+    var url=nodeUrl(); if(!url) return Promise.resolve(false);
+    return fetch(url,{cache:'no-store'}).then(function(r){ return r.json(); }).then(function(d){
+      if(!d||typeof d!=='object'){
+        // nothing in cloud yet: seed it from this device if we have settings
+        var c=collect(); if(c.templates.length||c.gate.headerImg||c.gate.outHeaderImg) return window.waCloudPush();
+        return false;
+      }
+      if((+d.updatedAt||0)>localTs()){ apply(d); localStorage.setItem(TS_KEY,String(d.updatedAt)); return true; }
+      return false;
+    }).catch(function(e){ console.warn('WA cloud pull failed:',e.message); return false; });
+  };
+
+  // Push after every save
+  var _ws=window.waSaveSettings;
+  if(typeof _ws==='function') window.waSaveSettings=function(){ var r=_ws.apply(this,arguments); window.waCloudPush(); return r; };
+  var _gs=window.gpSaveWA;
+  if(typeof _gs==='function') window.gpSaveWA=function(){ var r=_gs.apply(this,arguments); window.waCloudPush(); return r; };
+
+  // Pull on load, on foreground, and when settings open
+  setTimeout(window.waCloudPull,1500);
+  document.addEventListener('visibilitychange',function(){ if(document.visibilityState==='visible') window.waCloudPull(); });
+  var _o=window.dlOpenSettings;
+  window.dlOpenSettings=function(){ var r=_o&&_o.apply(this,arguments); window.waCloudPull(); return r; };
+})();
 </script>
 </body>
