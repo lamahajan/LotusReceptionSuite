@@ -9067,7 +9067,7 @@ var dlData=[];
 function dlLoadData(){
   try{
     var saved=localStorage.getItem(DL_STORE_KEY);
-    if(saved){dlData=JSON.parse(saved);window.dlData=dlData;}
+    if(saved){dlData=JSON.parse(saved).filter(function(s){return s&&Number(s.balance)>0;});window.dlData=dlData;}
     else if(window.dlData&&window.dlData.length){
       // localStorage empty (quota/security) but Firebase already loaded data
       dlData=window.dlData;
@@ -9329,8 +9329,8 @@ window.dlRender=function(){
 
   if(sort==='balance-desc')list.sort(function(a,b){return b.balance-a.balance;});
   else if(sort==='balance-asc')list.sort(function(a,b){return a.balance-b.balance;});
-  else if(sort==='name')list.sort(function(a,b){return a.name.localeCompare(b.name);});
-  else{list.sort(function(a,b){var ia=CLS_ORDER.indexOf(a.cls),ib=CLS_ORDER.indexOf(b.cls);if(ia!==ib)return ia-ib;return a.name.localeCompare(b.name);});}
+  else if(sort==='name')list.sort(function(a,b){return String(a.name||'').localeCompare(String(b.name||''));});
+  else{list.sort(function(a,b){var ia=CLS_ORDER.indexOf(a.cls),ib=CLS_ORDER.indexOf(b.cls);if(ia!==ib)return ia-ib;return String(a.name||'').localeCompare(String(b.name||''));});}
 
   dlUpdateStats(list);
 
@@ -9350,13 +9350,15 @@ window.dlRender=function(){
   if(sort==='class'){
     var groups={};
     list.forEach(function(s){(groups[s.cls]=groups[s.cls]||[]).push(s);});
-    CLS_ORDER.forEach(function(cls){
+    var _clsKeys=CLS_ORDER.slice();
+    Object.keys(groups).forEach(function(k){ if(_clsKeys.indexOf(k)===-1) _clsKeys.push(k); });
+    _clsKeys.forEach(function(cls){
       if(!groups[cls])return;
       var grp=groups[cls];
       var grpTotal=grp.reduce(function(s,x){return s+x.balance;},0);
       html+='<div class="dl-cls-header" data-cls="'+esc(cls)+'">'
         +'<input type="checkbox" class="dl-cls-selall" data-cls="'+esc(cls)+'" onclick="dlSelectAllClass(this)"/>'
-        +'<span style="font-size:11px;font-weight:800;color:#3b5bdb;letter-spacing:.8px;text-transform:uppercase">'+clsLabel(cls)+'</span>'
+        +'<span style="font-size:11px;font-weight:800;color:#3b5bdb;letter-spacing:.8px;text-transform:uppercase">'+(clsLabel(cls)||'No Class')+'</span>'
         +'<div style="flex:1;height:1px;background:#c5cce8"></div>'
         +'<span style="font-size:10px;font-weight:600;color:#6b7db3;margin-right:4px">'+grp.length+' students</span>'
         +'<span style="background:#fef9ec;color:#b45309;border:1.5px solid #fde68a;border-radius:20px;padding:2px 10px;font-size:10px;font-weight:800;font-family:\'Outfit\',sans-serif">₹'+grpTotal.toLocaleString('en-IN')+'</span>'
@@ -9443,7 +9445,7 @@ document.head.insertAdjacentHTML('beforeend','<style>#screen-due.active{display:
   try{
     var saved=localStorage.getItem(DL_STORE_KEY);
     if(saved){
-      dlData=JSON.parse(saved);window.dlData=dlData;
+      dlData=JSON.parse(saved).filter(function(s){return s&&Number(s.balance)>0;});window.dlData=dlData;
     } else {
       dlUseEmbedded();
     }
@@ -10035,7 +10037,7 @@ function dlFbRebuildFromMirror(){
     var r=_dlFbById[adm];
     if(!r||typeof r!=='object') return null;
     return { adm:String(r.adm||adm), name:r.name||'', cls:r.cls||'', mob:r.mob||'', due:0, recv:0, balance:Number(r.balance)||0 };
-  }).filter(Boolean);
+  }).filter(function(s){ return s && s.balance>0; });   // 0 / minus balance = nothing due -> not in Due List
   dlData=list; window.dlData=list;
   try{ localStorage.setItem(DL_STORE_KEY, JSON.stringify(list)); }catch(e){}
   if(typeof updateHomeStats==='function') updateHomeStats();
