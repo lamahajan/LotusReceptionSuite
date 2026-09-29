@@ -9563,6 +9563,9 @@ function dlRenderTmplRows(){
       +'<input type="number" min="1" max="31" placeholder="8" value="'+(t.dateTo||'')+'" oninput="dlWaTemplates['+i+'].dateTo=+this.value" '
       +'style="width:100%;background:#fff;border:1px solid #e8dcc8;border-radius:7px;padding:6px 8px;font-size:12px;outline:none;box-sizing:border-box"/></div>'
       +'</div>'
+      +'<div style="margin-top:8px"><div style="font-size:10px;color:#8a6428;font-weight:700;margin-bottom:3px">Header Image URL (public https link; leave empty if template has no image header)</div>'
+      +'<input placeholder="https://.../due_alert_1.png" value="'+esc2(t.headerImg||'')+'" oninput="dlWaTemplates['+i+'].headerImg=this.value" '
+      +'style="width:100%;background:#fff;border:1px solid #e8dcc8;border-radius:7px;padding:6px 8px;font-size:11.5px;outline:none;box-sizing:border-box"/></div>'
       +'<div style="margin-top:8px;display:flex;align-items:center;gap:6px">'
       +'<input type="checkbox" id="dl-tmpl-btn-'+i+'" '+(t.hasButton?'checked':'')+' onchange="dlWaTemplates['+i+'].hasButton=this.checked" style="width:14px;height:14px;accent-color:#b5883e;cursor:pointer"/>'
       +'<label for="dl-tmpl-btn-'+i+'" style="font-size:11px;font-weight:700;color:#8a6428;cursor:pointer">Has URL Button (Pay Now)</label>'
@@ -9946,7 +9949,13 @@ function dlSendBatch(students,phoneId,token,tmplName,idx,sent,failed,qrMap,proxy
   for(var ti=0;ti<dlWaTemplates.length;ti++){
     if(dlWaTemplates[ti].name===tmplName){ tmplCfg=dlWaTemplates[ti]; break; }
   }
-  var components=[{type:'body',parameters:bodyParams}];
+  var components=[];
+  // Templates created with an IMAGE header in Meta need a header component at send time
+  var hdrImg=tmplCfg&&String(tmplCfg.headerImg||'').trim();
+  if(hdrImg){
+    components.push({type:'header',parameters:[{type:'image',image:{link:hdrImg}}]});
+  }
+  components.push({type:'body',parameters:bodyParams});
   var hasBtn = tmplCfg ? (tmplCfg.hasButton !== false) : true; // default ON
   if(hasBtn){
     components.push({type:'button',sub_type:'url',index:'0',parameters:[{type:'text',text:suffix}]});
