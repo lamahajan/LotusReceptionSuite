@@ -1211,6 +1211,8 @@ Reason: {reason}"></textarea>
                 </label>
                 <input id="meta-wa-template" class="inp" placeholder="e.g. gatepass_issued" style="font-family:var(--mono);font-size:12px">
                 <div style="font-size:11px;color:var(--muted);margin-top:3px">Leave empty to send plain text (only works within 24hr window)</div>
+                <label class="lbl" style="margin-top:8px">Header Image URL <span style="font-weight:400;font-size:10px;color:var(--muted)">(only if template has an image header)</span></label>
+                <input id="meta-wa-header-img" class="inp" placeholder="https://.../gatepass.png" style="font-family:var(--mono);font-size:12px">
               </div>
               <div class="field">
                 <label class="lbl">Language Code</label>
@@ -1226,6 +1228,8 @@ Reason: {reason}"></textarea>
                   </label>
                 </label>
                 <input id="meta-wa-out-template" class="inp" placeholder="e.g. gatepass_exited" style="font-family:var(--mono);font-size:12px">
+                <label class="lbl" style="margin-top:8px">Header Image URL (Gate Out) <span style="font-weight:400;font-size:10px;color:var(--muted)">(only if template has an image header)</span></label>
+                <input id="meta-wa-out-header-img" class="inp" placeholder="https://.../gateout.png" style="font-family:var(--mono);font-size:12px">
                 <div style="font-size:11px;color:var(--muted);margin-top:3px">Sent to parent when student exits gate. Parameters: {{1}} name &nbsp;|&nbsp; {{2}} class &nbsp;|&nbsp; {{3}} picked by &nbsp;|&nbsp; {{4}} relation &nbsp;|&nbsp; {{5}} date &amp; time &nbsp;|&nbsp; {{6}} reason</div>
               </div>
               <div class="field">
@@ -4935,6 +4939,8 @@ function gpSaveWA(){
     metaToken:(tok?tok.value.trim():''),
     metaTemplate:(tmplEl?tmplEl.value.trim():''),
     metaOutTemplate:(outTmplEl?outTmplEl.value.trim():''),
+    metaHeaderImg:(document.getElementById('meta-wa-header-img')?document.getElementById('meta-wa-header-img').value.trim():''),
+    metaOutHeaderImg:(document.getElementById('meta-wa-out-header-img')?document.getElementById('meta-wa-out-header-img').value.trim():''),
     metaLang:(langEl?langEl.value.trim()||'en_US':'en_US'),
     metaOutLang:(document.getElementById('meta-wa-out-lang')?document.getElementById('meta-wa-out-lang').value.trim()||'en_US':'en_US'),
     metaAdminEnabled:metaAe?metaAe.checked:false,
@@ -4948,6 +4954,7 @@ function gpSaveWA(){
     phoneNumberId:gpWACfg.metaPhoneId,accessToken:gpWACfg.metaToken,
     enabled:mode==='meta',adminEnabled:gpWACfg.metaAdminEnabled,
     templateName:gpWACfg.metaTemplate,outTemplateName:gpWACfg.metaOutTemplate,
+    headerImg:gpWACfg.metaHeaderImg||'',outHeaderImg:gpWACfg.metaOutHeaderImg||'',
     langCode:gpWACfg.metaLang,outLangCode:gpWACfg.metaOutLang,
     adminPhone:gpWACfg.metaAdminPhone,
     passEnabled:gpWACfg.metaPassEnabled!==false,outEnabled:gpWACfg.metaOutEnabled!==false
@@ -5122,6 +5129,8 @@ function loadMetaWACfg(){
     adminEnabled:!!gpWACfg.metaAdminEnabled,
     templateName:gpWACfg.metaTemplate||'',
     outTemplateName:gpWACfg.metaOutTemplate||'',
+    headerImg:gpWACfg.metaHeaderImg||'',
+    outHeaderImg:gpWACfg.metaOutHeaderImg||'',
     langCode:gpWACfg.metaLang||'en_US',
     outLangCode:gpWACfg.metaOutLang||'en_US',
     adminPhone:gpWACfg.metaAdminPhone||'',
@@ -5143,6 +5152,10 @@ function loadMetaWACfg(){
   if(tok)tok.value=MetaWACfg.accessToken;
   if(tmpl)tmpl.value=MetaWACfg.templateName;
   if(outTmpl)outTmpl.value=MetaWACfg.outTemplateName;
+  var hImg=document.getElementById('meta-wa-header-img');
+  if(hImg)hImg.value=MetaWACfg.headerImg||'';
+  var hOutImg=document.getElementById('meta-wa-out-header-img');
+  if(hOutImg)hOutImg.value=MetaWACfg.outHeaderImg||'';
   var outLang=document.getElementById('meta-wa-out-lang');
   if(outLang)outLang.value=MetaWACfg.outLangCode||'en_US';
   if(lang)lang.value=MetaWACfg.langCode||'en_US';
@@ -5163,6 +5176,12 @@ function saveMetaWACfg(){
   gpSaveWA();
 }
 
+// Builds the header component for templates that have an IMAGE header in Meta
+function metaHdrComp(url){
+  url=String(url||'').trim();
+  return url?[{type:'header',parameters:[{type:'image',image:{link:url}}]}]:[];
+}
+
 // Core send — text or template
 async function metaWASend(toPhone, messageText, pass){
   if(!MetaWACfg.phoneNumberId||!MetaWACfg.accessToken)throw new Error('Meta WA not configured');
@@ -5176,14 +5195,14 @@ async function metaWASend(toPhone, messageText, pass){
       template:{
         name:MetaWACfg.templateName,
         language:{code:MetaWACfg.langCode||'en_US'},
-        components:[{type:'body',parameters:[
+        components:metaHdrComp(MetaWACfg.headerImg).concat([{type:'body',parameters:[
           {type:'text',text:pass.studentName||'Student'},
           {type:'text',text:pass.class||'N/A'},
           {type:'text',text:pass.pickedUpBy||'Guardian'},
           {type:'text',text:pass.relation||'Guardian'},
           {type:'text',text:(pass.date||'')+' at '+((pass.time||'').replace(/\b(am|pm)\b/gi,function(m){return m.toUpperCase();}))},
           {type:'text',text:pass.reason||'Early departure'}
-        ]}]
+        ]}])
       }
     };
   } else {
@@ -5248,14 +5267,14 @@ async function metaWASendGateOut(pass){
       template:{
         name:MetaWACfg.outTemplateName,
         language:{code:MetaWACfg.outLangCode||'en_US'},
-        components:[{type:'body',parameters:[
+        components:metaHdrComp(MetaWACfg.outHeaderImg).concat([{type:'body',parameters:[
           {type:'text',text:pass.studentName||'Student'},
           {type:'text',text:pass.class||'N/A'},
           {type:'text',text:pass.pickedUpBy||'Guardian'},
           {type:'text',text:pass.relation||'Guardian'},
           {type:'text',text:(pass.date||'')+' at '+((pass.gateOutTime||'').replace(/\b(am|pm)\b/gi,function(m){return m.toUpperCase();}))},
           {type:'text',text:pass.reason||'Early departure'}
-        ]}]
+        ]}])
       }
     };
     var resp=await fetch('https://graph.facebook.com/v25.0/'+MetaWACfg.phoneNumberId+'/messages',{
@@ -5295,7 +5314,7 @@ async function testMetaWACfg(){
   var testPass={studentName:'Test Student',class:'10-A',pickedUpBy:'Ramesh Kumar',relation:'Father',date:new Date().toLocaleDateString('en-IN'),time:new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}),reason:'Doctor visit'};
   var body;
   if(tmplName){
-    body={messaging_product:'whatsapp',to:testPhone,type:'template',template:{name:tmplName,language:{code:langCode},components:[{type:'body',parameters:[{type:'text',text:testPass.studentName},{type:'text',text:testPass.class},{type:'text',text:testPass.pickedUpBy},{type:'text',text:testPass.relation},{type:'text',text:testPass.date+' at '+testPass.time},{type:'text',text:testPass.reason}]}]}};
+    body={messaging_product:'whatsapp',to:testPhone,type:'template',template:{name:tmplName,language:{code:langCode},components:metaHdrComp((document.getElementById('meta-wa-header-img')||{value:''}).value).concat([{type:'body',parameters:[{type:'text',text:testPass.studentName},{type:'text',text:testPass.class},{type:'text',text:testPass.pickedUpBy},{type:'text',text:testPass.relation},{type:'text',text:testPass.date+' at '+testPass.time},{type:'text',text:testPass.reason}]}])}};
   } else {
     body={messaging_product:'whatsapp',to:testPhone,type:'text',text:{body:'✅ Lotus International School — Meta WA API Test!\nGate Pass system connected.\nTime: '+new Date().toLocaleTimeString('en-IN')}};
   }
