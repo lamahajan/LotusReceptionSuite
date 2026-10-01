@@ -3182,7 +3182,7 @@ Reason: {reason}"></textarea>
                 <div style="margin-top:12px;padding-top:10px;border-top:1px dashed #bbf7d0;display:flex;align-items:center;justify-content:space-between;gap:10px">
                   <div>
                     <div style="font-size:12px;font-weight:700;color:#166534">🔔 Payment Notifications</div>
-                    <div style="font-size:10px;color:#a89f92;line-height:1.5">Har payment aate hi is device par alert. Default ON.</div>
+                    <div style="font-size:10px;color:#a89f92;line-height:1.5">Get an alert on this device the moment a payment arrives. ON by default.</div>
                   </div>
                   <label style="position:relative;display:inline-block;width:44px;height:24px;flex-shrink:0;cursor:pointer">
                     <input type="checkbox" id="dl-fcm-toggle" checked onchange="dlFcmToggle(this.checked)" style="opacity:0;width:0;height:0"/>
@@ -10501,13 +10501,13 @@ function dlFcmSyncUI(){
 async function dlFcmRegister(){
   if(!dlFcmIsOn()) return;
   var proxyUrl = (localStorage.getItem(DL_RZP_PROXY_KEY)||'').replace(/\/+$/,'');
-  if(!proxyUrl){ dlFcmStatus('Worker URL set nahi hai (Razorpay settings)', true); return; }
-  if(!('serviceWorker' in navigator) || !('Notification' in window)){ dlFcmStatus('Is browser mein push notification support nahi hai', true); return; }
-  if(Notification.permission === 'denied'){ dlFcmStatus('Browser ne notification block kiya hai — site settings se Allow karo', true); return; }
+  if(!proxyUrl){ dlFcmStatus('Worker URL is not set (see Razorpay settings)', true); return; }
+  if(!('serviceWorker' in navigator) || !('Notification' in window)){ dlFcmStatus('This browser does not support push notifications', true); return; }
+  if(Notification.permission === 'denied'){ dlFcmStatus('Notifications are blocked in the browser — allow them in site settings', true); return; }
   try{
     if(Notification.permission === 'default'){
       var perm = await Notification.requestPermission();
-      if(perm !== 'granted'){ dlFcmStatus('Notification permission nahi mili', true); return; }
+      if(perm !== 'granted'){ dlFcmStatus('Notification permission was not granted', true); return; }
     }
     await navigator.serviceWorker.register('./sw.js');
     var reg = await navigator.serviceWorker.ready;
@@ -10516,7 +10516,7 @@ async function dlFcmRegister(){
       _dlFcmMessaging = firebase.messaging(app);
     }
     var token = await _dlFcmMessaging.getToken({ vapidKey: DL_FCM_VAPID, serviceWorkerRegistration: reg });
-    if(!token) throw new Error('Device token nahi mila');
+    if(!token) throw new Error('Could not get a device token');
     var r = await fetch(proxyUrl+'/register-fcm-token', {
       method: 'POST',
       headers: dlApiHeaders({'Content-Type':'application/json'}),
@@ -10524,9 +10524,9 @@ async function dlFcmRegister(){
     });
     if(!r.ok) throw new Error('Server HTTP '+r.status);
     localStorage.setItem(DL_FCM_TOKEN_KEY, token);
-    dlFcmStatus('✅ Is device par notifications ON hain');
+    dlFcmStatus('✅ Notifications are ON for this device');
   }catch(e){
-    dlFcmStatus('❌ '+(e.message || 'Kuch galat hua'), true);
+    dlFcmStatus('❌ '+(e.message || 'Something went wrong'), true);
   }
 }
 
@@ -10535,7 +10535,7 @@ window.dlFcmToggle = async function(on){
   if(on){
     localStorage.setItem(DL_FCM_ON_KEY, '1');
     dlFcmSyncUI();
-    dlFcmStatus('Chalu ho raha hai…');
+    dlFcmStatus('Turning on…');
     await dlFcmRegister();
   }else{
     localStorage.setItem(DL_FCM_ON_KEY, '0');
@@ -10553,14 +10553,14 @@ window.dlFcmToggle = async function(on){
       if(_dlFcmMessaging) await _dlFcmMessaging.deleteToken().catch(function(){});
     }catch(e){}
     localStorage.removeItem(DL_FCM_TOKEN_KEY);
-    dlFcmStatus('Is device par notifications band');
+    dlFcmStatus('Notifications are OFF for this device');
   }
 };
 
 // Auto-register by default. If the browser hasn't been asked yet, the prompt
 // appears on the first tap/click (browsers like Safari require a gesture).
-// Desktop par OS sound na bajaye (jaise Mac) to app khula hone par beep bajao.
-// Browser ko pehle ek click chahiye hota hai audio ke liye, isliye pehle click par unlock.
+// Fallback beep for when the OS plays no sound (e.g. macOS) and the app is open.
+// Browsers need a user click before audio can play, so audio is unlocked on the first click.
 var _dlAudioCtx = null;
 function dlBeep(){
   try{
