@@ -16,7 +16,7 @@
    file badlo to CACHE ka number bhi badha dena.
    ═══════════════════════════════════════════════════════════════ */
 
-const CACHE = 'reception-suite-v1';
+const CACHE = 'reception-suite-v2';
 
 const SHELL = [
   './',
@@ -94,4 +94,36 @@ self.addEventListener('fetch', event => {
 // App se "turant update karo" ka message
 self.addEventListener('message', event => {
   if (event.data === 'skipWaiting') self.skipWaiting();
+});
+
+// ── Push notifications (FCM) ──────────────────────────────────────
+// Firebase SDK SW me load nahi karte — FCM ka push payload seedha
+// padh ke notification dikhate hain. Isse firebase-messaging-sw.js
+// ki zarurat nahi, aur do service worker ka conflict nahi hota.
+self.addEventListener('push', event => {
+  let payload = {};
+  try { payload = event.data ? event.data.json() : {}; } catch (e) {
+    payload = { notification: { body: event.data ? event.data.text() : '' } };
+  }
+  const n = payload.notification || {};
+  const data = payload.data || {};
+  const title = n.title || data.title || 'Payment Received';
+  const body  = n.body  || data.body  || '';
+  event.waitUntil(self.registration.showNotification(title, {
+    body,
+    icon : './icon-192.png',
+    badge: './icon-192.png',
+    data
+  }));
+});
+
+// Notification par click: khula hua tab focus karo, warna naya kholo
+self.addEventListener('notificationclick', event => {
+  event.notification.close();
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
+      for (const c of list) { if ('focus' in c) return c.focus(); }
+      if (clients.openWindow) return clients.openWindow('./');
+    })
+  );
 });
