@@ -10559,6 +10559,34 @@ window.dlFcmToggle = async function(on){
 
 // Auto-register by default. If the browser hasn't been asked yet, the prompt
 // appears on the first tap/click (browsers like Safari require a gesture).
+// Desktop par OS sound na bajaye (jaise Mac) to app khula hone par beep bajao.
+// Browser ko pehle ek click chahiye hota hai audio ke liye, isliye pehle click par unlock.
+var _dlAudioCtx = null;
+function dlBeep(){
+  try{
+    if(!_dlAudioCtx) return;
+    if(_dlAudioCtx.state === 'suspended') _dlAudioCtx.resume();
+    [0, 0.28].forEach(function(t){
+      var o = _dlAudioCtx.createOscillator(), g = _dlAudioCtx.createGain();
+      o.type = 'sine'; o.frequency.value = t ? 1175 : 880;
+      g.gain.setValueAtTime(0.0001, _dlAudioCtx.currentTime + t);
+      g.gain.exponentialRampToValueAtTime(0.4, _dlAudioCtx.currentTime + t + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, _dlAudioCtx.currentTime + t + 0.25);
+      o.connect(g); g.connect(_dlAudioCtx.destination);
+      o.start(_dlAudioCtx.currentTime + t); o.stop(_dlAudioCtx.currentTime + t + 0.26);
+    });
+  }catch(e){}
+}
+document.addEventListener('click', function(){
+  if(!_dlAudioCtx){ try{ _dlAudioCtx = new (window.AudioContext || window.webkitAudioContext)(); }catch(e){} }
+  else if(_dlAudioCtx.state === 'suspended'){ _dlAudioCtx.resume(); }
+}, true);
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.addEventListener('message', function(ev){
+    if(ev.data && ev.data.type === 'dl-push' && dlFcmIsOn()) dlBeep();
+  });
+}
+
 window.addEventListener('load', function(){
   dlFcmSyncUI();
   setTimeout(function(){
