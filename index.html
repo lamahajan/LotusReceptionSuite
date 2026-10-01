@@ -3179,30 +3179,19 @@ Reason: {reason}"></textarea>
                 </div>
                 <div id="dl-txn-fb-status" style="font-size:11px;color:#166534;margin-top:7px;min-height:16px;font-weight:600"></div>
                 <div style="font-size:10px;color:#a89f92;margin-top:4px;line-height:1.5">Payments captured by the worker land here and stream live into the Processed Transactions tab.</div>
+                <div style="margin-top:12px;padding-top:10px;border-top:1px dashed #bbf7d0;display:flex;align-items:center;justify-content:space-between;gap:10px">
+                  <div>
+                    <div style="font-size:12px;font-weight:700;color:#166534">🔔 Payment Notifications</div>
+                    <div style="font-size:10px;color:#a89f92;line-height:1.5">Har payment aate hi is device par alert. Default ON.</div>
+                  </div>
+                  <label style="position:relative;display:inline-block;width:44px;height:24px;flex-shrink:0;cursor:pointer">
+                    <input type="checkbox" id="dl-fcm-toggle" checked onchange="dlFcmToggle(this.checked)" style="opacity:0;width:0;height:0"/>
+                    <span id="dl-fcm-track" style="position:absolute;inset:0;background:#16a34a;border-radius:24px;transition:.2s"></span>
+                    <span id="dl-fcm-knob" style="position:absolute;top:3px;left:23px;width:18px;height:18px;background:#fff;border-radius:50%;transition:.2s"></span>
+                  </label>
+                </div>
+                <div id="dl-fcm-status" style="font-size:11px;color:#166534;margin-top:6px;min-height:16px;font-weight:600"></div>
               </div>
-            </div>
-          </div>
-
-          <div class="dl-acc">
-            <button class="dl-acc-hdr" onclick="this.closest('.dl-acc').classList.toggle('open')">
-              <span class="dl-acc-hdr-icon">🔔</span>
-              <div class="dl-acc-hdr-info">
-                <div class="dl-acc-hdr-title">Push Notifications</div>
-                <div class="dl-acc-hdr-sub">Get notified the instant a payment comes in</div>
-              </div>
-              <span class="dl-acc-arrow">▼</span>
-            </button>
-            <div class="dl-acc-body">
-              <label class="dl-lbl" style="margin-top:10px">Firebase Config (Firebase console → Project settings → General → Your apps → SDK setup and config — paste the whole snippet's object)</label>
-              <textarea id="dl-fcm-config" class="dl-inp" rows="4" placeholder='{"apiKey":"...","authDomain":"...","projectId":"...","messagingSenderId":"...","appId":"..."}' style="font-family:'JetBrains Mono',monospace;font-size:11px;min-height:70px;resize:vertical"></textarea>
-              <label class="dl-lbl" style="margin-top:8px">VAPID Key (Firebase console → Project settings → Cloud Messaging → Web Push certificates → Generate key pair)</label>
-              <input id="dl-fcm-vapid" class="dl-inp" type="text" placeholder="B...(long key)" style="margin-bottom:10px"/>
-              <button onclick="dlFcmSaveConfig()" style="width:100%;background:#16a34a;color:#fff;border:none;border-radius:9px;padding:10px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">💾 Save Config</button>
-              <div id="dl-fcm-save-status" style="font-size:11px;color:#166534;margin-top:7px;min-height:16px;font-weight:600"></div>
-
-              <button onclick="dlFcmEnable()" id="dl-fcm-enable-btn" style="width:100%;background:#2563eb;color:#fff;border:none;border-radius:9px;padding:10px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;margin-top:10px">🔔 Enable Notifications on this Device</button>
-              <div id="dl-fcm-status" style="font-size:11px;color:#166534;margin-top:7px;min-height:16px;font-weight:600"></div>
-              <div style="font-size:10px;color:#a89f92;margin-top:4px;line-height:1.5">Needs <code>firebase-messaging-sw.js</code> uploaded at your site's root (same folder this page is hosted in). Repeat "Enable Notifications" on every device/browser you want alerts on.</div>
             </div>
           </div>
 
@@ -10479,101 +10468,115 @@ window.dlRzpSaveConfig = function(){
 //  sendFcmNotification, called from every payment-success branch).
 // ═══════════════════════════════════════════════════════
 
-var DL_FCM_CONFIG_KEY = 'dl_fcm_config';   // Firebase project config JSON, as a string
-var DL_FCM_VAPID_KEY  = 'dl_fcm_vapid';    // Web Push certificate key from Firebase console
-var DL_FCM_TOKEN_KEY  = 'dl_fcm_token';    // this device's own registered FCM token, once enabled
-var _dlFcmApp = null, _dlFcmMessaging = null;
-
-window.dlFcmSaveConfig = function(){
-  var cfgEl = document.getElementById('dl-fcm-config');
-  var vapEl = document.getElementById('dl-fcm-vapid');
-  var st = document.getElementById('dl-fcm-save-status');
-  var raw = (cfgEl && cfgEl.value || '').trim();
-  var vapid = (vapEl && vapEl.value || '').trim();
-
-  if(raw){
-    try{ JSON.parse(raw); } // just validating — stored as the exact string the user pasted
-    catch(e){
-      if(st){ st.textContent='❌ Invalid JSON — paste the whole {…} config object'; st.style.color='#dc2626'; }
-      return;
-    }
-  }
-  localStorage.setItem(DL_FCM_CONFIG_KEY, raw);
-  localStorage.setItem(DL_FCM_VAPID_KEY, vapid);
-  if(st){ st.textContent='✅ Saved!'; st.style.color='#166534'; setTimeout(function(){ st.textContent=''; },2000); }
+// Firebase web config + VAPID key are public client-side values (not secrets) — hardcoded.
+var DL_FCM_CONFIG = {
+  apiKey: "AIzaSyD9gsJYT6fEQ1UL2CxprBdTUL01zCZCs50",
+  authDomain: "transactions-d6547.firebaseapp.com",
+  projectId: "transactions-d6547",
+  storageBucket: "transactions-d6547.firebasestorage.app",
+  messagingSenderId: "840055966907",
+  appId: "1:840055966907:web:f19d79b73c5c0bb0ceed9e"
 };
+var DL_FCM_VAPID     = 'BLKvnIUJV_2bN0f0X6hBGyskU1zt98DiqYUExOslriRUz7KF15Dml-JLJXC2TtGuUEIVHnk1f-lZnUfKQgY8ll4';
+var DL_FCM_TOKEN_KEY = 'dl_fcm_token';    // this device's registered FCM token
+var DL_FCM_ON_KEY    = 'dl_fcm_enabled';  // '0' = user switched notifications off; anything else = ON (default)
+var _dlFcmMessaging  = null;
 
-(function(){
-  var _origOpen2 = window.dlOpenSettings;
-  window.dlOpenSettings = function(){
-    if(_origOpen2) _origOpen2.apply(this,arguments);
-    var cfgEl = document.getElementById('dl-fcm-config');
-    var vapEl = document.getElementById('dl-fcm-vapid');
-    if(cfgEl) cfgEl.value = localStorage.getItem(DL_FCM_CONFIG_KEY)||'';
-    if(vapEl) vapEl.value = localStorage.getItem(DL_FCM_VAPID_KEY)||'';
-  };
-})();
-
-window.dlFcmEnable = async function(){
+function dlFcmIsOn(){ return localStorage.getItem(DL_FCM_ON_KEY) !== '0'; }
+function dlFcmStatus(msg, bad){
   var st = document.getElementById('dl-fcm-status');
-  var btn = document.getElementById('dl-fcm-enable-btn');
-  function fail(msg){ if(st){ st.textContent='❌ '+msg; st.style.color='#dc2626'; } if(btn) btn.disabled=false; }
-  function ok(msg){ if(st){ st.textContent='✅ '+msg; st.style.color='#166534'; } }
+  if(st){ st.textContent = msg || ''; st.style.color = bad ? '#dc2626' : '#166534'; }
+}
+function dlFcmSyncUI(){
+  var on = dlFcmIsOn();
+  var t = document.getElementById('dl-fcm-toggle');
+  var tr = document.getElementById('dl-fcm-track');
+  var kn = document.getElementById('dl-fcm-knob');
+  if(t) t.checked = on;
+  if(tr) tr.style.background = on ? '#16a34a' : '#9ca3af';
+  if(kn) kn.style.left = on ? '23px' : '3px';
+}
 
+// Registers this device (permission → token → worker). Safe to call repeatedly.
+async function dlFcmRegister(){
+  if(!dlFcmIsOn()) return;
   var proxyUrl = (localStorage.getItem(DL_RZP_PROXY_KEY)||'').replace(/\/+$/,'');
-  var cfgRaw   = localStorage.getItem(DL_FCM_CONFIG_KEY)||'';
-  var vapid    = localStorage.getItem(DL_FCM_VAPID_KEY)||'';
-
-  if(!proxyUrl){ fail('Save the Cloudflare Worker URL above first'); return; }
-  if(!cfgRaw || !vapid){ fail('Save Firebase Config + VAPID Key above first'); return; }
-  if(!('serviceWorker' in navigator)){ fail('This browser does not support push notifications'); return; }
-
-  var cfg;
-  try{ cfg = JSON.parse(cfgRaw); }catch(e){ fail('Firebase Config is not valid JSON'); return; }
-
-  if(btn) btn.disabled=true;
-  if(st){ st.textContent='Requesting permission…'; st.style.color='#166534'; }
-
+  if(!proxyUrl){ dlFcmStatus('Worker URL set nahi hai (Razorpay settings)', true); return; }
+  if(!('serviceWorker' in navigator) || !('Notification' in window)){ dlFcmStatus('Is browser mein push notification support nahi hai', true); return; }
+  if(Notification.permission === 'denied'){ dlFcmStatus('Browser ne notification block kiya hai — site settings se Allow karo', true); return; }
   try{
-    var perm = await Notification.requestPermission();
-    if(perm !== 'granted'){ fail('Notification permission was denied in the browser'); return; }
-
-    if(!_dlFcmApp){
-      _dlFcmApp = firebase.apps && firebase.apps.length ? firebase.apps[0] : firebase.initializeApp(cfg);
-      _dlFcmMessaging = firebase.messaging();
-      // Foreground handler — SW only shows notifications when the tab is
-      // NOT focused; when it IS, FCM delivers here instead, so show our
-      // own toast so a payment while you're actively looking still alerts.
-      _dlFcmMessaging.onMessage(function(payload){
-        var n = payload.notification || {};
-        if(typeof toast === 'function') toast('🔔 '+(n.title||'Notification')+': '+(n.body||''));
-        else if(n.title) alert(n.title+'\n'+(n.body||''));
-      });
+    if(Notification.permission === 'default'){
+      var perm = await Notification.requestPermission();
+      if(perm !== 'granted'){ dlFcmStatus('Notification permission nahi mili', true); return; }
     }
-
-    if(st) st.textContent='Registering service worker…';
     await navigator.serviceWorker.register('./sw.js');
     var reg = await navigator.serviceWorker.ready;
-
-    if(st) st.textContent='Getting device token…';
-    var token = await _dlFcmMessaging.getToken({ vapidKey: vapid, serviceWorkerRegistration: reg });
-    if(!token){ fail('Could not get a device token — check VAPID key'); return; }
-
-    if(st) st.textContent='Registering with server…';
+    if(!_dlFcmMessaging){
+      var app = firebase.apps.filter(function(a){ return a.name === 'dl-fcm'; })[0] || firebase.initializeApp(DL_FCM_CONFIG, 'dl-fcm');
+      _dlFcmMessaging = firebase.messaging(app);
+    }
+    var token = await _dlFcmMessaging.getToken({ vapidKey: DL_FCM_VAPID, serviceWorkerRegistration: reg });
+    if(!token) throw new Error('Device token nahi mila');
     var r = await fetch(proxyUrl+'/register-fcm-token', {
       method: 'POST',
       headers: dlApiHeaders({'Content-Type':'application/json'}),
       body: JSON.stringify({ token: token })
     });
-    if(!r.ok) throw new Error('HTTP '+r.status);
-
+    if(!r.ok) throw new Error('Server HTTP '+r.status);
     localStorage.setItem(DL_FCM_TOKEN_KEY, token);
-    ok('Notifications enabled on this device!');
-    if(btn) btn.disabled=false;
+    dlFcmStatus('✅ Is device par notifications ON hain');
   }catch(e){
-    fail(e.message || 'Something went wrong');
+    dlFcmStatus('❌ '+(e.message || 'Kuch galat hua'), true);
+  }
+}
+
+// ON/OFF switch (Settings → Transaction Sync)
+window.dlFcmToggle = async function(on){
+  if(on){
+    localStorage.setItem(DL_FCM_ON_KEY, '1');
+    dlFcmSyncUI();
+    dlFcmStatus('Chalu ho raha hai…');
+    await dlFcmRegister();
+  }else{
+    localStorage.setItem(DL_FCM_ON_KEY, '0');
+    dlFcmSyncUI();
+    var token = localStorage.getItem(DL_FCM_TOKEN_KEY);
+    var proxyUrl = (localStorage.getItem(DL_RZP_PROXY_KEY)||'').replace(/\/+$/,'');
+    try{
+      if(token && proxyUrl){
+        await fetch(proxyUrl+'/unregister-fcm-token', {
+          method: 'POST',
+          headers: dlApiHeaders({'Content-Type':'application/json'}),
+          body: JSON.stringify({ token: token })
+        });
+      }
+      if(_dlFcmMessaging) await _dlFcmMessaging.deleteToken().catch(function(){});
+    }catch(e){}
+    localStorage.removeItem(DL_FCM_TOKEN_KEY);
+    dlFcmStatus('Is device par notifications band');
   }
 };
+
+// Auto-register by default. If the browser hasn't been asked yet, the prompt
+// appears on the first tap/click (browsers like Safari require a gesture).
+window.addEventListener('load', function(){
+  dlFcmSyncUI();
+  setTimeout(function(){
+    if(!dlFcmIsOn() || !('Notification' in window)) return;
+    if(Notification.permission === 'granted'){ dlFcmRegister(); }
+    else if(Notification.permission === 'default'){
+      var once = function(){ document.removeEventListener('click', once, true); dlFcmRegister(); };
+      document.addEventListener('click', once, true);
+    }
+  }, 2000);
+});
+(function(){
+  var _origOpen2 = window.dlOpenSettings;
+  window.dlOpenSettings = function(){
+    if(_origOpen2) _origOpen2.apply(this,arguments);
+    dlFcmSyncUI();
+  };
+})();
 
 // Pings the worker to say "this device is active right now". Marks it
 // eligible for real-time pushes, and if it had payments queued up from
