@@ -10552,8 +10552,8 @@ window.dlFcmEnable = async function(){
     }
 
     if(st) st.textContent='Registering service worker…';
-    var swUrl = './firebase-messaging-sw.js?' + new URLSearchParams(cfg).toString();
-    var reg = await navigator.serviceWorker.register(swUrl);
+    await navigator.serviceWorker.register('./sw.js');
+    var reg = await navigator.serviceWorker.ready;
 
     if(st) st.textContent='Getting device token…';
     var token = await _dlFcmMessaging.getToken({ vapidKey: vapid, serviceWorkerRegistration: reg });
