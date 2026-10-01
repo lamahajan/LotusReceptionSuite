@@ -16,7 +16,7 @@
    file badlo to CACHE ka number bhi badha dena.
    ═══════════════════════════════════════════════════════════════ */
 
-const CACHE = 'reception-suite-v2';
+const CACHE = 'reception-suite-v4';
 
 const SHELL = [
   './',
@@ -25,7 +25,8 @@ const SHELL = [
   './icon-192.png',
   './icon-512.png',
   './icon-maskable-512.png',
-  './favicon-64.png'
+  './favicon-64.png',
+  './notif-icon.png'
 ];
 
 self.addEventListener('install', event => {
@@ -109,12 +110,20 @@ self.addEventListener('push', event => {
   const data = payload.data || {};
   const title = n.title || data.title || 'Payment Received';
   const body  = n.body  || data.body  || '';
-  event.waitUntil(self.registration.showNotification(title, {
+  // Agar app ka tab/window khula hai to usse bhi batao (page beep bajata hai)
+  const tellPages = clients.matchAll({ type: 'window', includeUncontrolled: true })
+    .then(list => list.forEach(c => c.postMessage({ type: 'dl-push', title, body })));
+  event.waitUntil(Promise.all([tellPages, self.registration.showNotification(title, {
     body,
     icon : './icon-192.png',
-    badge: './icon-192.png',
+    badge: './notif-icon.png',
+    vibrate: [300, 150, 300, 150, 300],   // phone vibrate
+    silent: false,                        // device ki default notification sound bajegi
+    requireInteraction: true,             // dismiss karne tak screen par rahe (desktop)
+    tag: 'pay-' + Date.now(),             // har payment alag notification
+    renotify: true,
     data
-  }));
+  })]));
 });
 
 // Notification par click: khula hua tab focus karo, warna naya kholo
