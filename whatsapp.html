@@ -35,13 +35,43 @@ main{flex:1;display:flex;min-height:0}
 .tc{display:flex;gap:6px;flex-wrap:wrap}
 .dot{display:inline-block;min-width:8px;height:8px;border-radius:4px;background:#25D366;margin-right:6px}
 #thread{flex:1;display:flex;flex-direction:column;min-width:0}
-#tt{display:flex;align-items:center;gap:12px;padding:10px 16px;background:var(--panel);border-bottom:1px solid var(--line)}
-#tt .av{width:44px;height:44px;font-size:15px}
-#tt .hb{min-width:0;flex:1}
-#tt h2{margin:0;font-size:16px;font-weight:700;line-height:1.25}
-#tt small{display:block;color:var(--mute);font-size:12.5px;margin:1px 0 0}
-.sp{display:inline-flex;align-items:center;gap:6px;padding:3px 10px 3px 4px;border-radius:20px;font:600 11.5px Outfit,sans-serif;border:1.5px solid}
-.sp i{font-style:normal;width:18px;height:18px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:9.5px;font-weight:800}
+#tt{display:flex;align-items:center;gap:10px;padding:8px 14px;min-height:54px;background:var(--panel);border-bottom:1px solid var(--line);box-shadow:0 2px 10px rgba(15,23,42,.05);cursor:pointer;position:relative;z-index:2;transition:background .15s}
+#tt:hover{background:rgba(37,211,102,.07)}
+#tt:focus-visible{outline:2px solid var(--brand);outline-offset:-2px}
+#tt .av{width:34px;height:34px;border-radius:10px;font-size:12px}
+.hb{flex:1;min-width:0;display:flex;align-items:center;gap:8px;overflow:hidden}
+.tc{display:flex;gap:6px;flex-wrap:nowrap;overflow:hidden}
+.sp{display:inline-flex;align-items:center;gap:7px;padding:4px 5px 4px 12px;border-radius:20px;font:700 12.5px Outfit,sans-serif;white-space:nowrap}
+.sp em{font-style:normal;background:rgba(255,255,255,.7);padding:1px 8px;border-radius:20px;font-size:11px;font-weight:700;margin-right:0}
+.sp:not(:has(em)){padding-right:12px}
+.tn{font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tp{font:12px Outfit,sans-serif;color:var(--mute);white-space:nowrap}
+.inf{width:24px;height:24px;border-radius:50%;border:1.5px solid var(--line);color:var(--mute);display:flex;align-items:center;justify-content:center;font:italic 700 12px Georgia,serif;flex-shrink:0}
+#tt:hover .inf{border-color:var(--brand);color:var(--brand)}
+#info{position:fixed;inset:0;background:rgba(10,20,25,.45);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center;padding:16px;z-index:10}
+#info.open{display:flex}
+.ic{background:var(--panel);width:420px;max-width:100%;max-height:92vh;overflow:auto;border-radius:22px;box-shadow:0 24px 60px rgba(0,0,0,.3);animation:pop .18s ease-out}
+@keyframes pop{from{transform:translateY(8px) scale(.97);opacity:0}}
+@media(prefers-reduced-motion:reduce){.ic{animation:none}}
+.ih{display:flex;align-items:center;gap:14px;padding:20px 20px 18px;background:var(--brand);color:#fff;position:relative}
+.ih .av{width:52px;height:52px;border-radius:16px;font-size:18px}
+.ih h3{margin:0;font-size:18px;font-weight:700;letter-spacing:.2px}
+.ih p{margin:2px 0 0;font-size:13px;opacity:.85}
+.ix{position:absolute;top:12px;right:12px;width:30px;height:30px;border-radius:50%;border:0;background:rgba(255,255,255,.18);color:#fff;font-size:18px;line-height:1;cursor:pointer}
+.ix:hover{background:rgba(255,255,255,.3)}
+.ib{padding:16px 20px 20px}
+.ib h4{margin:0 0 8px;font-size:12.5px;font-weight:600;color:var(--mute)}
+.st{display:flex;align-items:center;gap:12px;padding:10px 12px;border:1px solid var(--line);border-radius:14px;margin-bottom:8px}
+.st .av{width:38px;height:38px;border-radius:12px;font-size:13px}
+.st div.x{flex:1;min-width:0}
+.st b{display:block;font-size:14px}
+.st span{font:12px Outfit,sans-serif;color:var(--mute)}
+.cp{border:1px solid var(--line);background:none;color:var(--mute);border-radius:8px;padding:4px 9px;font:600 11.5px Outfit,sans-serif;cursor:pointer}
+.cp:hover{color:var(--brand);border-color:var(--brand)}
+.ac{display:flex;gap:8px;margin:14px 0 4px}
+.ac a{flex:1;text-align:center;text-decoration:none;padding:10px;border-radius:12px;font-weight:700;font-size:13.5px;border:1.5px solid var(--brand);color:var(--brand)}
+.ac a.p{background:var(--brand);color:#fff}
+.ft{margin-top:12px;font-size:12px;color:var(--mute)}
 #msgs{flex:1;overflow:auto;padding:10px 16px 18px;display:flex;flex-direction:column;gap:8px;background-color:var(--bg);background-image:radial-gradient(rgba(0,0,0,.045) 1px,transparent 1px);background-size:18px 18px}
 .m{max-width:min(560px,82%);background:var(--in);padding:8px 12px 6px;border-radius:4px 14px 14px 14px;box-shadow:0 1px 2px rgba(0,0,0,.14);overflow-wrap:anywhere;white-space:pre-wrap;line-height:1.4}
 .m.g{margin-top:-5px;border-top-left-radius:14px}
@@ -83,10 +113,11 @@ main{flex:1;display:flex;min-height:0}
     <div id="chats"></div>
   </section>
   <section id="thread">
-    <div id="tt">Select a chat</div>
+    <div id="tt" role="button" tabindex="0" aria-label="Chat details">Select a chat</div>
     <div id="msgs"><div class="empty">Select a chat from the list.</div></div>
   </section>
 </main>
+<div id="info" aria-modal="true" role="dialog"></div>
 <div id="cfg"><form id="f">
   <b>Connect to your worker</b>
   <label>Worker URL<input id="u" placeholder="https://wa-inbox.yourname.workers.dev" required></label>
@@ -164,13 +195,12 @@ function render(){
 function thread(){
   const c=chats().find(x=>x.from===S.cur);if(!c)return;
   S.seen[c.from]=c.msgs.at(-1).ts;
-  const hb=el('div','hb'),tc=el('div','tc');
-  c.stu.forEach(s=>{const pc=palOf(s.name),sp=el('span','sp'),i=el('i','',initials(s.name));
-    i.style.background=pc[1];i.style.color=pc[0];sp.style.borderColor=pc[1];
-    sp.append(i,document.createTextNode(s.name+(s.adm?' · #'+s.adm:'')+(s.cls?' · '+s.cls:'')));tc.append(sp)});
-  const sm=el('small','','+'+c.from+(c.name&&c.stu.length?' · WhatsApp name: '+c.name:''));
-  if(c.stu.length){tc.style.marginBottom='4px';hb.append(tc,sm)}else hb.append(el('h2','',title(c)),sm);
-  $('tt').replaceChildren(avatar(c.stu[0]?c.stu[0].name:title(c)),hb);
+  const hb=el('div','hb');
+  if(c.stu.length){const tc=el('div','tc');
+    c.stu.forEach(s=>{const pc=palOf(s.name),sp=el('span','sp');sp.style.background=pc[1];sp.style.color=pc[0];sp.append(el('b','',s.name));if(s.cls)sp.append(el('em','',s.cls));tc.append(sp)});
+    hb.append(tc)}
+  else hb.append(el('b','tn',title(c)),el('span','tp',fmtPh(c.from)));
+  $('tt').replaceChildren(avatar(c.stu[0]?c.stu[0].name:title(c)),hb,el('span','inf','i'));
   const box=$('msgs'),prev=box.scrollTop,stick=box.scrollHeight-box.scrollTop-box.clientHeight<80||!box.children.length;
   box.replaceChildren();
   if(S.older){const mb=el('button','','Load older messages');mb.id='more';mb.onclick=older;box.append(mb)}
@@ -193,8 +223,36 @@ function thread(){
   if(!stick)box.scrollTop=prev;
   if(stick)box.scrollTop=box.scrollHeight;
 }
+
+const fmtPh=n=>/^91\d{10}$/.test(n)?`+91 ${n.slice(2,7)} ${n.slice(7)}`:'+'+n;
+function openInfo(){
+  const c=chats().find(x=>x.from===S.cur);if(!c)return;
+  const box=$('info'),card=el('div','ic'),h=el('div','ih');
+  const hb=el('div');hb.append(el('h3','',fmtPh(c.from)),el('p','',c.name?'WhatsApp name: '+c.name:'WhatsApp contact'));
+  const x=el('button','ix','×');x.type='button';x.setAttribute('aria-label','Close');x.onclick=closeInfo;
+  h.append(avatar(c.stu[0]?c.stu[0].name:title(c)),hb,x);
+  const b=el('div','ib');
+  if(c.stu.length){
+    b.append(el('h4','',c.stu.length>1?'Students ('+c.stu.length+')':'Student'));
+    c.stu.forEach(s=>{const r=el('div','st'),m=el('div','x');
+      m.append(el('b','',s.name),el('span','',[s.cls&&'Class '+s.cls,s.adm&&'Admission no. '+s.adm].filter(Boolean).join(' · ')));
+      r.append(avatar(s.name),m);
+      if(s.adm){const cp=el('button','cp','Copy');cp.type='button';cp.title='Copy admission number';
+        cp.onclick=()=>{navigator.clipboard&&navigator.clipboard.writeText(s.adm);cp.textContent='Copied';setTimeout(()=>cp.textContent='Copy',1200)};r.append(cp)}
+      b.append(r)});
+  }else b.append(el('p','ft','This number is not in the Due List.'));
+  const ac=el('div','ac'),call=el('a','','Call'),wa=el('a','p','Open in WhatsApp');
+  call.href='tel:+'+c.from;wa.href='https://wa.me/'+c.from;wa.target='_blank';wa.rel='noopener';ac.append(call,wa);b.append(ac);
+  b.append(el('div','ft',c.msgs.length+' message'+(c.msgs.length>1?'s':'')+' loaded · last on '+fmtD(c.msgs.at(-1).ts)+', '+fmtT(c.msgs.at(-1).ts)));
+  card.append(h,b);box.replaceChildren(card);box.classList.add('open');
+}
+function closeInfo(){$('info').classList.remove('open')}
+$('tt').onclick=openInfo;
+$('tt').onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openInfo()}};
+$('info').onclick=e=>{if(e.target.id==='info')closeInfo()};
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeInfo()});
 $('q').oninput=render;
-$('back').onclick=()=>{S.cur=null;document.body.classList.remove('open');$('tt').textContent='Select a chat';render()};
+$('back').onclick=()=>{S.cur=null;document.body.classList.remove('open');$('tt').textContent='Select a chat';closeInfo();render()};
 $('set').onclick=()=>{$('u').value=S.url;$('t').value=S.tok;$('cfg').classList.add('open')};
 $('f').onsubmit=e=>{e.preventDefault();S.url=$('u').value.trim();S.tok=$('t').value;ls.set('waUrl',S.url);ls.set('waTok',S.tok);S.map.clear();$('cfg').classList.remove('open');load(true)};
 document.onvisibilitychange=()=>{if(!document.hidden){S.unread=0;document.title='WhatsApp Inbox'}};
