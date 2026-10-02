@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>WhatsApp Inbox</title>
+<title>Parent Desk - DigiFee Mitra</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;700;800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#efeae2;--panel:#fff;--ink:#1b2a2f;--mute:#6b7c85;--line:#e3e8ea;--brand:#0b5d4f;--in:#fff;--hl:#d9f2e6}
@@ -11,9 +11,10 @@
 *{box-sizing:border-box}
 html,body{height:100%;margin:0}
 body{font:15px/1.45 "Segoe UI",system-ui,sans-serif;color:var(--ink);background:var(--bg);display:flex;flex-direction:column}
-header{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--brand);color:#fff}
-header h1{font-size:17px;margin:0;flex:1;font-weight:600}
-header button{background:rgba(255,255,255,.18);color:#fff;border:0;border-radius:8px;padding:6px 10px;font:inherit;font-size:13px;cursor:pointer}
+header{display:flex;align-items:center;gap:10px;padding:12px 16px;background:linear-gradient(135deg,#075E54,#128C7E);color:#fff;box-shadow:0 4px 20px rgba(0,0,0,.2);position:relative;z-index:3}
+header h1{font:800 18px Outfit,sans-serif;letter-spacing:.2px;margin:0;flex:1}
+header button{background:rgba(255,255,255,.16);color:#fff;border:1px solid rgba(255,255,255,.22);border-radius:10px;padding:6px 12px;font:600 13px Outfit,sans-serif;cursor:pointer;backdrop-filter:blur(4px)}
+header button:hover{background:rgba(255,255,255,.26)}
 header button:focus-visible,input:focus-visible,.chat:focus-visible{outline:2px solid #fff;outline-offset:2px}
 #status{font-size:12px;opacity:.85}
 main{flex:1;display:flex;min-height:0}
@@ -35,7 +36,7 @@ main{flex:1;display:flex;min-height:0}
 .tc{display:flex;gap:6px;flex-wrap:wrap}
 .dot{display:inline-block;min-width:8px;height:8px;border-radius:4px;background:#25D366;margin-right:6px}
 #thread{flex:1;display:flex;flex-direction:column;min-width:0}
-#tt{display:flex;align-items:center;gap:10px;padding:8px 14px;min-height:54px;background:var(--panel);border-bottom:1px solid var(--line);box-shadow:0 2px 10px rgba(15,23,42,.05);cursor:pointer;position:relative;z-index:2;transition:background .15s}
+#tt{display:flex;align-items:center;gap:10px;padding:8px 16px;min-height:54px;background:var(--panel);border-bottom:1px solid var(--line);box-shadow:0 2px 10px rgba(15,23,42,.05);cursor:pointer;position:relative;z-index:2;transition:background .15s}
 #tt:hover{background:rgba(37,211,102,.07)}
 #tt:focus-visible{outline:2px solid var(--brand);outline-offset:-2px}
 #tt .av{width:34px;height:34px;border-radius:10px;font-size:12px}
@@ -53,7 +54,7 @@ main{flex:1;display:flex;min-height:0}
 .ic{background:var(--panel);width:420px;max-width:100%;max-height:92vh;overflow:auto;border-radius:22px;box-shadow:0 24px 60px rgba(0,0,0,.3);animation:pop .18s ease-out}
 @keyframes pop{from{transform:translateY(8px) scale(.97);opacity:0}}
 @media(prefers-reduced-motion:reduce){.ic{animation:none}}
-.ih{display:flex;align-items:center;gap:14px;padding:20px 20px 18px;background:var(--brand);color:#fff;position:relative}
+.ih{display:flex;align-items:center;gap:14px;padding:20px 20px 18px;background:linear-gradient(135deg,#075E54,#128C7E);color:#fff;position:relative}
 .ih .av{width:52px;height:52px;border-radius:16px;font-size:18px}
 .ih h3{margin:0;font-size:18px;font-weight:700;letter-spacing:.2px}
 .ih p{margin:2px 0 0;font-size:13px;opacity:.85}
@@ -72,19 +73,19 @@ main{flex:1;display:flex;min-height:0}
 .ac a{flex:1;text-align:center;text-decoration:none;padding:10px;border-radius:12px;font-weight:700;font-size:13.5px;border:1.5px solid var(--brand);color:var(--brand)}
 .ac a.p{background:var(--brand);color:#fff}
 .ft{margin-top:12px;font-size:12px;color:var(--mute)}
-#msgs{flex:1;overflow:auto;padding:10px 16px 18px;display:flex;flex-direction:column;gap:8px;background-color:var(--bg);background-image:radial-gradient(rgba(0,0,0,.045) 1px,transparent 1px);background-size:18px 18px}
-.m{max-width:min(560px,82%);background:var(--in);padding:8px 12px 6px;border-radius:4px 14px 14px 14px;box-shadow:0 1px 2px rgba(0,0,0,.14);overflow-wrap:anywhere;white-space:pre-wrap;line-height:1.4}
-.m.g{margin-top:-5px;border-top-left-radius:14px}
-.m .t{float:right;margin:7px 0 0 14px;font-size:11px;color:var(--mute);white-space:nowrap}
+#msgs{flex:1;overflow:auto;padding:10px 16px 18px;display:flex;flex-direction:column;gap:8px;background-color:var(--bg);background-image:radial-gradient(rgba(7,94,84,.07) 1px,transparent 1px),linear-gradient(180deg,rgba(255,255,255,.35),transparent 160px);background-size:20px 20px,100% 100%}
+.m{max-width:min(560px,82%);background:var(--in);padding:10px 14px 7px;border-radius:5px 18px 18px 18px;border:1px solid rgba(7,94,84,.08);box-shadow:0 1px 2px rgba(15,23,42,.06),0 6px 18px rgba(15,23,42,.06);overflow-wrap:anywhere;white-space:pre-wrap;line-height:1.5;font-size:14.5px}
+.m.g{margin-top:-4px;border-top-left-radius:18px}
+.m .t{float:right;margin:8px 0 0 16px;font:500 10.5px Outfit,sans-serif;color:var(--mute);white-space:nowrap;letter-spacing:.2px}
 .m::after{content:"";display:block;clear:both}
-.m .im{display:block;margin:-2px -6px 6px;border-radius:10px;overflow:hidden;background:rgba(0,0,0,.06)}
+.m .im{display:block;margin:-4px -8px 8px;border-radius:13px;overflow:hidden;background:rgba(0,0,0,.05);border:1px solid rgba(15,23,42,.06)}
 .m .im img{display:block;max-width:100%;max-height:340px;margin:0 auto;cursor:zoom-in}
 .m video{max-width:100%;max-height:340px;border-radius:10px;display:block;margin-bottom:4px}
 .m audio{max-width:100%;display:block;margin-bottom:4px}
 .m a{color:var(--brand)}
-.doc{display:flex;align-items:center;gap:10px;padding:8px 10px;margin:-2px -4px 6px;border-radius:10px;background:rgba(0,0,0,.06);text-decoration:none;color:inherit!important;font-weight:600;font-size:13.5px}
+.doc{display:flex;align-items:center;gap:10px;padding:10px 12px;margin:-2px -6px 8px;border-radius:12px;background:rgba(7,94,84,.07);border:1px solid rgba(7,94,84,.1);text-decoration:none;color:inherit!important;font-weight:600;font-size:13.5px}
 .doc b{font-size:22px}
-.day{align-self:center;position:sticky;top:0;z-index:1;font:600 12px Outfit,sans-serif;color:var(--mute);background:var(--panel);padding:3px 12px;border-radius:10px;margin:6px 0 2px;box-shadow:0 1px 2px rgba(0,0,0,.12)}
+.day{align-self:center;position:sticky;top:6px;z-index:1;font:600 11.5px Outfit,sans-serif;letter-spacing:.3px;color:var(--mute);background:color-mix(in srgb,var(--panel) 82%,transparent);backdrop-filter:blur(6px);padding:4px 14px;border-radius:20px;margin:6px 0 2px;border:1px solid var(--line);box-shadow:0 2px 8px rgba(15,23,42,.08)}
 .empty{margin:auto;color:var(--mute);text-align:center;padding:20px}
 #more{align-self:center}
 #more,#cfg button{background:var(--brand);color:#fff;border:0;border-radius:8px;padding:7px 14px;font:inherit;cursor:pointer}
@@ -103,7 +104,7 @@ main{flex:1;display:flex;min-height:0}
 <body>
 <header>
   <button id="back" type="button">‹ Back</button>
-  <h1>WhatsApp Inbox</h1>
+  <h1 id="app-name">Parent Desk - DigiFee Mitra</h1>
   <span id="status"></span>
   <button id="set" type="button">Settings</button>
 </header>
@@ -127,6 +128,7 @@ main{flex:1;display:flex;min-height:0}
 
 <script>
 const $=id=>document.getElementById(id);
+const APP_NAME='Parent Desk - DigiFee Mitra'; // change the app name here and in <title>/<h1>
 const DEFAULTS={url:'https://whatsapp.due-4a8.workers.dev',tok:''}; // optional: pre-fill (keep the file private if you add the token)
 const ls={get:k=>{try{return localStorage.getItem(k)}catch(e){return null}},set:(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}}};
 {const h=new URLSearchParams(location.hash.slice(1));if(h.get('url')||h.get('k')){if(h.get('url'))ls.set('waUrl',h.get('url'));if(h.get('k'))ls.set('waTok',h.get('k'));history.replaceState(null,'',location.pathname+location.search)}}
@@ -147,7 +149,7 @@ async function load(first){
     const before=S.map.size;
     d.messages.forEach(m=>S.map.set(m.id,m));Object.assign(S.con,d.contacts||{});
     if(first)S.older=d.cursor;
-    if(!first&&S.map.size>before&&document.hidden){S.unread+=S.map.size-before;document.title=`(${S.unread}) WhatsApp Inbox`}
+    if(!first&&S.map.size>before&&document.hidden){S.unread+=S.map.size-before;document.title=`(${S.unread}) ${APP_NAME}`}
     $('status').textContent='Updated '+new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
     render();
   }catch(e){$('status').textContent=e.message}
@@ -200,7 +202,7 @@ function thread(){
     c.stu.forEach(s=>{const pc=palOf(s.name),sp=el('span','sp');sp.style.background=pc[1];sp.style.color=pc[0];sp.append(el('b','',s.name));if(s.cls)sp.append(el('em','',s.cls));tc.append(sp)});
     hb.append(tc)}
   else hb.append(el('b','tn',title(c)),el('span','tp',fmtPh(c.from)));
-  $('tt').replaceChildren(avatar(c.stu[0]?c.stu[0].name:title(c)),hb,el('span','inf','i'));
+  $('tt').replaceChildren(hb,el('span','inf','i'));
   const box=$('msgs'),prev=box.scrollTop,stick=box.scrollHeight-box.scrollTop-box.clientHeight<80||!box.children.length;
   box.replaceChildren();
   if(S.older){const mb=el('button','','Load older messages');mb.id='more';mb.onclick=older;box.append(mb)}
@@ -255,7 +257,7 @@ $('q').oninput=render;
 $('back').onclick=()=>{S.cur=null;document.body.classList.remove('open');$('tt').textContent='Select a chat';closeInfo();render()};
 $('set').onclick=()=>{$('u').value=S.url;$('t').value=S.tok;$('cfg').classList.add('open')};
 $('f').onsubmit=e=>{e.preventDefault();S.url=$('u').value.trim();S.tok=$('t').value;ls.set('waUrl',S.url);ls.set('waTok',S.tok);S.map.clear();$('cfg').classList.remove('open');load(true)};
-document.onvisibilitychange=()=>{if(!document.hidden){S.unread=0;document.title='WhatsApp Inbox'}};
+document.onvisibilitychange=()=>{if(!document.hidden){S.unread=0;document.title=APP_NAME}};
 load(true);setInterval(()=>{if(!document.hidden)load(false)},10000);
 </script>
 </body>
