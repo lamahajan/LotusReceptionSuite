@@ -3,6 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="/icon-192.png"/>
+<link rel="apple-touch-icon" href="/icon-192.png"/>
+<link rel="manifest" href="/manifest.json"/>
+<meta name="theme-color" content="#b5883e"/>
 <title>Parent Desk - DigiFee Mitra</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;700;800&display=swap" rel="stylesheet">
 <style>
@@ -12,14 +16,15 @@
 html,body{height:100%;margin:0}
 body{font:15px/1.45 "Segoe UI",system-ui,sans-serif;color:var(--ink);background:var(--bg);display:flex;flex-direction:column}
 header{display:flex;align-items:center;gap:10px;padding:12px 16px;background:linear-gradient(135deg,#075E54,#128C7E);color:#fff;box-shadow:0 4px 20px rgba(0,0,0,.2);position:relative;z-index:3}
-header h1{font:800 18px Outfit,sans-serif;letter-spacing:.2px;margin:0;flex:1}
+header h1{font:800 18px Outfit,sans-serif;letter-spacing:.2px;margin:0;flex:1;display:flex;align-items:center;gap:10px;min-width:0}
 header button{background:rgba(255,255,255,.16);color:#fff;border:1px solid rgba(255,255,255,.22);border-radius:10px;padding:6px 12px;font:600 13px Outfit,sans-serif;cursor:pointer;backdrop-filter:blur(4px)}
 header button:hover{background:rgba(255,255,255,.26)}
 header button:focus-visible,input:focus-visible,.chat:focus-visible{outline:2px solid #fff;outline-offset:2px}
 #status{font-size:12px;opacity:.85}
 main{flex:1;display:flex;min-height:0}
 #list{width:340px;max-width:100%;background:var(--panel);border-right:1px solid var(--line);display:flex;flex-direction:column}
-#q{margin:10px;padding:9px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);font:inherit}
+.sbar{height:60px;flex-shrink:0;display:flex;align-items:center;padding:0 12px;border-bottom:1px solid var(--line);background:var(--panel);position:relative;z-index:2;box-shadow:0 2px 10px rgba(15,23,42,.05)}
+#q{flex:1;height:38px;padding:0 14px;border:1px solid var(--line);border-radius:12px;background:var(--bg);color:var(--ink);font:inherit}
 #chats{flex:1;overflow:auto}
 #chats{padding:6px 10px 10px;background:#f1f5f9}
 @media(prefers-color-scheme:dark){#chats{background:#0e1517}}
@@ -36,7 +41,7 @@ main{flex:1;display:flex;min-height:0}
 .tc{display:flex;gap:6px;flex-wrap:wrap}
 .dot{display:inline-block;min-width:8px;height:8px;border-radius:4px;background:#25D366;margin-right:6px}
 #thread{flex:1;display:flex;flex-direction:column;min-width:0}
-#tt{display:flex;align-items:center;gap:10px;padding:8px 16px;min-height:54px;background:var(--panel);border-bottom:1px solid var(--line);box-shadow:0 2px 10px rgba(15,23,42,.05);cursor:pointer;position:relative;z-index:2;transition:background .15s}
+#tt{display:flex;align-items:center;gap:10px;padding:0 16px;height:60px;flex-shrink:0;box-sizing:border-box;background:var(--panel);border-bottom:1px solid var(--line);box-shadow:0 2px 10px rgba(15,23,42,.05);cursor:pointer;position:relative;z-index:2;transition:background .15s}
 #tt:hover{background:rgba(37,211,102,.07)}
 #tt:focus-visible{outline:2px solid var(--brand);outline-offset:-2px}
 #tt .av{width:34px;height:34px;border-radius:10px;font-size:12px}
@@ -86,6 +91,16 @@ main{flex:1;display:flex;min-height:0}
 .doc{display:flex;align-items:center;gap:10px;padding:10px 12px;margin:-2px -6px 8px;border-radius:12px;background:rgba(7,94,84,.07);border:1px solid rgba(7,94,84,.1);text-decoration:none;color:inherit!important;font-weight:600;font-size:13.5px}
 .doc b{font-size:22px}
 .day{align-self:center;position:sticky;top:6px;z-index:1;font:600 11.5px Outfit,sans-serif;letter-spacing:.3px;color:var(--mute);background:color-mix(in srgb,var(--panel) 82%,transparent);backdrop-filter:blur(6px);padding:4px 14px;border-radius:20px;margin:6px 0 2px;border:1px solid var(--line);box-shadow:0 2px 8px rgba(15,23,42,.08)}
+.sk{display:flex;align-items:center;gap:10px;background:var(--panel);border-radius:14px;padding:12px 14px;margin-bottom:6px}
+.sk i,.sk b{display:block;border-radius:8px;background:linear-gradient(90deg,var(--line) 25%,rgba(255,255,255,.55) 50%,var(--line) 75%);background-size:200% 100%;animation:sh 1.2s linear infinite}
+.sk i{width:40px;height:40px;border-radius:12px;flex-shrink:0}
+.sk div{flex:1;display:grid;gap:7px}.sk b{height:10px}.sk b:first-child{width:55%;height:12px}.sk b:last-child{width:80%}
+@keyframes sh{to{background-position:-200% 0}}
+.spin{width:34px;height:34px;border-radius:50%;border:3px solid var(--line);border-top-color:#128C7E;animation:rot .8s linear infinite;margin:0 auto 12px}
+@keyframes rot{to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){.sk i,.sk b,.spin{animation:none}}
+.err{background:var(--panel);border-radius:14px;padding:16px;text-align:center;color:var(--mute);font-size:13px}
+.err button{margin-top:10px;background:linear-gradient(135deg,#075E54,#128C7E);color:#fff;border:0;border-radius:10px;padding:7px 16px;font:600 13px Outfit,sans-serif;cursor:pointer}
 .empty{margin:auto;color:var(--mute);text-align:center;padding:20px}
 #more{align-self:center}
 #more,#cfg button{background:var(--brand);color:#fff;border:0;border-radius:8px;padding:7px 14px;font:inherit;cursor:pointer}
@@ -104,13 +119,13 @@ main{flex:1;display:flex;min-height:0}
 <body>
 <header>
   <button id="back" type="button">‹ Back</button>
-  <h1 id="app-name">Parent Desk - DigiFee Mitra</h1>
+  <h1 id="app-name"><svg viewBox="0 0 24 24" width="24" height="24" fill="#fff" aria-hidden="true" style="display:block;flex-shrink:0"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg><span>Parent Desk - DigiFee Mitra</span></h1>
   <span id="status"></span>
   <button id="set" type="button">Settings</button>
 </header>
 <main>
   <section id="list">
-    <input id="q" type="search" placeholder="Search name, number or message" aria-label="Search">
+    <div class="sbar"><input id="q" type="search" placeholder="Search name, number or message" aria-label="Search"></div>
     <div id="chats"></div>
   </section>
   <section id="thread">
@@ -132,7 +147,7 @@ const APP_NAME='Parent Desk - DigiFee Mitra'; // change the app name here and in
 const DEFAULTS={url:'https://whatsapp.due-4a8.workers.dev',tok:''}; // optional: pre-fill (keep the file private if you add the token)
 const ls={get:k=>{try{return localStorage.getItem(k)}catch(e){return null}},set:(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}}};
 {const h=new URLSearchParams(location.hash.slice(1));if(h.get('url')||h.get('k')){if(h.get('url'))ls.set('waUrl',h.get('url'));if(h.get('k'))ls.set('waTok',h.get('k'));history.replaceState(null,'',location.pathname+location.search)}}
-const S={con:{},url:ls.get('waUrl')||DEFAULTS.url,tok:ls.get('waTok')||DEFAULTS.tok,map:new Map(),cur:null,older:null,seen:{},unread:0};
+const S={loaded:false,err:'',con:{},url:ls.get('waUrl')||DEFAULTS.url,tok:ls.get('waTok')||DEFAULTS.tok,map:new Map(),cur:null,older:null,seen:{},unread:0};
 const fmtT=ts=>new Date(ts*1000).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',timeZone:'Asia/Kolkata'});
 const fmtD=ts=>new Date(ts*1000).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric',timeZone:'Asia/Kolkata'});
 const el=(t,c,x)=>{const e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e};
@@ -144,6 +159,7 @@ async function api(path){
 }
 async function load(first){
   if(!S.url||!S.tok)return $('cfg').classList.add('open');
+  if(first){S.loaded=false;S.err='';$('status').textContent='Loading…';render()}
   try{
     const d=await api('/messages');
     const before=S.map.size;
@@ -151,8 +167,8 @@ async function load(first){
     if(first)S.older=d.cursor;
     if(!first&&S.map.size>before&&document.hidden){S.unread+=S.map.size-before;document.title=`(${S.unread}) ${APP_NAME}`}
     $('status').textContent='Updated '+new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
-    render();
-  }catch(e){$('status').textContent=e.message}
+    S.loaded=true;S.err='';render();
+  }catch(e){$('status').textContent=e.message;if(!S.loaded){S.loaded=true;S.err=e.message;render()}}
 }
 async function older(){
   if(!S.older)return;
@@ -172,8 +188,17 @@ const title=c=>c.stu.length?c.stu.map(s=>s.name).join(' & '):(c.name||'+'+c.from
 const palOf=t=>PAL[(t||'?').charCodeAt(0)%PAL.length];
 const initials=t=>t.replace(/[^\p{L}\p{N} ]/gu,'').split(' ').filter(Boolean).slice(0,2).map(w=>w[0]).join('').toUpperCase()||'#';
 function avatar(t){const pc=palOf(t),a=el('div','av',initials(t));a.style.background=pc[1];a.style.color=pc[0];return a}
+function sideMsg(){
+  const m=$('msgs');if(S.cur)return;
+  const d=el('div','empty');
+  if(!S.loaded){d.append(el('div','spin'),document.createTextNode('Loading chats…'))}
+  else d.textContent=S.err&&!S.map.size?'Could not load chats.':'Select a chat from the list.';
+  m.replaceChildren(d);
+}
 function render(){
   const q=$('q').value.toLowerCase(),box=$('chats');box.replaceChildren();
+  if(!S.loaded){for(let i=0;i<5;i++){const k=el('div','sk');k.append(el('i'),Object.assign(el('div'),{}));k.lastChild.append(el('b'),el('b'),el('b'));box.append(k)}sideMsg();return}
+  if(S.err&&!S.map.size){const e=el('div','err',"Couldn't load chats: "+S.err);const b=el('button','','Retry');b.onclick=()=>load(true);e.append(document.createElement('br'),b);box.append(e);sideMsg();return}
   const all=chats().filter(c=>!q||(c.name+c.from+c.stu.map(s=>s.name+s.adm+s.cls).join(' ')).toLowerCase().includes(q)||c.msgs.some(m=>(m.body||'').toLowerCase().includes(q)));
   if(!all.length)box.append(el('div','empty',S.map.size?'No match.':'No messages yet.'));
   all.forEach(c=>{
@@ -192,7 +217,7 @@ function render(){
     b.onclick=()=>{S.cur=c.from;document.body.classList.add('open');render()};
     box.append(b);
   });
-  thread();
+  sideMsg();thread();
 }
 function thread(){
   const c=chats().find(x=>x.from===S.cur);if(!c)return;
