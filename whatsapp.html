@@ -72,7 +72,7 @@ main{flex:1;display:flex;min-height:0}
   </section>
   <section id="thread">
     <div id="tt">Select a chat</div>
-    <div id="msgs"><div class="empty">Left side se koi chat chuniye.</div></div>
+    <div id="msgs"><div class="empty">Select a chat from the list.</div></div>
   </section>
 </main>
 <div id="cfg"><form id="f">
@@ -124,7 +124,7 @@ const title=c=>c.stu.length?c.stu[0].name:(c.name||'+'+c.from);
 function render(){
   const q=$('q').value.toLowerCase(),box=$('chats');box.replaceChildren();
   const all=chats().filter(c=>!q||(c.name+c.from+c.stu.map(s=>s.name+s.adm+s.cls).join(' ')).toLowerCase().includes(q)||c.msgs.some(m=>(m.body||'').toLowerCase().includes(q)));
-  if(!all.length)box.append(el('div','empty',S.map.size?'No match.':'Abhi koi message nahi aaya.'));
+  if(!all.length)box.append(el('div','empty',S.map.size?'No match.':'No messages yet.'));
   all.forEach(c=>{
     const last=c.msgs.at(-1),b=el('button','chat'+(S.cur===c.from?' on':''));
     const t=title(c),pc=PAL[t.charCodeAt(0)%PAL.length];
