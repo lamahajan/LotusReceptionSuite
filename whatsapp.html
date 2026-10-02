@@ -39,7 +39,7 @@ main{flex:1;display:flex;min-height:0}
 #tt .av{width:44px;height:44px;font-size:15px}
 #tt .hb{min-width:0;flex:1}
 #tt h2{margin:0;font-size:16px;font-weight:700;line-height:1.25}
-#tt small{display:block;color:var(--mute);font-size:12.5px;margin:1px 0 6px}
+#tt small{display:block;color:var(--mute);font-size:12.5px;margin:1px 0 0}
 .sp{display:inline-flex;align-items:center;gap:6px;padding:3px 10px 3px 4px;border-radius:20px;font:600 11.5px Outfit,sans-serif;border:1.5px solid}
 .sp i{font-style:normal;width:18px;height:18px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:9.5px;font-weight:800}
 #msgs{flex:1;overflow:auto;padding:10px 16px 18px;display:flex;flex-direction:column;gap:8px;background-color:var(--bg);background-image:radial-gradient(rgba(0,0,0,.045) 1px,transparent 1px);background-size:18px 18px}
@@ -96,7 +96,10 @@ main{flex:1;display:flex;min-height:0}
 
 <script>
 const $=id=>document.getElementById(id);
-const S={con:{},url:localStorage.waUrl||'',tok:localStorage.waTok||'',map:new Map(),cur:null,older:null,seen:{},unread:0};
+const DEFAULTS={url:'https://whatsapp.due-4a8.workers.dev',tok:''}; // optional: pre-fill (keep the file private if you add the token)
+const ls={get:k=>{try{return localStorage.getItem(k)}catch(e){return null}},set:(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}}};
+{const h=new URLSearchParams(location.hash.slice(1));if(h.get('url')||h.get('k')){if(h.get('url'))ls.set('waUrl',h.get('url'));if(h.get('k'))ls.set('waTok',h.get('k'));history.replaceState(null,'',location.pathname+location.search)}}
+const S={con:{},url:ls.get('waUrl')||DEFAULTS.url,tok:ls.get('waTok')||DEFAULTS.tok,map:new Map(),cur:null,older:null,seen:{},unread:0};
 const fmtT=ts=>new Date(ts*1000).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',timeZone:'Asia/Kolkata'});
 const fmtD=ts=>new Date(ts*1000).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric',timeZone:'Asia/Kolkata'});
 const el=(t,c,x)=>{const e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e};
@@ -162,11 +165,11 @@ function thread(){
   const c=chats().find(x=>x.from===S.cur);if(!c)return;
   S.seen[c.from]=c.msgs.at(-1).ts;
   const hb=el('div','hb'),tc=el('div','tc');
-  hb.append(el('h2','',title(c)),el('small','','+'+c.from+(c.name&&c.stu.length?' · WhatsApp name: '+c.name:'')));
   c.stu.forEach(s=>{const pc=palOf(s.name),sp=el('span','sp'),i=el('i','',initials(s.name));
     i.style.background=pc[1];i.style.color=pc[0];sp.style.borderColor=pc[1];
     sp.append(i,document.createTextNode(s.name+(s.adm?' · #'+s.adm:'')+(s.cls?' · '+s.cls:'')));tc.append(sp)});
-  hb.append(tc);
+  const sm=el('small','','+'+c.from+(c.name&&c.stu.length?' · WhatsApp name: '+c.name:''));
+  if(c.stu.length){tc.style.marginBottom='4px';hb.append(tc,sm)}else hb.append(el('h2','',title(c)),sm);
   $('tt').replaceChildren(avatar(c.stu[0]?c.stu[0].name:title(c)),hb);
   const box=$('msgs'),prev=box.scrollTop,stick=box.scrollHeight-box.scrollTop-box.clientHeight<80||!box.children.length;
   box.replaceChildren();
@@ -193,7 +196,7 @@ function thread(){
 $('q').oninput=render;
 $('back').onclick=()=>{S.cur=null;document.body.classList.remove('open');$('tt').textContent='Select a chat';render()};
 $('set').onclick=()=>{$('u').value=S.url;$('t').value=S.tok;$('cfg').classList.add('open')};
-$('f').onsubmit=e=>{e.preventDefault();S.url=localStorage.waUrl=$('u').value.trim();S.tok=localStorage.waTok=$('t').value;S.map.clear();$('cfg').classList.remove('open');load(true)};
+$('f').onsubmit=e=>{e.preventDefault();S.url=$('u').value.trim();S.tok=$('t').value;ls.set('waUrl',S.url);ls.set('waTok',S.tok);S.map.clear();$('cfg').classList.remove('open');load(true)};
 document.onvisibilitychange=()=>{if(!document.hidden){S.unread=0;document.title='WhatsApp Inbox'}};
 load(true);setInterval(()=>{if(!document.hidden)load(false)},10000);
 </script>
