@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>WhatsApp Inbox</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;700;800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#efeae2;--panel:#fff;--ink:#1b2a2f;--mute:#6b7c85;--line:#e3e8ea;--brand:#0b5d4f;--in:#fff;--hl:#d9f2e6}
 @media(prefers-color-scheme:dark){:root{--bg:#0e1517;--panel:#162024;--ink:#e6edf0;--mute:#8aa0a9;--line:#24343a;--brand:#27a58a;--in:#1f2e34;--hl:#1c3a33}}
@@ -19,11 +20,19 @@ main{flex:1;display:flex;min-height:0}
 #list{width:340px;max-width:100%;background:var(--panel);border-right:1px solid var(--line);display:flex;flex-direction:column}
 #q{margin:10px;padding:9px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);font:inherit}
 #chats{flex:1;overflow:auto}
-.chat{display:block;width:100%;text-align:left;border:0;border-bottom:1px solid var(--line);background:none;color:inherit;font:inherit;padding:10px 14px;cursor:pointer}
-.chat:hover,.chat.on{background:var(--hl)}
-.chat b{display:flex;justify-content:space-between;gap:8px}
-.chat b span{font-weight:400;font-size:12px;color:var(--mute);white-space:nowrap}
-.chat p{margin:2px 0 0;color:var(--mute);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#chats{padding:6px 10px 10px;background:#f1f5f9}
+@media(prefers-color-scheme:dark){#chats{background:#0e1517}}
+.chat{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:var(--panel);color:inherit;font:inherit;border:1.5px solid transparent;border-radius:14px;padding:12px 14px;margin-bottom:6px;cursor:pointer;transition:border-color .15s}
+.chat:hover{border-color:var(--line)}.chat.on{border-color:#25D366;background:var(--hl)}
+.av{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;font:800 14px Outfit,sans-serif;flex-shrink:0}
+.cb{flex:1;min-width:0}
+.nm{font-size:13.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.meta{display:flex;gap:5px;align-items:center;margin-top:3px;flex-wrap:wrap;font:10px Outfit,sans-serif;color:#94a3b8}
+.chip{background:#f1f5f9;color:#475569;padding:1px 8px;border-radius:20px;font-weight:600;font-size:10px}
+@media(prefers-color-scheme:dark){.chip{background:#24343a;color:#c5d3d8}}
+.side{text-align:right;flex-shrink:0;font:11px Outfit,sans-serif;color:var(--mute)}
+.pv{margin-top:4px;font-size:12px;color:var(--mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tc{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
 .dot{display:inline-block;min-width:8px;height:8px;border-radius:4px;background:var(--brand);margin-right:6px}
 #thread{flex:1;display:flex;flex-direction:column;min-width:0}
 #tt{padding:10px 16px;background:var(--panel);border-bottom:1px solid var(--line);font-weight:600}
@@ -75,7 +84,7 @@ main{flex:1;display:flex;min-height:0}
 
 <script>
 const $=id=>document.getElementById(id);
-const S={url:localStorage.waUrl||'',tok:localStorage.waTok||'',map:new Map(),cur:null,older:null,seen:{},unread:0};
+const S={con:{},url:localStorage.waUrl||'',tok:localStorage.waTok||'',map:new Map(),cur:null,older:null,seen:{},unread:0};
 const fmtT=ts=>new Date(ts*1000).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',timeZone:'Asia/Kolkata'});
 const fmtD=ts=>new Date(ts*1000).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric',timeZone:'Asia/Kolkata'});
 const el=(t,c,x)=>{const e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e};
@@ -90,7 +99,7 @@ async function load(first){
   try{
     const d=await api('/messages');
     const before=S.map.size;
-    d.messages.forEach(m=>S.map.set(m.id,m));
+    d.messages.forEach(m=>S.map.set(m.id,m));Object.assign(S.con,d.contacts||{});
     if(first)S.older=d.cursor;
     if(!first&&S.map.size>before&&document.hidden){S.unread+=S.map.size-before;document.title=`(${S.unread}) WhatsApp Inbox`}
     $('status').textContent='Updated '+new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
@@ -100,25 +109,38 @@ async function load(first){
 async function older(){
   if(!S.older)return;
   const d=await api('/messages?cursor='+encodeURIComponent(S.older));
-  d.messages.forEach(m=>S.map.set(m.id,m));S.older=d.cursor;render();
+  d.messages.forEach(m=>S.map.set(m.id,m));Object.assign(S.con,d.contacts||{});S.older=d.cursor;render();
 }
 function chats(){
   const g={};
   [...S.map.values()].forEach(m=>{(g[m.from]=g[m.from]||{from:m.from,name:'',msgs:[]}).msgs.push(m);if(m.name)g[m.from].name=m.name});
-  Object.values(g).forEach(c=>c.msgs.sort((a,b)=>a.ts-b.ts));
+  Object.values(g).forEach(c=>{c.msgs.sort((a,b)=>a.ts-b.ts);c.stu=S.con[c.from]||[]});
   return Object.values(g).sort((a,b)=>b.msgs.at(-1).ts-a.msgs.at(-1).ts);
 }
 const preview=m=>m.body||({image:'📷 Photo',video:'🎥 Video',audio:'🎤 Audio',document:'📄 '+(m.file||'Document'),sticker:'Sticker',location:'📍 Location'}[m.type]||m.type);
+const PAL=[['#6366f1','#ede9fe'],['#0891b2','#cffafe'],['#059669','#d1fae5'],['#d97706','#fef3c7'],['#dc2626','#fee2e2'],['#7c3aed','#f3e8ff'],['#0284c7','#e0f2fe'],['#be185d','#fce7f3']];
+const mob10=n=>String(n).replace(/\D/g,'').slice(-10);
+const title=c=>c.stu.length?c.stu[0].name:(c.name||'+'+c.from);
 function render(){
   const q=$('q').value.toLowerCase(),box=$('chats');box.replaceChildren();
-  const all=chats().filter(c=>!q||(c.name+c.from).toLowerCase().includes(q)||c.msgs.some(m=>(m.body||'').toLowerCase().includes(q)));
+  const all=chats().filter(c=>!q||(c.name+c.from+c.stu.map(s=>s.name+s.adm+s.cls).join(' ')).toLowerCase().includes(q)||c.msgs.some(m=>(m.body||'').toLowerCase().includes(q)));
   if(!all.length)box.append(el('div','empty',S.map.size?'No match.':'Abhi koi message nahi aaya.'));
   all.forEach(c=>{
     const last=c.msgs.at(-1),b=el('button','chat'+(S.cur===c.from?' on':''));
-    const h=el('b');const n=el('div','',c.name||'+'+c.from);
-    if((S.seen[c.from]||0)<last.ts)n.prepend(el('i','dot'));
-    h.append(n,el('span','',fmtT(last.ts)));
-    b.append(h,el('p','',preview(last)));
+    const t=title(c),pc=PAL[t.charCodeAt(0)%PAL.length];
+    const ini=t.replace(/[^\p{L}\p{N} ]/gu,'').split(' ').filter(Boolean).slice(0,2).map(w=>w[0]).join('').toUpperCase()||'#';
+    const av=el('div','av',ini);av.style.background=pc[1];av.style.color=pc[0];
+    const cb=el('div','cb'),nm=el('div','nm',t);
+    if(c.stu.length>1)nm.append(el('span','chip','+'+(c.stu.length-1)));
+    const meta=el('div','meta');
+    if(c.stu[0]){if(c.stu[0].adm)meta.append(el('span','','#'+c.stu[0].adm));if(c.stu[0].cls)meta.append(el('span','chip',c.stu[0].cls))}
+    else if(c.name)meta.append(el('span','chip',c.name));
+    meta.append(el('span','',mob10(c.from)));
+    cb.append(nm,meta,el('div','pv',preview(last)));
+    const side=el('div','side');
+    if((S.seen[c.from]||0)<last.ts)side.append(el('i','dot'));
+    side.append(document.createTextNode(fmtT(last.ts)));
+    b.append(av,cb,side);
     b.onclick=()=>{S.cur=c.from;document.body.classList.add('open');render()};
     box.append(b);
   });
@@ -127,7 +149,9 @@ function render(){
 function thread(){
   const c=chats().find(x=>x.from===S.cur);if(!c)return;
   S.seen[c.from]=c.msgs.at(-1).ts;
-  $('tt').replaceChildren(document.createTextNode(c.name||'+'+c.from),Object.assign(el('small'),{textContent:'+'+c.from}));
+  const hd=el('small','','+'+c.from+(c.stu.length&&c.name?' · WhatsApp: '+c.name:''));
+  const tc=el('div','tc');c.stu.forEach(s=>tc.append(el('span','chip',s.name+(s.adm?' #'+s.adm:'')+(s.cls?' · '+s.cls:''))));
+  $('tt').replaceChildren(document.createTextNode(title(c)),hd,tc);
   const box=$('msgs'),stick=box.scrollHeight-box.scrollTop-box.clientHeight<80||!box.children.length;
   box.replaceChildren();
   if(S.older){const mb=el('button','','Load older messages');mb.id='more';mb.onclick=older;box.append(mb)}
