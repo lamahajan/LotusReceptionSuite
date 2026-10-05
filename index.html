@@ -3239,6 +3239,39 @@ Reason: {reason}"></textarea>
             </div>
           </div>
 
+          <!-- Manage QR -->
+          <div class="dl-acc">
+            <button class="dl-acc-hdr" onclick="this.closest('.dl-acc').classList.toggle('open');if(this.closest('.dl-acc').classList.contains('open'))qrRefreshStats()">
+              <span class="dl-acc-hdr-icon">🔳</span>
+              <div class="dl-acc-hdr-info">
+                <div class="dl-acc-hdr-title">Manage QR</div>
+                <div class="dl-acc-hdr-sub">Full QR clean-up, Part QR sync, month-end wipe</div>
+              </div>
+              <span class="dl-acc-arrow">▾</span>
+            </button>
+            <div class="dl-acc-body">
+              <div style="font-size:11px;color:#6a6055;margin:10px 0 10px;line-height:1.5">Full QR = the fixed-amount QR sent with the reminder. Part QR = a permanent QR for every student (the parent enters the amount). Part QRs are safe from every cleanup and from the month-end wipe.</div>
+              <div id="qr-mg-stats" style="font-size:12px;font-weight:800;color:#1a1208;margin-bottom:12px">Full QR active: —  ·  Part QR: —</div>
+
+              <label style="display:flex;align-items:center;gap:8px;font-size:12px;font-weight:800;color:#1a1208;cursor:pointer">
+                <input type="checkbox" id="qr-part-on" onchange="qrPartToggle(this.checked)" style="width:16px;height:16px;accent-color:#f97316;cursor:pointer"/> Enable Part QR (Full / Part popup)
+              </label>
+              <div id="qr-part-state" style="font-size:11px;margin:2px 0 12px 24px;color:#6a6055">OFF — payment page works as before (Full QR only)</div>
+
+              <label style="display:flex;align-items:center;gap:8px;font-size:12px;font-weight:800;color:#1a1208;cursor:pointer">
+                <input type="checkbox" id="qr-wipe-on" onchange="qrWipeToggle(this.checked)" style="width:16px;height:16px;accent-color:#dc2626;cursor:pointer"/> Enable month-end Full QR wipe (11:59 PM)
+              </label>
+              <div id="qr-wipe-state" style="font-size:11px;margin:2px 0 12px 24px;color:#6a6055">Loading status…</div>
+
+              <div style="display:flex;flex-direction:column;gap:8px">
+                <button id="qr-part-sync-btn" onclick="qrSyncPartQrs()" style="width:100%;border-radius:10px;padding:10px 12px;font-size:12px;font-weight:700;cursor:pointer;text-align:left;font-family:inherit;background:#f97316;color:#fff;border:none">🔄 Sync Static (Part) QRs — from Student DB</button>
+                <button onclick="qrReconcileFull()" style="width:100%;border-radius:10px;padding:10px 12px;font-size:12px;font-weight:700;cursor:pointer;text-align:left;font-family:inherit;background:#fff;color:#1a1208;border:1.5px solid #e8dcc8">🧹 Reconcile Full QRs — against Due List</button>
+                <button onclick="qrOpenClosePicker()" style="width:100%;border-radius:10px;padding:10px 12px;font-size:12px;font-weight:700;cursor:pointer;text-align:left;font-family:inherit;background:#fff;color:#dc2626;border:1.5px solid #e8dcc8">🗑️ Close Full QRs… (select or all)</button>
+                <button onclick="qrRefreshStats()" style="width:100%;border-radius:10px;padding:10px 12px;font-size:12px;font-weight:700;cursor:pointer;text-align:left;font-family:inherit;background:transparent;color:#6a6055;border:1.5px dashed #d9cdb6">↻ Refresh counts</button>
+              </div>
+              <div id="qr-mg-status" style="font-size:11px;color:#6a6055;margin-top:8px;min-height:14px;line-height:1.5;font-weight:600"></div>
+            </div>
+          </div>
           <!-- ── 5. PROCESSED TRANSACTIONS ── -->
           <div class="dl-acc">
             <button class="dl-acc-hdr" onclick="this.closest('.dl-acc').classList.toggle('open')">
@@ -3394,28 +3427,6 @@ Reason: {reason}"></textarea>
         <button onclick="waDownloadDeliveryReport()" style="flex:1;min-width:150px;background:var(--brand);color:#fff;border:none;border-radius:9px;padding:9px 14px;font-size:13px;font-weight:700;cursor:pointer">⬇️ Download Excel</button>
       </div>
       <div id="wa-rep-status" style="font-size:11px;color:var(--sub);margin-top:8px;min-height:14px;line-height:1.5"></div>
-    </div>
-
-    <!-- Manage QR -->
-    <div style="background:var(--surf);border:1.5px solid var(--bdr);border-radius:var(--r);padding:16px 18px;margin-bottom:14px;box-shadow:var(--sha)">
-      <div style="font-size:13px;font-weight:800;color:var(--txt);margin-bottom:4px">🔳 Manage QR</div>
-      <div style="font-size:11px;color:var(--sub);margin-bottom:10px;line-height:1.5">Full QR = the fixed-amount QR sent with the reminder. Part QR = a permanent QR for every student (the parent enters the amount). Part QRs are safe from every cleanup and from the month-end wipe.</div>
-      <label style="display:flex;align-items:center;gap:8px;font-size:12px;font-weight:800;color:var(--txt);cursor:pointer;margin-bottom:2px">
-        <input type="checkbox" id="qr-part-on" onchange="qrPartToggle(this.checked)" style="width:16px;height:16px;accent-color:#b5883e;cursor:pointer"/> Enable Part QR (Full / Part popup)
-      </label>
-      <div id="qr-part-state" style="font-size:11px;margin:0 0 10px 24px;color:var(--sub)">OFF — payment page works as before (Full QR only)</div>
-      <label style="display:flex;align-items:center;gap:8px;font-size:12px;font-weight:800;color:var(--txt);cursor:pointer;margin-bottom:2px">
-        <input type="checkbox" id="qr-wipe-on" onchange="qrWipeToggle(this.checked)" style="width:16px;height:16px;accent-color:#dc2626;cursor:pointer"/> Enable month-end Full QR wipe (11:59 PM)
-      </label>
-      <div id="qr-wipe-state" style="font-size:11px;margin:0 0 10px 24px;color:var(--sub)">Loading status…</div>
-      <div id="qr-mg-stats" style="font-size:12px;font-weight:700;color:var(--txt);margin-bottom:10px">Full QR active: —  ·  Part QR: —</div>
-      <div style="display:flex;flex-direction:column;gap:8px">
-        <button id="qr-part-sync-btn" onclick="qrSyncPartQrs()" style="width:100%;border-radius:9px;padding:10px 14px;font-size:13px;font-weight:700;cursor:pointer;text-align:left;background:var(--brand);color:#fff;border:none">🔄 Sync Static (Part) QRs — from Student DB</button>
-        <button onclick="qrReconcileFull()" style="width:100%;border-radius:9px;padding:10px 14px;font-size:13px;font-weight:700;cursor:pointer;text-align:left;background:var(--bg3);color:var(--txt);border:1.5px solid var(--bdr)">🧹 Reconcile Full QRs — against Due List</button>
-        <button onclick="qrOpenClosePicker()" style="width:100%;border-radius:9px;padding:10px 14px;font-size:13px;font-weight:700;cursor:pointer;text-align:left;background:var(--bg3);color:#dc2626;border:1.5px solid var(--bdr)">🗑️ Close Full QRs… (select or all)</button>
-        <button onclick="qrRefreshStats()" style="width:100%;border-radius:9px;padding:10px 14px;font-size:13px;font-weight:700;cursor:pointer;text-align:left;background:transparent;color:var(--sub);border:1.5px dashed var(--bdr)">↻ Refresh counts</button>
-      </div>
-      <div id="qr-mg-status" style="font-size:11px;color:var(--sub);margin-top:8px;min-height:14px;line-height:1.5"></div>
     </div>
 
     <!-- Data Management -->
@@ -3617,7 +3628,6 @@ function goTo(name){
   var mn=document.getElementById('mt-screen-name');if(mn)mn.textContent=SCREEN_NAMES[name]||'School Suite';
   if(name==='home')updateHomeStats();
   if(name==='att'&&typeof _attInit==='function')_attInit();
-  if(name==='settings'&&typeof qrRefreshStats==='function')qrRefreshStats();
 }
 function openMobileDrawer(){document.getElementById('mobile-drawer').classList.add('open');}
 function closeMobileDrawer(){document.getElementById('mobile-drawer').classList.remove('open');}
@@ -5418,7 +5428,7 @@ async function qrLoop(path,bodyFn,progress){
 // the parents' payment page obeys it too. localStorage only mirrors it so the
 // bulk-send code can read it synchronously.
 //   OFF = app behaves exactly as before: no Part QR sync, no popup on the
-//         payment page, no 2nd WhatsApp button.
+//         payment page.
 function qrPartOn(){ return localStorage.getItem('qr_part_enabled')==='1'; }
 window.qrPartInit=function(){
   var cb=document.getElementById('qr-part-on'); if(cb) cb.checked=qrPartOn();
@@ -5439,6 +5449,11 @@ window.qrPartToggle=async function(on){
   qrPartInit();
 };
 try{ qrPartInit(); document.addEventListener('DOMContentLoaded',qrPartInit); }catch(e){}
+// Refresh Manage QR (counts + switches) each time Due List Settings opens.
+window.addEventListener('load',function(){
+  var o=window.dlOpenSettings;
+  if(typeof o==='function') window.dlOpenSettings=function(){ var r=o.apply(this,arguments); try{ qrRefreshStats(); }catch(e){} return r; };
+});
 // Month-end wipe switch lives on the worker (the cron runs there, not in this browser).
 window.qrWipeInit=async function(){
   var cb=document.getElementById('qr-wipe-on'), t=document.getElementById('qr-wipe-state');
@@ -10029,10 +10044,6 @@ function dlRenderTmplRows(){
       +'<input type="checkbox" id="dl-tmpl-btn-'+i+'" '+(t.hasButton?'checked':'')+' onchange="dlWaTemplates['+i+'].hasButton=this.checked" style="width:14px;height:14px;accent-color:#b5883e;cursor:pointer"/>'
       +'<label for="dl-tmpl-btn-'+i+'" style="font-size:11px;font-weight:700;color:#8a6428;cursor:pointer">Has URL Button (Pay Now)</label>'
       +'</div>'
-      +'<div style="margin-top:6px;display:flex;align-items:center;gap:6px">'
-      +'<input type="checkbox" id="dl-tmpl-pbtn-'+i+'" '+(t.hasPartButton?'checked':'')+' onchange="dlWaTemplates['+i+'].hasPartButton=this.checked" style="width:14px;height:14px;accent-color:#b5883e;cursor:pointer"/>'
-      +'<label for="dl-tmpl-pbtn-'+i+'" style="font-size:11px;font-weight:700;color:#8a6428;cursor:pointer">Has 2nd URL Button (Pay Part Fee) — the template needs 2 buttons</label>'
-      +'</div>'
       +'</div>';
   }).join('');
 }
@@ -10266,10 +10277,7 @@ function dlCreateQRsAndSend(students,phoneId,token,tmplName,proxyUrl){
   function startSend(){
     if(sendStarted) return;
     sendStarted=true;
-    // Part QR ids (one per student) for the 2nd "Pay Part Fee" button
-    (qrPartOn()?qrCall('GET','/part-qrs'):Promise.resolve({map:{}})).then(function(m){ window._dlPartMap=(m&&m.map)||{}; })
-      .catch(function(){ window._dlPartMap={}; })
-      .then(function(){ dlSendBatch(students,phoneId,token,tmplName,0,0,0,qrMap,proxyUrl); });
+    dlSendBatch(students,phoneId,token,tmplName,0,0,0,qrMap,proxyUrl);
   }
   function oneDone(){
     finished++;
@@ -10457,13 +10465,6 @@ function dlSendBatch(students,phoneId,token,tmplName,idx,sent,failed,qrMap,proxy
   var hasBtn = tmplCfg ? (tmplCfg.hasButton !== false) : true; // default ON
   if(hasBtn){
     components.push({type:'button',sub_type:'url',index:'0',parameters:[{type:'text',text:suffix}]});
-    // Optional 2nd button "Pay Part Fee" → the student's permanent Part QR
-    // (?pqr=…). No Part QR yet → falls back to the Full link so it never breaks.
-    if(tmplCfg && tmplCfg.hasPartButton && qrPartOn()){
-      var _pid=(window._dlPartMap||{})[adm]||'';
-      var _psuf=_pid?('?pqr='+encodeURIComponent(_pid)):suffix;
-      components.push({type:'button',sub_type:'url',index:'1',parameters:[{type:'text',text:_psuf}]});
-    }
   }
 
   var _waCtx=waCtx(s.adm,s.name,s.cls||s.class,tmplName);
