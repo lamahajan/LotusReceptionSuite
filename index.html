@@ -3380,6 +3380,44 @@ Reason: {reason}"></textarea>
       </div>
     </div>
 
+    <!-- WhatsApp Delivery Report -->
+    <div style="background:var(--surf);border:1.5px solid var(--bdr);border-radius:var(--r);padding:16px 18px;margin-bottom:14px;box-shadow:var(--sha)">
+      <div style="font-size:13px;font-weight:800;color:var(--txt);margin-bottom:4px">📨 WhatsApp Delivery Report</div>
+      <div style="font-size:11px;color:var(--sub);margin-bottom:12px;line-height:1.5">See who received the WhatsApp message and who did not, and why — download it as Excel. (Uses the worker URL + token saved in Parent Desk.)</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <select id="wa-rep-days" style="flex:0 0 auto;background:var(--bg3);border:1.5px solid var(--bdr);color:var(--txt);border-radius:9px;padding:9px 10px;font-size:12px;font-weight:700">
+          <option value="1">Last 24 hours</option>
+          <option value="3">Last 3 days</option>
+          <option value="7" selected>Last 7 days</option>
+          <option value="30">Last 30 days</option>
+        </select>
+        <button onclick="waDownloadDeliveryReport()" style="flex:1;min-width:150px;background:var(--brand);color:#fff;border:none;border-radius:9px;padding:9px 14px;font-size:13px;font-weight:700;cursor:pointer">⬇️ Download Excel</button>
+      </div>
+      <div id="wa-rep-status" style="font-size:11px;color:var(--sub);margin-top:8px;min-height:14px;line-height:1.5"></div>
+    </div>
+
+    <!-- Manage QR -->
+    <div style="background:var(--surf);border:1.5px solid var(--bdr);border-radius:var(--r);padding:16px 18px;margin-bottom:14px;box-shadow:var(--sha)">
+      <div style="font-size:13px;font-weight:800;color:var(--txt);margin-bottom:4px">🔳 Manage QR</div>
+      <div style="font-size:11px;color:var(--sub);margin-bottom:10px;line-height:1.5">Full QR = the fixed-amount QR sent with the reminder. Part QR = a permanent QR for every student (the parent enters the amount). Part QRs are safe from every cleanup and from the month-end wipe.</div>
+      <label style="display:flex;align-items:center;gap:8px;font-size:12px;font-weight:800;color:var(--txt);cursor:pointer;margin-bottom:2px">
+        <input type="checkbox" id="qr-part-on" onchange="qrPartToggle(this.checked)" style="width:16px;height:16px;accent-color:#b5883e;cursor:pointer"/> Enable Part QR (Full / Part popup)
+      </label>
+      <div id="qr-part-state" style="font-size:11px;margin:0 0 10px 24px;color:var(--sub)">OFF — payment page works as before (Full QR only)</div>
+      <label style="display:flex;align-items:center;gap:8px;font-size:12px;font-weight:800;color:var(--txt);cursor:pointer;margin-bottom:2px">
+        <input type="checkbox" id="qr-wipe-on" onchange="qrWipeToggle(this.checked)" style="width:16px;height:16px;accent-color:#dc2626;cursor:pointer"/> Enable month-end Full QR wipe (11:59 PM)
+      </label>
+      <div id="qr-wipe-state" style="font-size:11px;margin:0 0 10px 24px;color:var(--sub)">Loading status…</div>
+      <div id="qr-mg-stats" style="font-size:12px;font-weight:700;color:var(--txt);margin-bottom:10px">Full QR active: —  ·  Part QR: —</div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <button id="qr-part-sync-btn" onclick="qrSyncPartQrs()" style="width:100%;border-radius:9px;padding:10px 14px;font-size:13px;font-weight:700;cursor:pointer;text-align:left;background:var(--brand);color:#fff;border:none">🔄 Sync Static (Part) QRs — from Student DB</button>
+        <button onclick="qrReconcileFull()" style="width:100%;border-radius:9px;padding:10px 14px;font-size:13px;font-weight:700;cursor:pointer;text-align:left;background:var(--bg3);color:var(--txt);border:1.5px solid var(--bdr)">🧹 Reconcile Full QRs — against Due List</button>
+        <button onclick="qrOpenClosePicker()" style="width:100%;border-radius:9px;padding:10px 14px;font-size:13px;font-weight:700;cursor:pointer;text-align:left;background:var(--bg3);color:#dc2626;border:1.5px solid var(--bdr)">🗑️ Close Full QRs… (select or all)</button>
+        <button onclick="qrRefreshStats()" style="width:100%;border-radius:9px;padding:10px 14px;font-size:13px;font-weight:700;cursor:pointer;text-align:left;background:transparent;color:var(--sub);border:1.5px dashed var(--bdr)">↻ Refresh counts</button>
+      </div>
+      <div id="qr-mg-status" style="font-size:11px;color:var(--sub);margin-top:8px;min-height:14px;line-height:1.5"></div>
+    </div>
+
     <!-- Data Management -->
     <div style="background:var(--surf);border:1.5px solid var(--bdr);border-radius:var(--r);padding:16px 18px;margin-bottom:14px;box-shadow:var(--sha)">
       <div style="font-size:13px;font-weight:800;color:var(--txt);margin-bottom:4px">🗄️ Data Management</div>
@@ -3579,6 +3617,7 @@ function goTo(name){
   var mn=document.getElementById('mt-screen-name');if(mn)mn.textContent=SCREEN_NAMES[name]||'School Suite';
   if(name==='home')updateHomeStats();
   if(name==='att'&&typeof _attInit==='function')_attInit();
+  if(name==='settings'&&typeof qrRefreshStats==='function')qrRefreshStats();
 }
 function openMobileDrawer(){document.getElementById('mobile-drawer').classList.add('open');}
 function closeMobileDrawer(){document.getElementById('mobile-drawer').classList.remove('open');}
@@ -5218,6 +5257,365 @@ window.gpUploadHdr=async function(inputId){
 };
 
 // Core send — text or template
+// ═══ WhatsApp delivery tracking / report ═══
+// ctx rides inside each outgoing message (biz_opaque_callback_data) and comes
+// back in Meta's status webhook, so the report knows who each message was for.
+window._waDelQ = window._waDelQ || [];
+function waCtx(adm,name,cls,tmpl){
+  return [adm,name,cls,tmpl].map(function(x){ return String(x==null?'':x).replace(/\|/g,'/').trim(); }).join('|').slice(0,480);
+}
+function waWorkerCfg(){
+  return {
+    url:(localStorage.getItem('waUrl')||'https://whatsapp.due-4a8.workers.dev').replace(/\/+$/,''),
+    tok:localStorage.getItem('waTok')||''
+  };
+}
+// Messages that never reached Meta (rejected / no number) are reported to the worker too.
+function waDelLog(it){
+  try{ it.ts=Math.floor(Date.now()/1000); window._waDelQ.push(it); if(window._waDelQ.length>=25) waDelFlush(); }catch(e){}
+}
+function waDelFlush(){
+  try{
+    var c=waWorkerCfg(), q=window._waDelQ.splice(0);
+    if(!q.length||!c.tok) return;
+    fetch(c.url+'/delivery-log',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+c.tok},
+      body:JSON.stringify({items:q})
+    }).catch(function(){});
+  }catch(e){}
+}
+var WA_ERR_MAP={
+  '131026':'Number is not on WhatsApp, WhatsApp is outdated, or the parent has not accepted WhatsApp\'s latest Terms of Service',
+  '131047':'More than 24 hours since the parent last replied (free-form text is not allowed) — send a template message',
+  '131049':'Meta chose not to deliver this message (too many marketing/alert messages, or the parent blocked the number)',
+  '131048':'Spam rate limit reached — too many messages sent, try again later',
+  '131056':'Too many messages to the same number too quickly — slow down',
+  '130429':'Meta throughput limit — messages were sent too fast',
+  '130472':'The parent\'s number is in a Meta test group, so the message was not delivered',
+  '131030':'Number is not on the allowed list (test mode)',
+  '131021':'Sender and recipient number are the same',
+  '131000':'Something went wrong on Meta\'s side — send again',
+  '131008':'A required parameter of the message is missing',
+  '131009':'A parameter of the message is invalid',
+  '131031':'WhatsApp Business account is locked',
+  '131042':'WhatsApp Business account has a payment / billing problem',
+  '131051':'This message type is not supported',
+  '131053':'Media (image) upload failed',
+  '132000':'The number of template variables does not match',
+  '132001':'Template does not exist (wrong name or language)',
+  '132005':'Translated template text is too long',
+  '132007':'Template violates WhatsApp policy',
+  '132012':'Template variable format is invalid',
+  '132015':'Template was paused by Meta (low quality)',
+  '132016':'Template was disabled by Meta',
+  '133010':'Sender phone number is not registered on WhatsApp',
+  '190':'Access token expired — enter a new token in Settings',
+  '368':'WhatsApp account is temporarily blocked (policy violation)',
+  '80007':'WhatsApp API rate limit — try again later',
+  'NO_NUMBER':'Mobile number is missing or not 10 digits — fix the number in Due List / Student data',
+  'API':'The WhatsApp API rejected the message'
+};
+function waFmt(ts){
+  if(!ts) return '';
+  var d=new Date(ts*1000), p=function(n){ return String(n).padStart(2,'0'); };
+  return p(d.getDate())+'/'+p(d.getMonth()+1)+'/'+d.getFullYear()+' '+p(d.getHours())+':'+p(d.getMinutes());
+}
+function waStatusOf(r){
+  if(r.failed_ts) return 'Failed';
+  if(r.read_ts) return 'Read';
+  if(r.delivered_ts) return 'Delivered';
+  if(r.sent_ts) return 'Sent (not delivered yet)';
+  return 'Unknown';
+}
+async function waDownloadDeliveryReport(){
+  var st=document.getElementById('wa-rep-status');
+  var say=function(t,c){ if(st){ st.textContent=t; st.style.color=c||'var(--sub)'; } };
+  var days=(document.getElementById('wa-rep-days')||{}).value||'7';
+  var c=waWorkerCfg();
+  if(!c.tok){ say('⚠️ First save the worker URL and token in Parent Desk (WhatsApp inbox)','var(--amber)'); return; }
+  if(typeof XLSX==='undefined'){ say('⚠️ The Excel library did not load — reload the page','var(--red)'); return; }
+  say('⏳ Fetching report…');
+  try{
+    waDelFlush();
+    var r=await fetch(c.url+'/delivery-report?days='+encodeURIComponent(days),{headers:{'Authorization':'Bearer '+c.tok}});
+    var j=await r.json().catch(function(){ return {}; });
+    if(!r.ok||!j.ok) throw new Error(j.error||('HTTP '+r.status));
+    if(!j.rows||!j.rows.length){ say('ℹ️ No messages were recorded in this period. (The report only covers messages sent after tracking was switched on.)','var(--amber)'); return; }
+
+    var all=[], bad=[], counts={}, reasons={};
+    j.rows.forEach(function(x){
+      var status=waStatusOf(x), reason='', meta='';
+      if(status==='Failed'){
+        reason=WA_ERR_MAP[x.err_code]||x.err_title||'Unknown error';
+        meta=(x.err_title||'')+(x.err_detail?' – '+x.err_detail:'');
+      } else if(status==='Sent (not delivered yet)'){
+        reason='Parent\'s phone is off / has no internet / WhatsApp is not running — it will be delivered once they are online';
+      }
+      var row={
+        'Student':x.name||'(name not found)','Adm No':x.adm||'','Class':x.cls||'',
+        'Mobile':x.to||'','Template':x.template||'',
+        'Sent At':waFmt(x.sent_ts||x.failed_ts||x.first),'Status':status,
+        'Delivered At':waFmt(x.delivered_ts),'Read At':waFmt(x.read_ts),
+        'Error Code':x.err_code||'','Reason':reason,'Meta Message':meta
+      };
+      all.push(row);
+      counts[status]=(counts[status]||0)+1;
+      if(status==='Failed'||status==='Sent (not delivered yet)'){
+        bad.push(row);
+        reasons[reason]=(reasons[reason]||0)+1;
+      }
+    });
+    var num=function(a){ return a.map(function(o,i){ return Object.assign({'Sr':i+1},o); }); };
+    var cols=[{wch:5},{wch:26},{wch:10},{wch:8},{wch:14},{wch:16},{wch:17},{wch:22},{wch:17},{wch:17},{wch:11},{wch:70},{wch:50}];
+    var wb=XLSX.utils.book_new();
+    var sum=[['WhatsApp Delivery Report'],['Period','Last '+days+' day(s)'],['Generated',waFmt(Math.floor(Date.now()/1000))],[],['Status','Count']];
+    ['Read','Delivered','Sent (not delivered yet)','Failed','Unknown'].forEach(function(k){ if(counts[k]) sum.push([k,counts[k]]); });
+    sum.push(['Total',all.length],[],['Not delivered — reason','Count']);
+    Object.keys(reasons).sort(function(a,b){ return reasons[b]-reasons[a]; }).forEach(function(k){ sum.push([k,reasons[k]]); });
+    var ws0=XLSX.utils.aoa_to_sheet(sum); ws0['!cols']=[{wch:70},{wch:12}];
+    XLSX.utils.book_append_sheet(wb,ws0,'Summary');
+    var ws1=XLSX.utils.json_to_sheet(num(bad.length?bad:[{'Student':'— everyone received it —'}])); ws1['!cols']=cols;
+    XLSX.utils.book_append_sheet(wb,ws1,'Not Delivered');
+    var ws2=XLSX.utils.json_to_sheet(num(all)); ws2['!cols']=cols;
+    XLSX.utils.book_append_sheet(wb,ws2,'All Messages');
+    var d=new Date(), p=function(n){ return String(n).padStart(2,'0'); };
+    XLSX.writeFile(wb,'WhatsApp_Delivery_'+d.getFullYear()+p(d.getMonth()+1)+p(d.getDate())+'.xlsx');
+    say('✅ Downloaded — '+all.length+' messages, '+bad.length+' not delivered','var(--green-d)');
+  }catch(err){
+    say('❌ '+err.message,'var(--red)');
+  }
+}
+
+// ═══ Manage QR (Settings) ═══
+function qrProxy(){ return (localStorage.getItem('dl_rzp_proxy_url')||'').replace(/\/+$/,''); }
+async function qrCall(method,path,body){
+  var base=qrProxy();
+  if(!base) throw new Error('Razorpay proxy URL is not set (enter it in Due List → Settings)');
+  var r=await fetch(base+path,{
+    method:method,
+    headers:dlApiHeaders(body?{'Content-Type':'application/json'}:{}),
+    body:body?JSON.stringify(body):undefined
+  });
+  var j=await r.json().catch(function(){ return {}; });
+  if(!r.ok){ var e=new Error(j.error||('HTTP '+r.status)); e.status=r.status; e.data=j; throw e; }
+  return j;
+}
+// The worker closes a limited chunk per call (Cloudflare limit) and says how
+// many are left — keep calling until nothing is left or nothing progresses.
+async function qrLoop(path,bodyFn,progress){
+  var total=0,guard=0,last=null;
+  while(guard++<400){
+    last=await qrCall('POST',path,bodyFn());
+    total+=last.closed_count||0;
+    if(progress) progress(last,total);
+    var left=last.left?last.left.length:(last.remaining||0);
+    if(!left||!(last.closed_count>0)) break;
+  }
+  return {total:total,last:last};
+}
+// Part QR master switch (default OFF) — the setting lives on the worker so
+// the parents' payment page obeys it too. localStorage only mirrors it so the
+// bulk-send code can read it synchronously.
+//   OFF = app behaves exactly as before: no Part QR sync, no popup on the
+//         payment page, no 2nd WhatsApp button.
+function qrPartOn(){ return localStorage.getItem('qr_part_enabled')==='1'; }
+window.qrPartInit=function(){
+  var cb=document.getElementById('qr-part-on'); if(cb) cb.checked=qrPartOn();
+  var b=document.getElementById('qr-part-sync-btn');
+  if(b){ b.disabled=!qrPartOn(); b.style.opacity=qrPartOn()?'1':'.45'; b.style.cursor=qrPartOn()?'pointer':'not-allowed'; }
+  var t=document.getElementById('qr-part-state');
+  if(t){ t.textContent=qrPartOn()?'ON — the payment page shows a "Pay full / Pay part" popup (for students that have a Part QR)':'OFF — payment page works as before (Full QR only)'; t.style.color=qrPartOn()?'var(--green-d)':'var(--sub)'; }
+};
+window.qrPartLoad=async function(){
+  if(!qrProxy()){ qrPartInit(); return; }
+  try{ var c=await qrCall('GET','/part-config'); localStorage.setItem('qr_part_enabled',c.enabled?'1':'0'); }catch(e){}
+  qrPartInit();
+};
+window.qrPartToggle=async function(on){
+  try{ await qrCall('POST','/part-config',{enabled:!!on}); }
+  catch(e){ qrSay('❌ '+e.message,'var(--red)'); qrPartInit(); return; }
+  localStorage.setItem('qr_part_enabled',on?'1':'0');
+  qrPartInit();
+};
+try{ qrPartInit(); document.addEventListener('DOMContentLoaded',qrPartInit); }catch(e){}
+// Month-end wipe switch lives on the worker (the cron runs there, not in this browser).
+window.qrWipeInit=async function(){
+  var cb=document.getElementById('qr-wipe-on'), t=document.getElementById('qr-wipe-state');
+  if(!cb||!qrProxy()) return;
+  try{
+    var c=await qrCall('GET','/wipe-config');
+    cb.checked=!!c.enabled;
+    if(t){
+      t.textContent=(c.enabled?'ON — all Full QRs are closed at 11:59 PM on the last day of every month':'OFF — nothing is closed at month end')
+        +(c.last_run_at?(' · pichhla wipe: '+new Date(c.last_run_at*1000).toLocaleDateString('en-IN')+' ('+(c.last_closed||0)+' QR)'):'');
+      t.style.color=c.enabled?'var(--green-d)':'var(--sub)';
+    }
+  }catch(e){ if(t){ t.textContent='Could not load status: '+e.message; t.style.color='var(--amber)'; } }
+};
+window.qrWipeToggle=async function(on){
+  var cb=document.getElementById('qr-wipe-on');
+  if(on&&!confirm('ALL active Full QRs will be closed at 11:59 PM on the last day of every month (Part QRs stay safe). Turn it ON?')){ if(cb) cb.checked=false; return; }
+  try{ await qrCall('POST','/wipe-config',{enabled:!!on}); }
+  catch(e){ if(cb) cb.checked=!on; qrSay('❌ '+e.message,'var(--red)'); return; }
+  await qrWipeInit();
+};
+function qrSay(t,c){ var st=document.getElementById('qr-mg-status'); if(st){ st.textContent=t; st.style.color=c||'var(--sub)'; } }
+
+window.qrRefreshStats=async function(){
+  var el=document.getElementById('qr-mg-stats');
+  try{
+    var a=await qrCall('GET','/full-qrs'), b=await qrCall('GET','/part-qrs');
+    if(el) el.textContent='Full QR active: '+(a.count||0)+'  ·  Part QR: '+(b.count||0);
+  }catch(e){ if(el) el.textContent='Could not load counts: '+e.message; }
+  qrWipeInit();
+  qrPartLoad();
+};
+
+window.qrSyncPartQrs=async function(){
+  if(!qrPartOn()){ qrSay('ℹ️ Part QR is OFF — turn the switch ON above','var(--amber)'); return; }
+  var stu=((typeof S!=='undefined'&&S.students)||[]).map(function(x){
+    return {adm:String(x.admissionNumber||'').trim(),name:x.name||'',cls:x.class||''};
+  }).filter(function(x){ return x.adm; });
+  if(!stu.length){ qrSay('⚠️ The Student DB is empty — run Student Sync in Gate Pass first','var(--amber)'); return; }
+  try{
+    qrSay('⏳ Preparing preview…');
+    var d=await qrCall('POST','/sync-part-qrs',{students:stu,dry:true});
+    if(!d.create.length&&!d.update&&!d.remove.length){ qrSay('✅ Everything is in sync — '+d.keep+' Part QRs, nothing to do','var(--green-d)'); return; }
+    var msg='Student DB: '+stu.length+' students\n\n✅ New Part QRs to create: '+d.create.length
+      +'\n✏️ Name/class updates: '+d.update
+      +'\n🗑️ Records to delete (not in the student list): '+d.remove.length;
+    if(d.remove.length) msg+='\n    '+d.remove.slice(0,10).map(function(x){ return (x.name||'?')+' ('+x.adm+')'; }).join(', ')+(d.remove.length>10?' …':'');
+    msg+='\n\nContinue?';
+    if(!confirm(msg)){ qrSay(''); return; }
+    var force=false,created=0,removed=0,updated=0,failed=[],guard=0,j=null;
+    while(guard++<300){
+      try{ j=await qrCall('POST','/sync-part-qrs',{students:stu,force:force}); }
+      catch(e){
+        if(e.status===409&&e.data&&e.data.remove){
+          if(confirm('⚠️ '+e.data.remove+' Part QR records are about to be removed (that is a lot). Are you sure?')){ force=true; continue; }
+          qrSay('Stopped','var(--amber)'); return;
+        }
+        throw e;
+      }
+      created+=j.created||0; removed+=j.removed||0; updated+=j.updated||0; failed=failed.concat(j.failed||[]);
+      qrSay('⏳ '+created+' QRs created · '+(j.remaining_create||0)+' left…');
+      if(!j.remaining_create||!j.created) break;
+    }
+    qrSay('✅ Created '+created+' · removed '+removed+' · updated '+updated+(failed.length?(' · ❌ failed '+failed.length+' (run again)'):''),failed.length?'var(--amber)':'var(--green-d)');
+    qrRefreshStats();
+  }catch(e){ qrSay('❌ '+e.message,'var(--red)'); }
+};
+
+window.qrReconcileFull=async function(){
+  try{
+    qrSay('⏳ Matching against the Due List…');
+    var r=await qrLoop('/reconcile-qrs',function(){ return {}; },function(j,t){ qrSay('⏳ '+t+' QRs closed · '+(j.remaining||0)+' left…'); });
+    qrSay('✅ Closed '+r.total+' Full QRs (balance 0 / not in the Due List)',r.last&&r.last.failed?'var(--amber)':'var(--green-d)');
+    qrRefreshStats();
+  }catch(e){
+    if(e.status===409) qrSay('⚠️ The Due List is empty or unreadable — nothing was closed','var(--amber)');
+    else qrSay('❌ '+e.message,'var(--red)');
+  }
+};
+
+window.qrOpenClosePicker=async function(){
+  qrSay('⏳ Loading active Full QRs…');
+  var data;
+  try{ data=await qrCall('GET','/full-qrs'); }catch(e){ qrSay('❌ '+e.message,'var(--red)'); return; }
+  var items=(data.items||[]).slice().sort(function(a,b){
+    return String(a.cls).localeCompare(String(b.cls),undefined,{numeric:true})||String(a.name).localeCompare(String(b.name));
+  });
+  if(!items.length){ qrSay('ℹ️ There are no active Full QRs','var(--amber)'); return; }
+  qrSay('');
+  var sel={}, classes=[];
+  items.forEach(function(x){ if(x.cls&&classes.indexOf(x.cls)<0) classes.push(x.cls); });
+  classes.sort(function(a,b){ return String(a).localeCompare(String(b),undefined,{numeric:true}); });
+  var esc=function(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); };
+
+  var ov=document.createElement('div');
+  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:100000;display:flex;align-items:center;justify-content:center;padding:14px';
+  ov.innerHTML=
+    '<div style="background:var(--surf,#fff);color:var(--txt,#1d1d1f);border-radius:14px;width:100%;max-width:520px;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 10px 40px rgba(0,0,0,.3)">'
+    +'<div style="padding:14px 16px 8px;font-weight:800;font-size:14px">🗑️ Close Full QRs <span id="qp-total" style="font-weight:600;color:var(--sub,#6e6e73);font-size:12px"></span></div>'
+    +'<div style="padding:0 16px 8px;display:flex;gap:8px">'
+    +'<input id="qp-q" placeholder="Search name / adm / class" style="flex:1;min-width:0;background:var(--bg3,#f5f5f7);border:1.5px solid var(--bdr,#e5e5ea);color:inherit;border-radius:9px;padding:8px 10px;font-size:13px"/>'
+    +'<select id="qp-c" style="background:var(--bg3,#f5f5f7);border:1.5px solid var(--bdr,#e5e5ea);color:inherit;border-radius:9px;padding:8px;font-size:13px"><option value="">All classes</option>'
+    +classes.map(function(c){ return '<option>'+esc(c)+'</option>'; }).join('')+'</select></div>'
+    +'<div style="padding:0 16px 6px;display:flex;align-items:center;gap:10px;font-size:12px">'
+    +'<label style="display:flex;align-items:center;gap:6px;font-weight:700;cursor:pointer"><input type="checkbox" id="qp-all"/> Select all (visible)</label>'
+    +'<span id="qp-n" style="margin-left:auto;color:var(--sub,#6e6e73);font-weight:700"></span></div>'
+    +'<div id="qp-list" style="overflow:auto;flex:1;min-height:120px;border-top:1px solid var(--bdr,#e5e5ea);border-bottom:1px solid var(--bdr,#e5e5ea)"></div>'
+    +'<div id="qp-msg" style="padding:6px 16px 0;font-size:12px;min-height:16px"></div>'
+    +'<div style="padding:10px 16px 14px;display:flex;gap:8px;flex-wrap:wrap">'
+    +'<button id="qp-go" style="flex:1;min-width:140px;background:#dc2626;color:#fff;border:none;border-radius:9px;padding:10px;font-size:13px;font-weight:700;cursor:pointer">Close selected (0)</button>'
+    +'<button id="qp-allbtn" style="background:var(--bg3,#f5f5f7);color:#dc2626;border:1.5px solid #dc2626;border-radius:9px;padding:10px 12px;font-size:12px;font-weight:700;cursor:pointer">Close ALL ('+items.length+')</button>'
+    +'<button id="qp-x" style="background:var(--bg3,#f5f5f7);color:inherit;border:1.5px solid var(--bdr,#e5e5ea);border-radius:9px;padding:10px 12px;font-size:12px;font-weight:700;cursor:pointer">Cancel</button>'
+    +'</div></div>';
+  document.body.appendChild(ov);
+  var $=function(id){ return ov.querySelector('#'+id); };
+  var busy=false;
+  var say=function(t,c){ var m=$('qp-msg'); m.textContent=t; m.style.color=c||'var(--sub,#6e6e73)'; };
+  var selCount=function(){ return Object.keys(sel).length; };
+  var visible=function(){
+    var q=$('qp-q').value.trim().toLowerCase(), c=$('qp-c').value;
+    return items.filter(function(x){
+      return (!c||x.cls===c)&&(!q||[x.name,x.adm,x.cls].some(function(v){ return String(v||'').toLowerCase().indexOf(q)>=0; }));
+    });
+  };
+  var refresh=function(){
+    var vis=visible();
+    $('qp-total').textContent='('+items.length+' active)';
+    $('qp-list').innerHTML=vis.map(function(x){
+      return '<label style="display:flex;align-items:center;gap:10px;padding:8px 16px;border-bottom:1px solid var(--bdr,#f0f0f3);cursor:pointer;font-size:13px">'
+        +'<input type="checkbox" data-id="'+esc(x.qr_id)+'" '+(sel[x.qr_id]?'checked':'')+'/>'
+        +'<span style="flex:1;min-width:0"><b>'+esc(x.name||'—')+'</b> <span style="color:var(--sub,#6e6e73)">· '+esc(x.adm)+' · '+esc(x.cls||'—')+'</span></span>'
+        +'<span style="font-weight:700">₹'+Number(x.amount||0).toLocaleString('en-IN')+'</span></label>';
+    }).join('')||'<div style="padding:16px;color:var(--sub,#6e6e73);font-size:13px">No matches</div>';
+    $('qp-n').textContent='Showing '+vis.length;
+    $('qp-go').textContent='Close selected ('+selCount()+')';
+    $('qp-all').checked=vis.length>0&&vis.every(function(x){ return sel[x.qr_id]; });
+  };
+  $('qp-q').oninput=refresh; $('qp-c').onchange=refresh;
+  $('qp-all').onchange=function(){ var on=this.checked; visible().forEach(function(x){ if(on) sel[x.qr_id]=true; else delete sel[x.qr_id]; }); refresh(); };
+  $('qp-list').onchange=function(e){ var id=e.target&&e.target.getAttribute('data-id'); if(!id) return; if(e.target.checked) sel[id]=true; else delete sel[id]; refresh(); };
+  $('qp-x').onclick=function(){ if(!busy) ov.remove(); };
+
+  $('qp-go').onclick=async function(){
+    if(busy) return;
+    var ids=Object.keys(sel);
+    if(!ids.length){ say('Select something first','var(--amber,#d97706)'); return; }
+    if(!confirm(ids.length+' Full QRs will be closed on Razorpay and deleted from Firebase. Are you sure?')) return;
+    busy=true;
+    try{
+      var left=ids.slice(), done=0, guard=0;
+      while(left.length&&guard++<300){
+        var j=await qrCall('POST','/close-qrs',{qr_ids:left,reason:'closed (manual)'});
+        done+=j.closed_count||0; left=j.left||[];
+        say('⏳ '+done+' / '+ids.length+' closed…');
+        if(!j.closed_count) break;
+      }
+      say(left.length?('⚠️ '+done+' closed, '+left.length+' not closed — try again'):('✅ '+done+' Full QRs closed'),left.length?'var(--amber,#d97706)':'#15803d');
+      qrRefreshStats();
+      if(!left.length) setTimeout(function(){ ov.remove(); },900);
+    }catch(e){ say('❌ '+e.message,'#dc2626'); }
+    busy=false;
+  };
+  $('qp-allbtn').onclick=async function(){
+    if(busy) return;
+    if(!confirm('ALL '+items.length+' Full QRs will be closed (Part QRs stay safe). Are you sure?')) return;
+    busy=true;
+    try{
+      var r=await qrLoop('/wipe-full-qrs',function(){ return {reason:'closed (manual wipe)'}; },function(j,t){ say('⏳ '+t+' closed · '+(j.remaining||0)+' left…'); });
+      say(r.last&&r.last.remaining?('⚠️ '+r.total+' closed, '+r.last.remaining+' left — run again'):('✅ '+r.total+' Full QRs closed'),r.last&&r.last.remaining?'var(--amber,#d97706)':'#15803d');
+      qrRefreshStats();
+      if(!(r.last&&r.last.remaining)) setTimeout(function(){ ov.remove(); },900);
+    }catch(e){ say('❌ '+e.message,'#dc2626'); }
+    busy=false;
+  };
+  refresh();
+};
+
 async function metaWASend(toPhone, messageText, pass){
   if(!MetaWACfg.phoneNumberId||!MetaWACfg.accessToken)throw new Error('Meta WA not configured');
   var phone=String(toPhone).replace(/[^0-9]/g,'');
@@ -5227,6 +5625,7 @@ async function metaWASend(toPhone, messageText, pass){
     // Template message
     body={
       messaging_product:'whatsapp',to:phone,type:'template',
+      biz_opaque_callback_data:waCtx(pass.admissionNumber,pass.studentName,pass.class,MetaWACfg.templateName),
       template:{
         name:MetaWACfg.templateName,
         language:{code:MetaWACfg.langCode||'en_US'},
@@ -5270,6 +5669,7 @@ async function metaWASendGatepass(pass){
       gpToast('📨 Meta API: Parent WA sent → +'+parentPhone);
     }catch(err){
       results.push('Parent ❌');
+      waDelLog({to:parentPhone,ctx:waCtx(pass.admissionNumber,pass.studentName,pass.class,MetaWACfg.templateName),reason:err.message,code:'API'}); waDelFlush();
       gpToast('⚠️ Meta WA parent failed: '+err.message,'err');
       console.error('MetaWA parent:',err);
     }
@@ -5299,6 +5699,7 @@ async function metaWASendGateOut(pass){
   try{
     var body={
       messaging_product:'whatsapp',to:parentPhone,type:'template',
+      biz_opaque_callback_data:waCtx(pass.admissionNumber,pass.studentName,pass.class,MetaWACfg.outTemplateName),
       template:{
         name:MetaWACfg.outTemplateName,
         language:{code:MetaWACfg.outLangCode||'en_US'},
@@ -5321,6 +5722,7 @@ async function metaWASendGateOut(pass){
     if(!resp.ok)throw new Error((data.error&&data.error.message)||JSON.stringify(data));
     gpToast('📨 Gate out WA sent → '+pass.studentName);
   }catch(err){
+    waDelLog({to:parentPhone,ctx:waCtx(pass.admissionNumber,pass.studentName,pass.class,MetaWACfg.outTemplateName),reason:err.message,code:'API'}); waDelFlush();
     gpToast('⚠️ Gate out WA failed: '+err.message,'err');
     console.error('MetaWA gateOut:',err);
   }
@@ -9627,6 +10029,10 @@ function dlRenderTmplRows(){
       +'<input type="checkbox" id="dl-tmpl-btn-'+i+'" '+(t.hasButton?'checked':'')+' onchange="dlWaTemplates['+i+'].hasButton=this.checked" style="width:14px;height:14px;accent-color:#b5883e;cursor:pointer"/>'
       +'<label for="dl-tmpl-btn-'+i+'" style="font-size:11px;font-weight:700;color:#8a6428;cursor:pointer">Has URL Button (Pay Now)</label>'
       +'</div>'
+      +'<div style="margin-top:6px;display:flex;align-items:center;gap:6px">'
+      +'<input type="checkbox" id="dl-tmpl-pbtn-'+i+'" '+(t.hasPartButton?'checked':'')+' onchange="dlWaTemplates['+i+'].hasPartButton=this.checked" style="width:14px;height:14px;accent-color:#b5883e;cursor:pointer"/>'
+      +'<label for="dl-tmpl-pbtn-'+i+'" style="font-size:11px;font-weight:700;color:#8a6428;cursor:pointer">Has 2nd URL Button (Pay Part Fee) — the template needs 2 buttons</label>'
+      +'</div>'
       +'</div>';
   }).join('');
 }
@@ -9848,77 +10254,100 @@ window.dlSendWhatsApp=function(){
 function dlCreateQRsAndSend(students,phoneId,token,tmplName,proxyUrl){
   var sub=document.getElementById('dl-wa-prog-sub');
   var qrMap={}; // adm → {qr_id, upi_url}
-  var pending=students.length;
+  var total=students.length;
+  var finished=0;
+  var next=0;
+  // QRs are created a few at a time (not all at once) so the worker, Razorpay
+  // and the Google Sheet logger don't get hundreds of calls in one second.
+  var CONCURRENCY=4;
+  var GAP_MS=250;
+  var sendStarted=false;
 
-  students.forEach(function(s){
+  function startSend(){
+    if(sendStarted) return;
+    sendStarted=true;
+    // Part QR ids (one per student) for the 2nd "Pay Part Fee" button
+    (qrPartOn()?qrCall('GET','/part-qrs'):Promise.resolve({map:{}})).then(function(m){ window._dlPartMap=(m&&m.map)||{}; })
+      .catch(function(){ window._dlPartMap={}; })
+      .then(function(){ dlSendBatch(students,phoneId,token,tmplName,0,0,0,qrMap,proxyUrl); });
+  }
+  function oneDone(){
+    finished++;
+    if(sub) sub.textContent='QR created: '+finished+'/'+total;
+    if(finished>=total) startSend();
+  }
+  if(!total){ startSend(); return; }
+
+  function processOne(s){
     var adm=String(s.adm||s.name);
     var amount=Math.round(Number(s.balance));
     var name=(s.name||s.adm||'Student');
     var cls=(s.cls||s.class||'');
-    if(!amount||amount<=0){
-      // No balance — skip QR
-      pending--;
-      if(pending<=0) dlSendBatch(students,phoneId,token,tmplName,0,0,0,qrMap,proxyUrl);
-      return;
-    }
+    if(!amount||amount<=0) return Promise.resolve(); // No balance — skip QR
 
     // Look up any existing QR for this adm first — reused if it's still
     // active AND amount/name/class are all unchanged (no point closing a
     // perfectly valid QR and minting a fresh Razorpay one just to reissue
     // the exact same thing). Only closes+recreates when something actually
     // changed (balance updated, name/class edited) or the old QR is gone/closed.
-    var lookupPromise = fetch(proxyUrl+'/qr-by-adm/'+encodeURIComponent(adm), { headers: dlApiHeaders() })
+    return fetch(proxyUrl+'/qr-by-adm/'+encodeURIComponent(adm), { headers: dlApiHeaders() })
       .then(function(r){ return r.json(); })
-      .catch(function(){ return null; });
+      .catch(function(){ return null; })
+      .then(function(d){
+        var same = d && d.found && d.qr_id && d.status==='pending'
+          && Number(d.amount)===amount*100
+          && String(d.name||'').trim()===name.trim()
+          && String(d.cls||'').trim()===cls.trim();
 
-    lookupPromise.then(function(d){
-      var same = d && d.found && d.qr_id && d.status==='pending'
-        && Number(d.amount)===amount*100
-        && String(d.name||'').trim()===name.trim()
-        && String(d.cls||'').trim()===cls.trim();
+        if(same){
+          return { qr_id: d.qr_id, image_url: d.image_url, reused: true };
+        }
 
-      if(same){
-        return { qr_id: d.qr_id, image_url: d.image_url, reused: true };
-      }
+        var deletePromise = (d && d.found && d.qr_id)
+          ? fetch(proxyUrl+'/delete-qr/'+d.qr_id, { method:'DELETE', headers: dlApiHeaders() }).catch(function(){})
+          : Promise.resolve();
 
-      var deletePromise = (d && d.found && d.qr_id)
-        ? fetch(proxyUrl+'/delete-qr/'+d.qr_id, { method:'DELETE', headers: dlApiHeaders() }).catch(function(){})
-        : Promise.resolve();
+        return deletePromise.then(function(){
+          return fetch(proxyUrl+'/create-qr',{
+            method:'POST',
+            headers: dlApiHeaders({'Content-Type':'application/json'}),
+            body:JSON.stringify({
+              adm: adm,
+              name: name,
+              cls: cls,
+              amount: amount,
+              description: 'Fee: '+name
+            })
+          });
+        }).then(function(r){ return r.json(); });
+      })
+      .then(function(data){
+        if(data && data.qr_id){
+          qrMap[adm]={ qr_id: data.qr_id, image_url: data.image_url };
+          // Track for future cleanup
+          if(!window._dlPendingQrMap) window._dlPendingQrMap = {};
+          window._dlPendingQrMap[adm] = data.qr_id;
+        }
+      })
+      .catch(function(){ /* QR create failed, will use fallback */ });
+  }
 
-      return deletePromise.then(function(){
-        return fetch(proxyUrl+'/create-qr',{
-          method:'POST',
-          headers: dlApiHeaders({'Content-Type':'application/json'}),
-          body:JSON.stringify({
-            adm: adm,
-            name: name,
-            cls: cls,
-            amount: amount,
-            description: 'Fee: '+name
-          })
-        });
-      }).then(function(r){ return r.json(); });
-    })
-    .then(function(data){
-      if(data && data.qr_id){
-        qrMap[adm]={ qr_id: data.qr_id, image_url: data.image_url };
-        // Track for future cleanup
-        if(!window._dlPendingQrMap) window._dlPendingQrMap = {};
-        window._dlPendingQrMap[adm] = data.qr_id;
-      }
-    })
-    .catch(function(){ /* QR create failed, will use fallback */ })
-    .finally(function(){
-      pending--;
-      if(sub) sub.textContent='QR created: '+(students.length-pending)+'/'+students.length;
-      if(pending<=0) dlSendBatch(students,phoneId,token,tmplName,0,0,0,qrMap,proxyUrl);
+  // Worker pool: each lane takes the next student, waits a short gap, repeats.
+  function lane(){
+    if(next>=total) return;
+    var s=students[next++];
+    processOne(s).then(function(){
+      oneDone();
+      setTimeout(lane,GAP_MS);
     });
-  });
+  }
+  for(var i=0;i<Math.min(CONCURRENCY,total);i++) setTimeout(lane,i*GAP_MS);
 }
 
 function dlSendBatch(students,phoneId,token,tmplName,idx,sent,failed,qrMap,proxyUrl){
   if(!qrMap) qrMap={};
   if(idx>=students.length){
+    waDelFlush();
     var bar=document.getElementById('dl-wa-prog-bar');
     if(bar) bar.style.width='100%';
     var sub=document.getElementById('dl-wa-prog-sub');
@@ -9941,6 +10370,7 @@ function dlSendBatch(students,phoneId,token,tmplName,idx,sent,failed,qrMap,proxy
   var mob=String(s.mob||'').replace(/\D/g,'');
   if(mob.length===10) mob='91'+mob;
   if(!mob||mob.length<12){
+    waDelLog({to:mob||String(s.mob||''),ctx:waCtx(s.adm,s.name,s.cls||s.class,tmplName),reason:'Mobile number is missing or invalid',code:'NO_NUMBER'});
     setTimeout(function(){ dlSendBatch(students,phoneId,token,tmplName,idx+1,sent,failed+1,qrMap,proxyUrl); },100);
     return;
   }
@@ -10027,11 +10457,20 @@ function dlSendBatch(students,phoneId,token,tmplName,idx,sent,failed,qrMap,proxy
   var hasBtn = tmplCfg ? (tmplCfg.hasButton !== false) : true; // default ON
   if(hasBtn){
     components.push({type:'button',sub_type:'url',index:'0',parameters:[{type:'text',text:suffix}]});
+    // Optional 2nd button "Pay Part Fee" → the student's permanent Part QR
+    // (?pqr=…). No Part QR yet → falls back to the Full link so it never breaks.
+    if(tmplCfg && tmplCfg.hasPartButton && qrPartOn()){
+      var _pid=(window._dlPartMap||{})[adm]||'';
+      var _psuf=_pid?('?pqr='+encodeURIComponent(_pid)):suffix;
+      components.push({type:'button',sub_type:'url',index:'1',parameters:[{type:'text',text:_psuf}]});
+    }
   }
 
+  var _waCtx=waCtx(s.adm,s.name,s.cls||s.class,tmplName);
   var body=JSON.stringify({
     messaging_product:'whatsapp',
     to:mob,
+    biz_opaque_callback_data:_waCtx,
     type:'template',
     template:{
       name:tmplName,
@@ -10051,6 +10490,7 @@ function dlSendBatch(students,phoneId,token,tmplName,idx,sent,failed,qrMap,proxy
       } else {
         failed++;
         var errMsg=(data&&data.error&&data.error.message)||JSON.stringify(data);
+        waDelLog({to:mob,ctx:_waCtx,reason:errMsg,code:String((data&&data.error&&data.error.code)||'API')});
         var det=document.getElementById('dl-wa-prog-detail');
         if(det) det.textContent='❌ '+(s.name||s.adm||'')+': '+errMsg;
         console.warn('WA send failed for '+(s.name||s.adm||'')+': '+errMsg);
@@ -10059,6 +10499,7 @@ function dlSendBatch(students,phoneId,token,tmplName,idx,sent,failed,qrMap,proxy
     });
   }).catch(function(e){
     failed++;
+    waDelLog({to:mob,ctx:_waCtx,reason:'Network error: '+(e&&e.message||'unknown'),code:'API'});
     var det=document.getElementById('dl-wa-prog-detail');
     if(det) det.textContent='❌ Network error: '+(e&&e.message||'unknown');
     setTimeout(function(){ dlSendBatch(students,phoneId,token,tmplName,idx+1,sent,failed,qrMap,proxyUrl); },350);
@@ -10275,12 +10716,10 @@ window.dlPushFileChange = function(inp){
         var proxyUrl=(localStorage.getItem('dl_rzp_proxy_url')||'').replace(/\/+$/,'');
         if(proxyUrl){
           if(st) st.textContent += ' — checking for stale QR codes…';
-          fetch(proxyUrl+'/reconcile-qrs', {
-            method:'POST',
-            headers: dlApiHeaders({'Content-Type':'application/json'}),
-            body: JSON.stringify({ admList: Object.keys(payload) })
-          }).then(function(rr){ return rr.json(); }).then(function(rd){
-            var n = rd && rd.closed_count || 0;
+          qrLoop('/reconcile-qrs', function(){ return { admList: Object.keys(payload) }; }, function(j,t){
+            if(st) st.textContent='✅ Replaced at '+ts+' — '+count+' records · closing stale QRs… '+t;
+          }).then(function(rd){
+            var n = rd && rd.total || 0;
             if(st) st.textContent='✅ Replaced at '+ts+' — '+count+' records'+(n?(' · closed '+n+' stale QR'+(n===1?'':'s')):'');
             if(n && typeof toast==='function') toast('🔒 Closed '+n+' stale QR code'+(n===1?'':'s')+' (not in new due list)');
           }).catch(function(){ /* best-effort — sync itself already succeeded */ });
