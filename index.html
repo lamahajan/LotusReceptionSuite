@@ -3265,7 +3265,6 @@ Reason: {reason}"></textarea>
 
               <div style="display:flex;flex-direction:column;gap:8px">
                 <button id="qr-part-sync-btn" onclick="qrSyncPartQrs()" style="width:100%;border-radius:10px;padding:10px 12px;font-size:12px;font-weight:700;cursor:pointer;text-align:left;font-family:inherit;background:#f97316;color:#fff;border:none">🔄 Sync Static (Part) QRs — from Student DB</button>
-                <button onclick="qrReconcileFull()" style="width:100%;border-radius:10px;padding:10px 12px;font-size:12px;font-weight:700;cursor:pointer;text-align:left;font-family:inherit;background:#fff;color:#1a1208;border:1.5px solid #e8dcc8">🧹 Reconcile Full QRs — against Due List</button>
                 <button onclick="qrOpenClosePicker()" style="width:100%;border-radius:10px;padding:10px 12px;font-size:12px;font-weight:700;cursor:pointer;text-align:left;font-family:inherit;background:#fff;color:#dc2626;border:1.5px solid #e8dcc8">🗑️ Close Full QRs… (select or all)</button>
                 <button onclick="qrRefreshStats()" style="width:100%;border-radius:10px;padding:10px 12px;font-size:12px;font-weight:700;cursor:pointer;text-align:left;font-family:inherit;background:transparent;color:#6a6055;border:1.5px dashed #d9cdb6">↻ Refresh counts</button>
               </div>
@@ -5520,18 +5519,6 @@ window.qrSyncPartQrs=async function(){
     qrSay('✅ Created '+created+' · removed '+removed+' · updated '+updated+(failed.length?(' · ❌ failed '+failed.length+' (run again)'):''),failed.length?'var(--amber)':'var(--green-d)');
     qrRefreshStats();
   }catch(e){ qrSay('❌ '+e.message,'var(--red)'); }
-};
-
-window.qrReconcileFull=async function(){
-  try{
-    qrSay('⏳ Matching against the Due List…');
-    var r=await qrLoop('/reconcile-qrs',function(){ return {}; },function(j,t){ qrSay('⏳ '+t+' QRs closed · '+(j.remaining||0)+' left…'); });
-    qrSay('✅ Closed '+r.total+' Full QRs (balance 0 / not in the Due List)',r.last&&r.last.failed?'var(--amber)':'var(--green-d)');
-    qrRefreshStats();
-  }catch(e){
-    if(e.status===409) qrSay('⚠️ The Due List is empty or unreadable — nothing was closed','var(--amber)');
-    else qrSay('❌ '+e.message,'var(--red)');
-  }
 };
 
 window.qrOpenClosePicker=async function(){
