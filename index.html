@@ -1702,7 +1702,7 @@ Reason: {reason}"></textarea>
           <span class="gset-chev">▼</span>
         </button>
         <div class="gset-body">
-          <div style="font-size:11px;color:var(--sub);margin-bottom:12px;line-height:1.6">Export all settings — Firebase URLs, Telegram tokens &amp; chat IDs, Print config, Signature, WhatsApp templates &amp; header image URLs — as one JSON. Import on any device to restore instantly.</div>
+          <div style="font-size:11px;color:var(--sub);margin-bottom:12px;line-height:1.6">Export all settings of every app — Firebase URLs, Telegram tokens &amp; chat IDs, Print config, Signature, WhatsApp templates &amp; header image URLs, Due List &amp; Razorpay config, payment notifications, processed-transactions settings — as one JSON. Import on any device to restore instantly.</div>
           <div style="display:flex;gap:8px;flex-wrap:wrap">
             <button onclick="exportAllSettings()" class="btn bp flex1" style="font-size:13px;padding:10px 14px">⬇️ Export Settings</button>
             <label class="btn bgh flex1" style="cursor:pointer;justify-content:center;font-size:13px;padding:10px 14px">
@@ -3128,8 +3128,6 @@ Reason: {reason}"></textarea>
               <input id="dl-fb-url" class="dl-inp" type="text" placeholder="https://your-db.firebasedatabase.app"/>
               <label class="dl-lbl">Sync Code</label>
               <input id="dl-fb-code" class="dl-inp" type="text" placeholder="e.g. DUELIST" style="margin-bottom:10px"/>
-              <label class="dl-lbl">MDB / ACCDB File Path <span style="font-weight:400;color:#a89f92">(reception PC, read by the local sync tool)</span></label>
-              <input id="dl-mdb-path" class="dl-inp" type="text" placeholder="D:\Unilead\eacademic\1000.CMP\Data.mdb" style="margin-bottom:10px;font-family:'JetBrains Mono',monospace;font-size:11.5px"/>
               <div style="display:flex;align-items:center;gap:8px">
                 <button onclick="dlFbSaveConnect()" style="flex:1;background:#f97316;color:#fff;border:none;border-radius:9px;padding:10px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">🔗 Save &amp; Connect</button>
                 <span id="dl-fb-dot" style="width:10px;height:10px;border-radius:50%;background:#9ca3af;flex-shrink:0"></span>
@@ -9343,6 +9341,7 @@ const SETTINGS_EXPORT_KEYS=[
   'dl_col_map_v1','dl_sheet_v1','dl_class_mode_v1','dl_wa_settings','dl_auto_reload','dl_pinned_sheet','dl_settings_pw','dl_fb_url','dl_fb_code','dl_txn_fb_url','dl_txn_fb_code',
   'dl_rzp_proxy_url','dl_rzp_redirect_url','dl_app_token',
   'dl_fcm_config','dl_fcm_vapid',
+  'dl_fcm_enabled','dl_proc_settings','dl_txn_sort_order',
   // Attendance
   'att_worker_url','att_settings_pw','att_calendar_editable',
   // WA Inbox
@@ -10516,19 +10515,11 @@ window.dlCloseProgress=function(){
 // ═══════════════════════════════════════════════════════
 var DL_FB_URL_KEY  = 'dl_fb_url';
 var DL_FB_CODE_KEY = 'dl_fb_code';
-var DL_MDB_PATH_KEY = 'dl_mdb_path';
 var _dlFbById = {};   // live mirror of {code}, keyed by admission number
 var _dlFbES   = null; // open EventSource stream
 
 function dlFbCfg(){
   return { url:(localStorage.getItem(DL_FB_URL_KEY)||'').trim(), code:(localStorage.getItem(DL_FB_CODE_KEY)||'').trim() };
-}
-// Push the MDB/ACCDB path into Firebase under CONFIG (sibling of the Due List
-// code node) so the local offline sync tool can fetch it remotely — same DB,
-// no separate credential needed. Read back via GET {url}/CONFIG.json.
-function dlMdbPathPush(url, path){
-  if(!url) return;
-  fetch(url+'/CONFIG.json',{ method:'PATCH', body: JSON.stringify({ mdbPath: path||'' }) }).catch(function(){});
 }
 function dlFbSetDot(st){
   var d=document.getElementById('dl-fb-dot');
@@ -10577,15 +10568,12 @@ function dlFbStartSync(){
   _dlFbES.onerror=function(){ dlFbSetDot('err'); };
 }
 window.dlFbSaveConnect=function(){
-  var uEl=document.getElementById('dl-fb-url'), cEl=document.getElementById('dl-fb-code'), mEl=document.getElementById('dl-mdb-path');
+  var uEl=document.getElementById('dl-fb-url'), cEl=document.getElementById('dl-fb-code');
   var url=(uEl?uEl.value.trim():'').replace(/\/+$/,'');
   var code=(cEl?cEl.value.trim():'');
-  var mdbPath=(mEl?mEl.value.trim():'');
   if(!url||!code){ dlFbSetStatusText('Fill both fields','#d97706'); return; }
   localStorage.setItem(DL_FB_URL_KEY,url);
   localStorage.setItem(DL_FB_CODE_KEY,code);
-  localStorage.setItem(DL_MDB_PATH_KEY,mdbPath);
-  dlMdbPathPush(url,mdbPath);
   dlFbSetStatusText('✅ Connected! Syncing…','#166534');
   dlFbStartSync();
 };
@@ -10731,7 +10719,6 @@ window.dlPushFileChange = function(inp){
     var cfg=dlFbCfg();
     var uEl=document.getElementById('dl-fb-url'); if(uEl) uEl.value=cfg.url;
     var cEl=document.getElementById('dl-fb-code'); if(cEl) cEl.value=cfg.code;
-    var mEl=document.getElementById('dl-mdb-path'); if(mEl) mEl.value=(localStorage.getItem(DL_MDB_PATH_KEY)||'');
     dlFbSetDot(_dlFbES?'ok':'off');
   };
 })();
