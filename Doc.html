@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lotus International School - Letterhead Tool</title>
+<style>
+  @page { size: A4 portrait; margin: 0; }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: #e2e8f0; color: #1e293b; font-size: 13px; }
+
+  /* ---------- App layout ---------- */
+  .app { display: flex; gap: 20px; padding: 20px; align-items: flex-start; justify-content: center; }
+  .panel { width: 290px; flex-shrink: 0; background: #fff; border-radius: 10px; padding: 16px; box-shadow: 0 1px 4px rgba(0,0,0,.12); position: sticky; top: 20px; max-height: calc(100vh - 40px); overflow-y: auto; }
+  .panel h2 { font-size: 15px; color: #1e3a8a; margin-bottom: 12px; }
+  .panel label { display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; color: #475569; margin: 12px 0 4px; }
+  .panel input, .panel select { width: 100%; padding: 7px 8px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; font-family: inherit; }
+  .btn { display: inline-block; width: 100%; margin-top: 8px; padding: 9px 10px; background: #1e3a8a; color: #fff; border: 0; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; }
+  .btn.alt { background: #f1f5f9; color: #1e293b; border: 1px solid #cbd5e1; }
+  .btn:hover { opacity: .9; }
+  .hint { font-size: 11px; color: #64748b; margin-top: 4px; line-height: 1.35; }
+  .row { display: flex; gap: 6px; }
+  .row input[type=number] { flex: 1; min-width: 0; padding: 7px 8px; border: 1px solid #d5dde9; border-radius: 8px; font-size: 13px; background: #fff; }
+  .row .btn { width: auto; margin-top: 0; padding: 7px 12px; flex-shrink: 0; }
+  .size-row { align-items: center; gap: 4px; }
+  .size-row span { font-size: 11px; font-weight: 700; color: #475569; flex-shrink: 0; }
+  .size-row input[type=number] { flex: 1 1 0; width: 0; min-width: 0; padding: 6px 4px; font-size: 12px; }
+
+  /* ---------- Editor toolbar ---------- */
+  .toolbar { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 6px; }
+  .toolbar button { padding: 5px 9px; border: 1px solid #cbd5e1; background: #f8fafc; border-radius: 5px; cursor: pointer; font-size: 12px; }
+  .toolbar button:hover { background: #e2e8f0; }
+
+  /* ---------- A4 page ---------- */
+  .page-wrap { flex: 0 0 auto; }
+  .page {
+    width: 210mm; min-height: 297mm; background: #fff; box-shadow: 0 2px 10px rgba(0,0,0,.2);
+    display: flex; flex-direction: column; padding: 12mm 15mm 8mm;
+  }
+
+  .header { display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid #1e3a8a; padding-bottom: 12px; margin-bottom: 14px; }
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .logo-img { height: 54px; object-fit: contain; display: block; }
+  .brand-text .name { font-size: 21px; font-weight: 800; color: #1e3a8a; letter-spacing: .3px; line-height: 1.1; }
+  .brand-text .tag { font-size: 10.5px; color: #64748b; font-weight: 600; letter-spacing: .6px; text-transform: uppercase; margin-top: 3px; }
+  .header-tag { text-align: right; }
+  .badge { display: inline-block; background: #1e3a8a; color: #fff; font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 4px; letter-spacing: .5px; text-transform: uppercase; }
+  .sub { display: block; font-size: 11px; color: #64748b; margin-top: 4px; font-weight: 500; }
+
+  .meta { display: flex; justify-content: space-between; margin: 0 0 8px; font-size: 12.5px; }
+  .meta [contenteditable], .subject[contenteditable], .to-block[contenteditable] { outline: none; }
+  .to-block { font-size: 13px; margin-bottom: 10px; min-height: 18px; white-space: pre-line; }
+  .subject { font-weight: 700; font-size: 13.5px; text-align: center; text-decoration: underline; margin: 8px 0 12px; min-height: 18px; }
+  .body.fixed { flex: none; }
+  .body { flex: 1; font-size: 13px; line-height: 1.6; outline: none; min-height: 120mm; }
+  .body ul, .body ol { margin: 6px 0 6px 22px; }
+  .body p { margin-bottom: 8px; }
+  .body .intro-banner { background: #eff6ff; border-left: 4px solid #2563eb; padding: 10px 14px; border-radius: 0 6px 6px 0; margin: 4px 0 14px; }
+  .body .intro-banner h1 { font-size: 15px; color: #1e3a8a; margin: 0 0 3px; font-weight: 700; }
+  .body .intro-banner p { font-size: 12.5px; color: #334155; margin: 0; }
+  .body .section-title { font-size: 13px; text-transform: uppercase; letter-spacing: .6px; color: #0f172a; font-weight: 800; margin: 12px 0 8px; }
+
+  .sign { margin: 28px 0 18px; font-size: 13px; min-height: 40px; outline: none; }
+
+  html, body { margin: 0; }
+  .footer { flex-shrink: 0; border-top: 2px solid #1e3a8a; padding-top: 8px; margin-top: auto; font-size: 11.5px; font-weight: 600; color: #1e293b; text-align: center; line-height: 1.6; }
+  .footer b { color: inherit; font-weight: inherit; }
+  .footer .aff { color: #1e3a8a; font-weight: 800; letter-spacing: .2px; }
+  .footer .fdot { color: #1e3a8a; font-size: 8px; vertical-align: middle; margin: 0 3px; }
+
+
+  /* ---------- Boxes & shapes (like eResult guide) ---------- */
+  .body { counter-reset: step; }
+  .body .steps-container { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin: 6px 0 14px; }
+  .body .step-card { border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 12px; background: #fafafa; counter-increment: step; break-inside: avoid; margin-bottom: 8px; }
+  .body .steps-container .step-card { margin-bottom: 0; }
+  .body .step-header { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+  .body .step-num { width: 22px; height: 22px; background: #1e3a8a; color: #fff; border-radius: 50%; font-weight: 700; font-size: 11px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .body .step-num::before { content: counter(step); }
+  .body .step-title { font-size: 13px; font-weight: 700; color: #0f172a; }
+  .body .step-card ul { list-style: none; margin: 0; padding: 0; font-size: 11.5px; color: #334155; }
+  .body .step-card ul li { position: relative; padding-left: 14px; margin-bottom: 4px; }
+  .body .step-card ul li::before { content: "\2022"; position: absolute; left: 2px; color: #2563eb; font-weight: bold; }
+  .body .flow-box { border: 1px solid #cbd5e1; border-radius: 8px; padding: 10px 14px; background: #fff; margin: 6px 0 14px; break-inside: avoid; }
+  .body .flow-title { font-weight: 700; font-size: 12.5px; color: #1e293b; margin-bottom: 8px; }
+  .body .flow-steps { display: flex; align-items: center; justify-content: space-between; gap: 4px; text-align: center; font-size: 11px; font-weight: 600; color: #1e293b; }
+  .body .flow-node { background: #f1f5f9; border: 1px solid #e2e8f0; padding: 6px 8px; border-radius: 6px; flex: 1; }
+  .body .flow-node.hl { background: #dbeafe; border-color: #93c5fd; color: #1e40af; }
+  .body .flow-arrow { color: #94a3b8; font-weight: bold; font-size: 13px; }
+  .body .notes-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 6px 0 14px; }
+  .body .note-card { border-radius: 6px; padding: 8px 10px; font-size: 11px; line-height: 1.35; break-inside: avoid; margin-bottom: 8px; }
+  .body .notes-grid .note-card { margin-bottom: 0; }
+  .body .note-card strong { display: block; margin-bottom: 3px; font-size: 11.5px; }
+  .body .note-warning { background: #fffbeb; border: 1px solid #fde68a; color: #92400e; }
+  .body .note-security { background: #f8fafc; border: 1px solid #cbd5e1; color: #334155; }
+  .body .note-tip { background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; }
+  .body ol.num-list { list-style: none; margin: 6px 0 10px; padding: 0; counter-reset: n; }
+  .body ol.num-list li { counter-increment: n; position: relative; padding-left: 30px; margin-bottom: 8px; min-height: 22px; }
+  .body ol.num-list li::before { content: counter(n); position: absolute; left: 0; top: 0; width: 22px; height: 22px; background: #1e3a8a; color: #fff; border-radius: 50%; font-weight: 700; font-size: 11px; display: flex; align-items: center; justify-content: center; }
+  .shapes-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
+  .shapes-grid button { padding: 6px 4px; border: 1px solid #cbd5e1; background: #f8fafc; border-radius: 5px; cursor: pointer; font-size: 11.5px; }
+  .shapes-grid button:hover { background: #e2e8f0; }
+
+
+  /* ---------- Panel v2 ---------- */
+  body { background: #dfe6f1; }
+  .app { padding: 24px; gap: 24px; }
+  .panel { width: 310px; padding: 0; border-radius: 14px; box-shadow: 0 4px 18px rgba(30,58,138,.12), 0 1px 3px rgba(0,0,0,.08); overflow-x: hidden; }
+  .p-head { position: sticky; top: 0; z-index: 3; background: linear-gradient(160deg,#1e3a8a,#2563eb); color: #fff; padding: 16px 16px 12px; }
+  .p-title { font-size: 16px; font-weight: 800; display: flex; align-items: baseline; flex-wrap: wrap; gap: 0 8px; margin-bottom: 12px; }
+  .p-title .dot { width: 9px; height: 9px; border-radius: 50%; background: #fbbf24; align-self: center; margin-right: 2px; }
+  .p-title small { flex-basis: 100%; font-size: 11px; font-weight: 500; opacity: .75; margin: 2px 0 0 15px; }
+  .btn.primary { background: #fff; color: #1e3a8a; margin-top: 0; font-size: 14px; padding: 10px; box-shadow: 0 2px 6px rgba(0,0,0,.2); }
+  .btn.primary:hover { opacity: 1; background: #eff6ff; }
+  .hint.c { text-align: center; color: rgba(255,255,255,.8); margin-top: 7px; }
+  .hint.c b { color: #fff; }
+  .sec { border-bottom: 1px solid #e5eaf2; }
+  .sec summary { list-style: none; cursor: pointer; padding: 12px 16px; font-size: 13px; font-weight: 700; color: #1e293b; display: flex; align-items: center; justify-content: space-between; user-select: none; }
+  .sec summary::-webkit-details-marker { display: none; }
+  .sec summary::after { content: "▾"; color: #94a3b8; transition: transform .15s; }
+  .sec:not([open]) summary::after { transform: rotate(-90deg); }
+  .sec summary:hover { background: #f8fafc; }
+  .sec-body { padding: 2px 16px 14px; }
+  .sec-body label:not(.sw) { margin-top: 10px; }
+  .panel input[type=text], .panel input:not([type]), .panel select, .panel input[type=file] { border-radius: 8px; border-color: #d5dde9; background: #fff; }
+  .panel input:focus, .panel select:focus { outline: 2px solid #93c5fd; border-color: #60a5fa; }
+  .btn.ghost { background: #f1f5f9; color: #1e293b; border: 1px solid #d5dde9; }
+  .btn.ghost:hover { background: #e2e8f0; opacity: 1; }
+  .btn.danger { color: #b91c1c; }
+  .btn { border-radius: 8px; }
+  /* toggle switches */
+  .sw { display: flex !important; align-items: center; justify-content: space-between; margin: 0 !important; padding: 8px 0; font-size: 13px !important; font-weight: 600 !important; text-transform: none !important; letter-spacing: 0 !important; color: #1e293b !important; cursor: pointer; border-bottom: 1px dashed #edf1f7; }
+  .sw:last-child { border-bottom: 0; }
+  .sw input { position: absolute; opacity: 0; width: 0 !important; height: 0; }
+  .sw i { width: 38px; height: 22px; background: #cbd5e1; border-radius: 22px; position: relative; transition: background .15s; flex-shrink: 0; }
+  .sw i::after { content: ""; position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.3); transition: transform .15s; }
+  .sw input:checked + i { background: #2563eb; }
+  .sw input:checked + i::after { transform: translateX(16px); }
+  .sw input:focus-visible + i { outline: 2px solid #93c5fd; outline-offset: 2px; }
+  /* segmented toolbar */
+  .toolbar.seg { display: grid; grid-template-columns: repeat(4,1fr); gap: 5px; }
+  .toolbar.seg button { padding: 8px 0; border-radius: 7px; background: #f1f5f9; border: 1px solid #d5dde9; font-size: 13px; }
+  .toolbar.seg button:hover { background: #dbeafe; border-color: #93c5fd; }
+  /* shapes grid with icons */
+  .shapes-grid button { display: flex; align-items: center; gap: 7px; text-align: left; padding: 7px 8px; border-radius: 8px; background: #fff; border: 1px solid #d5dde9; font-size: 12px; font-weight: 600; color: #1e293b; }
+  .shapes-grid button:hover { border-color: #60a5fa; background: #eff6ff; }
+  .ic { font-style: normal; width: 24px; height: 20px; border-radius: 4px; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 800; }
+  .ic.n { background: #1e3a8a; color: #fff; border-radius: 10px; }
+  .ic.t { background: #f1f5f9; color: #1e3a8a; border: 1px solid #d5dde9; }
+  .hint { color: #64748b; }
+  .flowctl { display: flex; align-items: center; gap: 10px; }
+  .flowctl button { width: 34px; height: 32px; border: 1px solid #d5dde9; background: #f1f5f9; border-radius: 8px; font-size: 18px; font-weight: 700; cursor: pointer; color: #1e3a8a; }
+  .flowctl button:hover { background: #dbeafe; border-color: #93c5fd; }
+  .flowctl span { min-width: 22px; text-align: center; font-weight: 800; font-size: 16px; color: #1e3a8a; }
+  .flowctl em { font-style: normal; font-size: 12px; color: #64748b; }
+  .zoom { display: flex; align-items: center; gap: 8px; padding: 12px 16px; font-size: 12px; font-weight: 600; color: #475569; }
+  .zoom input { flex: 1; padding: 0 !important; border: 0 !important; accent-color: #2563eb; }
+  .zoom b { width: 38px; text-align: right; color: #1e3a8a; }
+  .page-wrap { transition: none; }
+  @media print {
+    html, body { width: 210mm; height: 297mm; overflow: hidden; }
+    .page { zoom: 1 !important; height: 297mm !important; min-height: 0 !important; overflow: hidden; page-break-after: avoid; break-after: avoid; }
+    .body { min-height: 0 !important; }
+    .body:not(.fixed) { overflow: hidden; }
+  }
+
+  [contenteditable]:hover { background: #f8fafc; }
+  [contenteditable]:focus { background: #eff6ff; }
+
+  @media print {
+    body { background: #fff; }
+    .app { display: block; padding: 0; }
+    .panel { display: none; }
+    .page { box-shadow: none; width: 210mm; min-height: 297mm; }
+    [contenteditable]:hover, [contenteditable]:focus { background: transparent; }
+  }
+  @media (max-width: 1100px) { .app { flex-direction: column; align-items: center; } .panel { position: static; width: 210mm; max-width: 100%; max-height: none; } .page-wrap { max-width: 100%; overflow-x: auto; } }
+
+  /* ---------- Desktop: no-scroll, fit-to-screen layout ---------- */
+  @media screen and (min-width: 1101px) {
+    html, body { height: 100%; overflow: hidden; }
+    .app { height: 100vh; padding: 12px; gap: 14px; align-items: stretch; justify-content: flex-start; }
+    .panel { position: static; width: 320px; max-height: none; height: 100%; display: flex; flex-direction: column; overflow: hidden; }
+    .p-head { position: static; padding: 12px 14px 10px; }
+    .p-title { margin-bottom: 8px; font-size: 15px; }
+    .hint.c { margin-top: 5px; font-size: 10.5px; }
+    .tabs { display: grid; grid-template-columns: repeat(3, 1fr); background: #eef2f9; padding: 4px; gap: 3px; flex-shrink: 0; }
+    .tabs button { border: 0; background: transparent; padding: 8px 2px; border-radius: 8px; font-size: 12px; font-weight: 700; color: #475569; cursor: pointer; }
+    .tabs button:hover { background: #dbe5f5; }
+    .tabs button.on { background: #fff; color: #1e3a8a; box-shadow: 0 1px 3px rgba(0,0,0,.15); }
+    .tab-content { flex: 1; overflow-y: auto; min-height: 0; }
+    .tab-content .sec { display: none; border-bottom: 1px solid #e5eaf2; }
+    .tab-content .sec.active { display: block; }
+    .tab-content .sec summary { pointer-events: none; cursor: default; padding: 10px 14px 4px; font-size: 11px; text-transform: uppercase; letter-spacing: .6px; color: #64748b; }
+    .tab-content .sec summary::after { display: none; }
+    .sec-body { padding: 2px 14px 10px; }
+    .sec-body .sw { padding: 5px 0; }
+    .sec-body label:not(.sw) { margin-top: 7px; }
+    .zoom { flex-shrink: 0; border-top: 1px solid #e5eaf2; padding: 8px 14px; }
+    .zoom .fit { border: 1px solid #d5dde9; background: #f1f5f9; border-radius: 6px; padding: 3px 8px; font-size: 11px; font-weight: 700; color: #1e3a8a; cursor: pointer; }
+    .zoom .fit.on { background: #1e3a8a; color: #fff; border-color: #1e3a8a; }
+    .page-wrap { flex: 1; min-width: 0; height: 100%; display: flex; align-items: flex-start; overflow: auto; border-radius: 10px; scrollbar-width: thin; }
+    .page { margin: 0 auto; flex-shrink: 0; box-shadow: 0 6px 24px rgba(30,58,138,.22); }
+  }
+  @media screen and (max-width: 1100px) { .tabs { display: none; } .tab-content .sec { display: block; } }
+  /* compact fields */
+  .panel .sec-body > input, .panel .sec-body > select { padding: 4px 7px; font-size: 12px; height: 28px; }
+  .panel .sec-body > label:not(.sw) { margin-top: 7px; margin-bottom: 2px; font-size: 10px; }
+  .panel .sec-body .btn { padding: 6px 8px; font-size: 12px; margin-top: 6px; }
+  .size-row input[type=number] { flex: 0 0 38px; width: 38px; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ================= CONTROL PANEL ================= -->
+  <aside class="panel">
+    <div class="p-head">
+      <div class="p-title"><span class="dot"></span>Letterhead Studio<small>Lotus International School</small></div>
+      <button class="btn primary" id="printBtn">🖨&nbsp; Print / Save as PDF</button>
+      <div class="hint c">Print dialog: <b>Margins: None</b>, <b>Background graphics: On</b></div>
+    </div>
+
+    <details class="sec" open>
+      <summary>📄 Document</summary>
+      <div class="sec-body">
+        <label>Document type (badge)</label>
+        <select id="typeSelect">
+          <option>Circular</option>
+          <option>Notice</option>
+          <option>Parent Letter</option>
+          <option>Fee Reminder</option>
+          <option>Leave Approval</option>
+          <option selected>Teacher's User Guide</option>
+          <option>Certificate</option>
+          <option>Official Letter</option>
+          <option value="__custom">Custom...</option>
+        </select>
+        <input id="typeCustom" placeholder="Type your own label" style="display:none;margin-top:6px">
+        <label>Sub-line</label>
+        <input id="subLine" value="Academic Session 2026–27">
+      </div>
+    </details>
+
+    <details class="sec" open>
+      <summary>👁 Show / hide parts</summary>
+      <div class="sec-body">
+        <label class="sw"><span>Ref / Date</span><input type="checkbox" id="showMeta" checked><i></i></label>
+        <label class="sw"><span>To (address)</span><input type="checkbox" id="showTo" checked><i></i></label>
+        <label class="sw"><span>Subject</span><input type="checkbox" id="showSub" checked><i></i></label>
+        <label class="sw"><span>Signature</span><input type="checkbox" id="showSign" checked><i></i></label>
+        <label class="sw"><span>Footer</span><input type="checkbox" id="showFoot" checked><i></i></label>
+      </div>
+    </details>
+
+    <details class="sec" open>
+      <summary>↕ Body height</summary>
+      <div class="sec-body">
+        <label class="sw"><span>Auto (fill page)</span><input type="checkbox" id="bodyAuto" checked><i></i></label>
+        <div class="zoom" style="padding:8px 0 0" id="bodyHRow">
+          <span>Height</span>
+          <input type="range" id="bodyH" min="30" max="220" value="120" step="5">
+          <b id="bodyHV" style="width:52px">120mm</b>
+        </div>
+        <div class="hint">Turn Auto off and use the slider to set the body height. The footer always stays at the bottom of the page.</div>
+      </div>
+    </details>
+
+    <details class="sec" open>
+      <summary>✍ Text formatting</summary>
+      <div class="sec-body">
+        <div class="toolbar seg">
+          <button data-cmd="bold" title="Bold"><b>B</b></button>
+          <button data-cmd="italic" title="Italic"><i>I</i></button>
+          <button data-cmd="underline" title="Underline"><u>U</u></button>
+          <button data-cmd="insertUnorderedList" title="Bullet list">• List</button>
+          <button data-cmd="insertOrderedList" title="Numbered list">1. List</button>
+          <button data-cmd="justifyLeft" title="Align left">⟸</button>
+          <button data-cmd="justifyCenter" title="Center">≡</button>
+          <button data-cmd="justifyRight" title="Align right">⟹</button>
+          <div style="grid-column:span 4;display:grid;grid-template-columns:repeat(3,1fr);gap:5px">
+            <button data-cmd="justifyFull" title="Justify">☰ Justify</button>
+            <button data-color="#1d4ed8" title="Blue link-style text (like URLs in the guide)" style="color:#1d4ed8;font-weight:700">A Blue</button>
+            <button data-color="#1e293b" title="Back to normal text colour">A Normal</button>
+          </div>
+        </div>
+        <label>Text size (px)</label>
+        <div class="row size-row">
+          <span>Sel</span>
+          <input type="number" id="selSize" min="6" max="100" step="1" placeholder="14" title="Size of selected text (works anywhere on the page)">
+          <button class="btn ghost" id="selApply" type="button" title="Apply to selected text">Apply</button>
+          <button class="btn ghost" id="selDefault" type="button" title="Selected text back to its block's default size">Def</button>
+          <span style="margin-left:4px">Body</span>
+          <input type="number" id="bodySize" min="8" max="40" step="0.5" value="13" title="Size of whole body text">
+          <button class="btn ghost" id="bodyDefault" type="button" title="Reset body size to 13px">Def</button>
+        </div>
+        <div class="hint">Sel: select any text on the page (body, address, subject, signature, date…), enter a number and press Apply. Body: changes the size of the whole body text as you type. Def = default.</div>
+      </div>
+    </details>
+
+    <details class="sec" open>
+      <summary>🧩 Boxes &amp; shapes</summary>
+      <div class="sec-body">
+        <div class="shapes-grid toolbar">
+          <button data-ins="banner"><em class="ic" style="background:#eff6ff;border-left:3px solid #2563eb"></em>Banner</button>
+          <button data-ins="title"><em class="ic t">T</em>Section title</button>
+          <button data-ins="step"><em class="ic n">1</em>Step card</button>
+          <button data-ins="steps2"><em class="ic n">1|2</em>2 Step cards</button>
+          <button data-ins="numlist"><em class="ic n">≡</em>Numbered list</button>
+          <button data-ins="flow"><em class="ic t">→</em>Flow box</button>
+          <button data-ins="warn"><em class="ic" style="background:#fffbeb;border:1px solid #fde68a"></em>Warning</button>
+          <button data-ins="sec"><em class="ic" style="background:#f8fafc;border:1px solid #cbd5e1"></em>Info</button>
+          <button data-ins="tip"><em class="ic" style="background:#f0fdf4;border:1px solid #bbf7d0"></em>Tip</button>
+          <button data-ins="notes3"><em class="ic t">▮▮▮</em>3 Notes</button>
+        </div>
+        <label>Flow steps (existing flow box)</label>
+        <div class="flowctl">
+          <button id="flowMinus" title="Remove last step">−</button>
+          <span id="flowCount">–</span>
+          <button id="flowPlus" title="Add a step">+</button>
+          <em>steps</em>
+        </div>
+        <div class="hint">Click inside a flow box, then press + / −. If you don't click, the last flow box is changed.</div>
+        <button class="btn ghost danger" id="rmBox">🗑 Remove box (click inside it first)</button>
+        <div class="hint">Step card numbers are automatic and renumber themselves on delete.</div>
+      </div>
+    </details>
+
+    <div class="zoom">
+      <span>🔍</span><button class="fit on" id="fitBtn" title="Fit page to screen">Fit</button>
+      <input type="range" id="zoomR" min="40" max="200" value="100" step="5">
+      <b id="zoomV">100%</b>
+    </div>
+  </aside>
+
+  <!-- ================= A4 PAGE ================= -->
+  <div class="page-wrap">
+    <div class="page" id="page">
+
+      <div class="header">
+        <div class="brand">
+          <img id="logoImg" class="logo-img" alt="Lotus International School Logo" src="https://raw.githubusercontent.com/lamahajan/LotusReceptionSuite/main/Logo%20with%20name.png" onerror="this.onerror=null;this.style.display='none';document.getElementById('logoFallback').style.display='block'" onload="document.getElementById('logoFallback').style.display='none'">
+        </div>
+        <div id="logoFallback" style="display:none;font-size:20px;font-weight:800;color:#1e3a8a">Lotus International School</div>
+        <div class="header-tag">
+          <span class="badge" id="badge">Teacher's User Guide</span>
+          <span class="sub" id="subOut">Academic Session 2026–27</span>
+        </div>
+      </div>
+
+      <div class="meta" id="metaRow">
+        <div>Ref No.: <span contenteditable="true" id="refNo">LIS/2026-27/001</span></div>
+        <div>Date: <span contenteditable="true" id="dateOut"></span></div>
+      </div>
+
+      <div class="to-block" contenteditable="true" id="toBlock">To,
+The Parents / Guardians</div>
+
+      <div class="subject" contenteditable="true" id="subject">Subject: </div>
+
+      <div class="body" contenteditable="true" id="body"><p>Dear Sir/Madam,</p><p>Write your letter here...</p></div>
+
+      <div class="sign" contenteditable="true" id="sign">Principal<br>Lotus International School</div>
+
+      <div class="footer" id="footer">
+        <span class="aff">CBSE Affiliation No: 1630651 <span class="fdot">●</span> School Code: 20814</span><br>
+        <b>Lotus International School, Near Chhotu Nath Mandir, Taragarh Road, Vill - Alikhan, Pathankot, Pb - 143534<br>
+        info@lisdnn.org <span class="fdot">●</span> www.lotusinternationalschool.org <span class="fdot">●</span> 9872760880, 9463714650
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var LS = {
+    get: function (k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+    set: function (k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+  };
+
+  // ---- Date default ----
+  function todayStr() {
+    var d = new Date();
+    return String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0') + '/' + d.getFullYear();
+  }
+  $('dateOut').textContent = todayStr();
+
+  // ---- Document type label ----
+  function applyType() {
+    var v = $('typeSelect').value;
+    var custom = v === '__custom';
+    $('typeCustom').style.display = custom ? 'block' : 'none';
+    $('badge').textContent = custom ? ($('typeCustom').value || 'Document') : v;
+  }
+  $('typeSelect').addEventListener('change', applyType);
+  $('typeCustom').addEventListener('input', applyType);
+  $('subLine').addEventListener('input', function () { $('subOut').textContent = this.value; });
+
+  // ---- Show/hide blocks ----
+  $('showMeta').addEventListener('change', function () { $('metaRow').style.display = this.checked ? 'flex' : 'none'; });
+  $('showSub').addEventListener('change', function () { $('subject').style.display = this.checked ? 'block' : 'none'; });
+  $('showTo').addEventListener('change', function () { $('toBlock').style.display = this.checked ? 'block' : 'none'; });
+  $('showSign').addEventListener('change', function () { $('sign').style.display = this.checked ? 'block' : 'none'; });
+
+  // ---- Formatting toolbar ----
+  document.querySelectorAll('.toolbar button[data-cmd]').forEach(function (b) {
+    b.addEventListener('mousedown', function (e) { e.preventDefault(); });
+    b.addEventListener('click', function () { document.execCommand(b.getAttribute('data-cmd'), false, null); });
+  });
+
+  // ---- Flow step count (+ / -) ----
+  function curFlow() {
+    var sel = window.getSelection(), n = sel.rangeCount ? sel.anchorNode : null;
+    if (n && n.nodeType === 3) n = n.parentNode;
+    var f = n && n.closest ? n.closest('.flow-box') : null;
+    if (f && $('body').contains(f)) return f;
+    var all = $('body').querySelectorAll('.flow-box');
+    return all.length ? all[all.length - 1] : null;
+  }
+  function showFlowCount() { var f = curFlow(); $('flowCount').textContent = f ? f.querySelectorAll('.flow-node').length : '–'; }
+  ['flowPlus', 'flowMinus'].forEach(function (id) { $(id).addEventListener('mousedown', function (e) { e.preventDefault(); }); });
+  $('flowPlus').addEventListener('click', function () {
+    var f = curFlow(); if (!f) { alert('Please add a flow box first.'); return; }
+    var steps = f.querySelector('.flow-steps'), nodes = steps.querySelectorAll('.flow-node');
+    if (nodes.length >= 8) return;
+    nodes[nodes.length - 1].classList.remove('hl');
+    var ar = document.createElement('div'); ar.className = 'flow-arrow'; ar.textContent = '→';
+    var nd = document.createElement('div'); nd.className = 'flow-node hl'; nd.textContent = (nodes.length + 1) + '. Step ' + (nodes.length + 1);
+    steps.appendChild(ar); steps.appendChild(nd); showFlowCount();
+  });
+  $('flowMinus').addEventListener('click', function () {
+    var f = curFlow(); if (!f) return;
+    var steps = f.querySelector('.flow-steps'), nodes = steps.querySelectorAll('.flow-node');
+    if (nodes.length <= 2) return;
+    var last = nodes[nodes.length - 1], prev = last.previousElementSibling;
+    last.remove(); if (prev && prev.classList.contains('flow-arrow')) prev.remove();
+    var rest = steps.querySelectorAll('.flow-node'); rest[rest.length - 1].classList.add('hl'); showFlowCount();
+  });
+  document.addEventListener('selectionchange', showFlowCount);
+  $('body').addEventListener('input', showFlowCount);
+
+  // ---- Text size (selected text: works in ANY editable part of the page) ----
+  var BODY_DEFAULT = 13, lastRng = null;
+  function editableOf(node) {
+    if (node && node.nodeType === 3) node = node.parentNode;
+    var ed = node && node.closest ? node.closest('[contenteditable="true"]') : null;
+    return ed && $('page').contains(ed) ? ed : null;
+  }
+  document.addEventListener('selectionchange', function () {
+    try {
+      var sel = window.getSelection();
+      if (sel.rangeCount && editableOf(sel.anchorNode)) lastRng = sel.getRangeAt(0).cloneRange();
+    } catch (e) {}
+  });
+  function setSelSize(px, useDefault) {
+    var sel = window.getSelection();
+    if (lastRng) { sel.removeAllRanges(); sel.addRange(lastRng); }
+    var ed = sel.rangeCount ? editableOf(sel.anchorNode) : null;
+    if (!ed || sel.isCollapsed || editableOf(sel.focusNode) !== ed) { alert('Please select some text first (inside a single block, e.g. body, address, subject or signature).'); return; }
+    if (useDefault) px = parseFloat(getComputedStyle(ed).fontSize) || BODY_DEFAULT;
+    ed.focus();
+    document.execCommand('styleWithCSS', false, false);
+    document.execCommand('fontSize', false, '7');
+    ed.querySelectorAll('font[size="7"]').forEach(function (f) {
+      var sp = document.createElement('span'); sp.style.fontSize = px + 'px'; sp.innerHTML = f.innerHTML; f.parentNode.replaceChild(sp, f);
+    });
+  }
+  ['selApply', 'selDefault', 'bodyDefault'].forEach(function (id) { $(id).addEventListener('mousedown', function (e) { e.preventDefault(); }); });
+  $('selApply').addEventListener('click', function () {
+    var px = parseFloat($('selSize').value);
+    if (isNaN(px) || px < 6 || px > 100) { alert('Enter a number between 6 and 100.'); return; }
+    setSelSize(px);
+  });
+  $('selSize').addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); $('selApply').click(); } });
+  $('selDefault').addEventListener('click', function () {
+    $('selSize').value = ''; setSelSize(0, true);
+  });
+  $('bodySize').addEventListener('input', function () {
+    var px = parseFloat(this.value);
+    if (!isNaN(px) && px >= 8 && px <= 40) $('body').style.fontSize = px + 'px';
+  });
+  $('bodyDefault').addEventListener('click', function () { $('bodySize').value = BODY_DEFAULT; $('body').style.fontSize = BODY_DEFAULT + 'px'; });
+
+  // ---- Blue (URL-style) text / normal text ----
+  document.querySelectorAll('button[data-color]').forEach(function (b) {
+    b.addEventListener('mousedown', function (e) { e.preventDefault(); });
+    b.addEventListener('click', function () {
+      var blue = b.getAttribute('data-color') === '#1d4ed8';
+      document.execCommand('styleWithCSS', false, true);
+      document.execCommand('foreColor', false, b.getAttribute('data-color'));
+      var sel = window.getSelection();
+      if (sel.rangeCount && !sel.isCollapsed) {
+        var isBold = document.queryCommandState('bold');
+        if (blue !== isBold) document.execCommand('bold', false, null);
+      }
+    });
+  });
+
+  // ---- Banner / section title inserts ----
+  var STEP = '<div class="step-card"><div class="step-header"><div class="step-num" contenteditable="false"></div><div class="step-title">Step Title</div></div><ul><li>Point one</li><li>Point two</li></ul></div>';
+  var INS = {
+    banner: '<div class="intro-banner"><h1>Heading</h1><p>Write your highlighted notice text here.</p></div><p><br></p>',
+    title: '<div class="section-title">Section Title</div><p><br></p>',
+    step: STEP + '<p><br></p>',
+    steps2: '<div class="steps-container">' + STEP + STEP + '</div><p><br></p>',
+    numlist: '<ol class="num-list"><li>First point</li><li>Second point</li><li>Third point</li></ol><p><br></p>',
+    flow: null,
+    flowOld: '<div class="flow-box"><div class="flow-title">Process Title</div><div class="flow-steps"><div class="flow-node">1. First</div><div class="flow-arrow">→</div><div class="flow-node">2. Second</div><div class="flow-arrow">→</div><div class="flow-node">3. Third</div><div class="flow-arrow">→</div><div class="flow-node hl">4. Final</div></div></div><p><br></p>',
+    warn: '<div class="note-card note-warning"><strong>⚠️ Warning Title</strong>Write the note here.</div><p><br></p>',
+    sec: '<div class="note-card note-security"><strong>🔑 Info Title</strong>Write the note here.</div><p><br></p>',
+    tip: '<div class="note-card note-tip"><strong>💡 Tip Title</strong>Write the tip here.</div><p><br></p>',
+    notes3: '<div class="notes-grid"><div class="note-card note-warning"><strong>⚠️ Warning</strong>Text here.</div><div class="note-card note-security"><strong>🔑 Info</strong>Text here.</div><div class="note-card note-tip"><strong>💡 Tip</strong>Text here.</div></div><p><br></p>'
+  };
+  function buildFlow(n) {
+    var h = '<div class="flow-box"><div class="flow-title">Process Title</div><div class="flow-steps">';
+    for (var i = 1; i <= n; i++) {
+      h += '<div class="flow-node' + (i === n ? ' hl' : '') + '">' + i + '. Step ' + i + '</div>';
+      if (i < n) h += '<div class="flow-arrow">→</div>';
+    }
+    return h + '</div></div><p><br></p>';
+  }
+  document.querySelectorAll('.toolbar button[data-ins]').forEach(function (b) {
+    b.addEventListener('mousedown', function (e) { e.preventDefault(); });
+    b.addEventListener('click', function () {
+      var html = INS[b.getAttribute('data-ins')];
+      if (b.getAttribute('data-ins') === 'flow') {
+        var ans = window.prompt('How many flow steps do you need? (2 to 8)', '4');
+        if (ans === null) return;
+        var n = parseInt(ans, 10);
+        if (isNaN(n) || n < 2) n = 2; if (n > 8) n = 8;
+        html = buildFlow(n);
+      }
+      var body = $('body'); body.focus();
+      var sel = window.getSelection(), n = sel.rangeCount ? sel.anchorNode : null;
+      if (n && n.nodeType === 3) n = n.parentNode;
+      if (!n || !body.contains(n) || n === body) { var r0 = document.createRange(); r0.selectNodeContents(body); r0.collapse(false); sel.removeAllRanges(); sel.addRange(r0); n = null; }
+      if (n) {
+        // if cursor is inside an existing box, move it after that box so boxes never nest
+        var top = n; while (top.parentNode !== body) top = top.parentNode;
+        if (top.className && /steps-container|notes-grid|step-card|flow-box|note-card|intro-banner|section-title|num-list/.test(top.className + ' ' + top.tagName)) {
+          var nx = top.nextElementSibling;
+          if (!nx) { nx = document.createElement('p'); nx.innerHTML = '<br>'; body.appendChild(nx); }
+          var r = document.createRange(); r.setStart(nx, 0); r.collapse(true); sel.removeAllRanges(); sel.addRange(r);
+        }
+      }
+      document.execCommand('insertHTML', false, html);
+    });
+  });
+
+  $('rmBox').addEventListener('mousedown', function (e) { e.preventDefault(); });
+  $('rmBox').addEventListener('click', function () {
+    var sel = window.getSelection(); if (!sel.rangeCount) return;
+    var n = sel.anchorNode; if (n && n.nodeType === 3) n = n.parentNode;
+    var box = n && n.closest ? n.closest('.steps-container, .notes-grid, .step-card, .flow-box, .note-card, .intro-banner, .section-title, ol.num-list') : null;
+    if (box && $('body').contains(box)) box.remove(); else alert('Please click inside a box first.');
+  });
+
+  // ---- Footer toggle + body height ----
+  $('showFoot').addEventListener('change', function () { $('footer').style.display = this.checked ? '' : 'none'; });
+  function applyBodyH() {
+    var auto = $('bodyAuto').checked, b = $('body');
+    b.classList.toggle('fixed', !auto);
+    b.style.minHeight = auto ? '' : '0';
+    b.style.height = auto ? '' : $('bodyH').value + 'mm';
+    $('bodyH').disabled = auto; $('bodyHRow').style.opacity = auto ? .45 : 1;
+    $('bodyHV').textContent = $('bodyH').value + 'mm';
+  }
+  $('bodyAuto').addEventListener('change', applyBodyH);
+  $('bodyH').addEventListener('input', applyBodyH);
+  applyBodyH();
+
+  // ---- Desktop tabs (no scrolling) ----
+  (function () {
+    var panel = document.querySelector('.panel'), secs = Array.prototype.slice.call(panel.querySelectorAll('details.sec'));
+    var groups = [['Page', [0, 1]], ['Text', [2, 3]], ['Boxes', [4]]];
+    var tabs = document.createElement('div'); tabs.className = 'tabs';
+    var content = document.createElement('div'); content.className = 'tab-content';
+    panel.insertBefore(tabs, secs[0]); panel.insertBefore(content, secs[0]);
+    secs.forEach(function (d) { d.open = true; content.appendChild(d); });
+    function show(i) {
+      Array.prototype.forEach.call(tabs.children, function (b, k) { b.classList.toggle('on', k === i); });
+      secs.forEach(function (d, k) { d.classList.toggle('active', groups[i][1].indexOf(k) > -1); });
+      content.scrollTop = 0;
+    }
+    groups.forEach(function (g, i) {
+      var b = document.createElement('button'); b.textContent = g[0]; b.addEventListener('click', function () { show(i); }); tabs.appendChild(b);
+    });
+    show(0);
+  })();
+
+  // ---- Fit page to screen ----
+  var fitOn = true;
+  function fitPage() {
+    var pg = $('page');
+    if (window.innerWidth <= 1100) { pg.style.zoom = fitOn ? 1 : pg.style.zoom; return; }
+    if (!fitOn) return;
+    pg.style.zoom = 1;
+    var panelW = document.querySelector('.panel').offsetWidth;
+    var availH = window.innerHeight - 24, availW = window.innerWidth - panelW - 12 * 2 - 14;
+    var z = Math.min(availH / pg.offsetHeight, availW / pg.offsetWidth, 1.25);
+    z = Math.max(0.4, z);
+    pg.style.zoom = z;
+    $('zoomR').value = Math.round(z * 100); $('zoomV').textContent = Math.round(z * 100) + '%';
+  }
+  $('fitBtn').addEventListener('click', function () { fitOn = true; this.classList.add('on'); fitPage(); });
+  $('zoomR').addEventListener('input', function () { fitOn = false; $('fitBtn').classList.remove('on'); });
+  window.addEventListener('resize', fitPage);
+  fitPage();
+
+  // ---- Preview zoom ----
+  $('zoomR').addEventListener('input', function () { $('page').style.zoom = this.value / 100; $('zoomV').textContent = this.value + '%'; });
+
+  // ---- Print ----
+  $('printBtn').addEventListener('click', function () { window.print(); });
+})();
+</script>
+</body>
+</html>
