@@ -3237,6 +3237,31 @@ Reason: {reason}"></textarea>
             </div>
           </div>
 
+          <!-- WhatsApp Delivery Report -->
+          <div class="dl-acc">
+            <button class="dl-acc-hdr" onclick="this.closest('.dl-acc').classList.toggle('open')">
+              <span class="dl-acc-hdr-icon">📨</span>
+              <div class="dl-acc-hdr-info">
+                <div class="dl-acc-hdr-title">WhatsApp Delivery Report</div>
+                <div class="dl-acc-hdr-sub">Who received the message, who didn't &amp; why</div>
+              </div>
+              <span class="dl-acc-arrow">▾</span>
+            </button>
+            <div class="dl-acc-body">
+              <div style="font-size:11px;color:#6a6055;margin:10px 0 10px;line-height:1.5">See who received the WhatsApp message and who did not, and why — download it as Excel. (Uses the worker URL + token saved in Parent Desk.)</div>
+              <div style="display:flex;gap:8px;flex-wrap:wrap">
+                <select id="wa-rep-days" style="flex:0 0 auto;background:#fff;border:1.5px solid #e2e8f0;color:#1a1208;border-radius:9px;padding:9px 10px;font-size:12px;font-weight:700;font-family:inherit">
+                  <option value="1">Last 24 hours</option>
+                  <option value="3">Last 3 days</option>
+                  <option value="7" selected>Last 7 days</option>
+                  <option value="30">Last 30 days</option>
+                </select>
+                <button onclick="waDownloadDeliveryReport()" style="flex:1;min-width:150px;background:#b5883e;color:#fff;border:none;border-radius:9px;padding:9px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">⬇️ Download Excel</button>
+              </div>
+              <div id="wa-rep-status" style="font-size:11px;color:#6a6055;margin-top:8px;min-height:14px;line-height:1.5"></div>
+            </div>
+          </div>
+
           <!-- Manage QR -->
           <div class="dl-acc">
             <button class="dl-acc-hdr" onclick="this.closest('.dl-acc').classList.toggle('open');if(this.closest('.dl-acc').classList.contains('open'))qrRefreshStats()">
@@ -3408,22 +3433,6 @@ Reason: {reason}"></textarea>
           <span style="margin-left:auto;color:var(--mut)">›</span>
         </button>
       </div>
-    </div>
-
-    <!-- WhatsApp Delivery Report -->
-    <div style="background:var(--surf);border:1.5px solid var(--bdr);border-radius:var(--r);padding:16px 18px;margin-bottom:14px;box-shadow:var(--sha)">
-      <div style="font-size:13px;font-weight:800;color:var(--txt);margin-bottom:4px">📨 WhatsApp Delivery Report</div>
-      <div style="font-size:11px;color:var(--sub);margin-bottom:12px;line-height:1.5">See who received the WhatsApp message and who did not, and why — download it as Excel. (Uses the worker URL + token saved in Parent Desk.)</div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <select id="wa-rep-days" style="flex:0 0 auto;background:var(--bg3);border:1.5px solid var(--bdr);color:var(--txt);border-radius:9px;padding:9px 10px;font-size:12px;font-weight:700">
-          <option value="1">Last 24 hours</option>
-          <option value="3">Last 3 days</option>
-          <option value="7" selected>Last 7 days</option>
-          <option value="30">Last 30 days</option>
-        </select>
-        <button onclick="waDownloadDeliveryReport()" style="flex:1;min-width:150px;background:var(--brand);color:#fff;border:none;border-radius:9px;padding:9px 14px;font-size:13px;font-weight:700;cursor:pointer">⬇️ Download Excel</button>
-      </div>
-      <div id="wa-rep-status" style="font-size:11px;color:var(--sub);margin-top:8px;min-height:14px;line-height:1.5"></div>
     </div>
 
     <!-- Data Management -->
