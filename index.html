@@ -5662,9 +5662,28 @@ async function metaWASend(toPhone, messageText, pass){
   return data;
 }
 
+// ═══ WA DUPLICATE-SEND GUARD ═══
+// Claims "this message was already sent" atomically in Firebase (conditional PUT, only
+// succeeds if the key doesn't exist yet) so two tabs/PCs/re-issues can never both send.
+// Falls back to a localStorage mark if Firebase is unreachable.
+async function waClaim(kind,adm,date,passId){
+  var key=(kind==='out'?'out_'+passId:'in_'+String(adm).replace(/[.$#\[\]\/]/g,'_')+'_'+date);
+  try{
+    if(localStorage.getItem('wa_sent_'+key))return false;
+    localStorage.setItem('wa_sent_'+key,'1');
+  }catch(e){}
+  if(!cfg.url||!cfg.code)return true;
+  try{
+    var r=await fetch(cfg.url+'/'+cfg.code+'/waSent/'+key+'.json',{method:'PUT',headers:{'Content-Type':'application/json','if-match':'null_etag'},body:JSON.stringify({t:Date.now()})});
+    if(r.status===412)return false; // someone else already sent it
+  }catch(e){}
+  return true;
+}
+
 // Called from issuePass()
 async function metaWASendGatepass(pass){
   if(!MetaWACfg.enabled||!MetaWACfg.phoneNumberId||!MetaWACfg.accessToken)return false;
+  if(!(await waClaim('in',pass.admissionNumber,pass.date,pass.id))){console.warn('WA gatepass already sent, skipped',pass.studentName);return false;}
   var st=document.getElementById('meta-wa-status');
   var results=[];
   var stu=S.students.find(s=>s.admissionNumber===pass.admissionNumber);
@@ -5702,6 +5721,7 @@ async function metaWASendGatepass(pass){
 async function metaWASendGateOut(pass){
   if(!MetaWACfg.enabled||!MetaWACfg.phoneNumberId||!MetaWACfg.accessToken||!MetaWACfg.outTemplateName)return;
   if(MetaWACfg.outEnabled===false)return;
+  if(!(await waClaim('out',pass.admissionNumber,pass.date,pass.id)))return;
   var stu=S.students.find(s=>s.admissionNumber===pass.admissionNumber);
   var parentPhone=((stu?stu.phone||'':'')).replace(/[^0-9]/g,'');
   if(!parentPhone||parentPhone.length<10)return;
