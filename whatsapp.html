@@ -147,9 +147,12 @@ const APP_NAME='Parent Desk - DigiFee Mitra'; // change the app name here and in
 const DEFAULTS={url:'https://whatsapp.due-4a8.workers.dev',tok:''}; // optional: pre-fill (keep the file private if you add the token)
 const ls={get:k=>{try{return localStorage.getItem(k)}catch(e){return null}},set:(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}}};
 {const h=new URLSearchParams(location.hash.slice(1));if(h.get('url')||h.get('k')){if(h.get('url'))ls.set('waUrl',h.get('url'));if(h.get('k'))ls.set('waTok',h.get('k'));history.replaceState(null,'',location.pathname+location.search)}}
-const S={loaded:false,err:'',con:{},url:ls.get('waUrl')||DEFAULTS.url,tok:ls.get('waTok')||DEFAULTS.tok,map:new Map(),cur:null,older:null,seen:{},unread:0};
+const S={loaded:false,err:'',con:{},url:ls.get('waUrl')||DEFAULTS.url,tok:ls.get('waTok')||DEFAULTS.tok,map:new Map(),cur:null,older:null,seen:(()=>{try{return JSON.parse(ls.get('waSeen')||'{}')||{}}catch(e){return{}}})(),hadSeen:ls.get('waSeen')!==null,unread:0};
+const saveSeen=()=>ls.set('waSeen',JSON.stringify(S.seen));
 const fmtT=ts=>new Date(ts*1000).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',timeZone:'Asia/Kolkata'});
 const fmtD=ts=>new Date(ts*1000).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric',timeZone:'Asia/Kolkata'});
+const dayK=ts=>new Date(ts*1000).toLocaleDateString('en-CA',{timeZone:'Asia/Kolkata'});
+const fmtL=ts=>{const n=Date.now()/1000,k=dayK(ts);if(k===dayK(n))return '';if(k===dayK(n-86400))return 'Yesterday';return new Date(ts*1000).toLocaleDateString('en-IN',k.slice(0,4)===dayK(n).slice(0,4)?{day:'numeric',month:'short',timeZone:'Asia/Kolkata'}:{day:'numeric',month:'short',year:'2-digit',timeZone:'Asia/Kolkata'})};
 const el=(t,c,x)=>{const e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e};
 
 async function api(path){
@@ -167,6 +170,7 @@ async function load(first){
     if(first)S.older=d.cursor;
     if(!first&&S.map.size>before&&document.hidden){S.unread+=S.map.size-before;document.title=`(${S.unread}) ${APP_NAME}`}
     $('status').textContent='Updated '+new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+    if(first&&!S.hadSeen){chats().forEach(c=>S.seen[c.from]=c.msgs.at(-1).ts);saveSeen();S.hadSeen=true}
     S.loaded=true;S.err='';render();
   }catch(e){$('status').textContent=e.message;if(!S.loaded){S.loaded=true;S.err=e.message;render()}}
 }
@@ -211,7 +215,9 @@ function render(){
     meta.append(el('span','',mob10(c.from)));
     cb.append(nm,meta,el('div','pv',preview(last)));
     const side=el('div','side');
-    if((S.seen[c.from]||0)<last.ts)side.append(el('i','dot'));
+    const dl=fmtL(last.ts);
+    if(dl){side.append(document.createTextNode(dl),document.createElement('br'))}
+    if(S.cur!==c.from&&(S.seen[c.from]||0)<last.ts)side.append(el('i','dot'));
     side.append(document.createTextNode(fmtT(last.ts)));
     b.append(avatar(c.stu[0]?c.stu[0].name:t),cb,side);
     b.onclick=()=>{S.cur=c.from;document.body.classList.add('open');render()};
@@ -221,7 +227,7 @@ function render(){
 }
 function thread(){
   const c=chats().find(x=>x.from===S.cur);if(!c)return;
-  S.seen[c.from]=c.msgs.at(-1).ts;
+  if((S.seen[c.from]||0)<c.msgs.at(-1).ts){S.seen[c.from]=c.msgs.at(-1).ts;saveSeen()}
   const hb=el('div','hb');
   if(c.stu.length){const tc=el('div','tc');
     c.stu.forEach(s=>{const pc=palOf(s.name),sp=el('span','sp');sp.style.background=pc[1];sp.style.color=pc[0];sp.append(el('b','',s.name));if(s.cls)sp.append(el('em','',s.cls));tc.append(sp)});
