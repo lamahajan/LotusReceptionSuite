@@ -3237,6 +3237,30 @@ Reason: {reason}"></textarea>
             </div>
           </div>
 
+          <!-- WhatsApp Skip List (synced via Firebase) -->
+          <div class="dl-acc">
+            <button class="dl-acc-hdr" onclick="this.closest('.dl-acc').classList.toggle('open');if(this.closest('.dl-acc').classList.contains('open'))dlSkipRender()">
+              <span class="dl-acc-hdr-icon">🚫</span>
+              <div class="dl-acc-hdr-info">
+                <div class="dl-acc-hdr-title">WhatsApp Skip List <span id="dl-skip-cnt" style="font-family:'Outfit',sans-serif;background:#fee2e2;color:#b91c1c;border-radius:10px;padding:0 7px;font-size:10px;margin-left:4px">0</span></div>
+                <div class="dl-acc-hdr-sub">These students will never receive the reminder &middot; auto-synced on all PCs</div>
+              </div>
+              <span class="dl-acc-arrow">&#9662;</span>
+            </button>
+            <div class="dl-acc-body">
+              <label class="dl-lbl" style="margin-top:10px">Bulk add &mdash; admission numbers (comma-separated)</label>
+              <textarea id="dl-skip-bulk" class="dl-inp" rows="2" placeholder="e.g. 1021, 1034, 2045" style="resize:vertical"></textarea>
+              <button onclick="dlSkipBulkAdd()" style="width:100%;background:#dc2626;color:#fff;border:none;border-radius:9px;padding:9px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;margin-bottom:6px">🚫 Add all to Skip List</button>
+              <label class="dl-lbl" style="margin-top:10px">Or search a student (name / adm / class)</label>
+              <input id="dl-skip-q" class="dl-inp" type="text" placeholder="Start typing…" oninput="dlSkipSearch()" autocomplete="off"/>
+              <div id="dl-skip-results" style="display:flex;flex-direction:column;gap:5px;margin-bottom:8px"></div>
+              <div style="font-size:10px;font-weight:800;color:#b91c1c;text-transform:uppercase;letter-spacing:.8px;margin:8px 0 6px">Always Skip</div>
+              <div id="dl-skip-list" style="display:flex;flex-direction:column;gap:5px;max-height:220px;overflow-y:auto"></div>
+              <div id="dl-skip-status" style="font-size:11px;color:#6a6055;margin-top:8px;min-height:14px;line-height:1.5;font-weight:600"></div>
+              <div style="font-size:10px;color:#a89f92;margin-top:4px;line-height:1.5">This list is saved in a separate node next to the Due List in Firebase, so &ldquo;Upload xlsm &amp; Full Replace&rdquo; will not erase it. Firebase Sync must be connected.</div>
+            </div>
+          </div>
+
           <!-- WhatsApp Delivery Report -->
           <div class="dl-acc">
             <button class="dl-acc-hdr" onclick="this.closest('.dl-acc').classList.toggle('open')">
@@ -9879,6 +9903,7 @@ function dlCardHTML(s){
     +'<div style="display:flex;gap:5px;align-items:center;margin-top:3px;flex-wrap:wrap">'
     +(s.adm?'<span style="font-size:10px;color:#94a3b8;font-family:\'Outfit\',sans-serif">#'+esc(s.adm)+'</span>':'')
     +(s.cls?'<span style="font-size:10px;background:#f1f5f9;color:#475569;padding:1px 8px;border-radius:20px;font-weight:600">'+esc(s.cls)+'</span>':'')
+    +((window.dlIsSkipped&&window.dlIsSkipped(s))?'<span title="WhatsApp skip list" style="font-size:10px;background:#fee2e2;color:#b91c1c;padding:1px 8px;border-radius:20px;font-weight:700">🚫 Skip</span>':'')
     +(mob?'<a href="tel:'+mob+'" onclick="if(dlSelectModeOn){event.preventDefault();event.stopPropagation();dlCardClick(this.closest(\'.dl-card-wrap\'),event);}else{event.stopPropagation();}" style="font-size:10px;color:#94a3b8;font-family:\'Outfit\',sans-serif;text-decoration:none">'+mob+'</a>':'')
     +'</div>'
     +'</div>'
@@ -10255,7 +10280,11 @@ window.dlSendWhatsApp=function(){
   var tmplName=sel?sel.value:'';
   if(!tmplName){ alert('Please select a template!'); return; }
   var students=(window.dlData||[]).filter(function(s){ return dlSelected.has(String(s.adm||s.name)); });
-  if(!students.length){ alert('No students selected!'); return; }
+  var _skipN=students.length;
+  students=students.filter(function(s){ return !(window.dlIsSkipped&&window.dlIsSkipped(s)); });
+  _skipN-=students.length;
+  if(_skipN>0 && typeof toast==='function') toast('🚫 '+_skipN+(_skipN===1?' student is':' students are')+' on the skip list — message not sent');
+  if(!students.length){ alert(_skipN>0?'All selected students are on the Skip List — no messages were sent.':'No students selected!'); return; }
 
   var prog=document.getElementById('dl-wa-progress');
   if(prog){ prog.style.display='flex'; prog.classList.add('active'); }
@@ -10864,6 +10893,153 @@ document.addEventListener('DOMContentLoaded',function(){
   waLoadSettings();
 });
 
+
+// ═══════════════════════════════════════════════════════
+//  WHATSAPP SKIP LIST — students who must NEVER get the due reminder.
+//  Stored at {url}/{code}__wa_skip/{adm} = { adm, name, cls }
+//  (a SIBLING node of the due list, so "Upload xlsm & Full Replace" —
+//  which PUTs the whole {code} node — can never wipe it, and the due-list
+//  mirror never mistakes it for a student).
+//  Live 2-way sync over EventSource, same pattern as the Due List stream;
+//  localStorage is only an offline cache.
+// ═══════════════════════════════════════════════════════
+(function(){
+  var CACHE_KEY='dl_wa_skip_v1';
+  var _skip={};      // key -> {adm,name,cls}
+  var _es=null;
+  try{ _skip=JSON.parse(localStorage.getItem(CACHE_KEY)||'{}')||{}; }catch(e){ _skip={}; }
+
+  function key(v){ return String(v==null?'':v).trim().replace(/[.#$\[\]\/]/g,'_'); }
+  function skey(s){ return key(s&&(s.adm||s.name)); }
+  function base(){
+    var c=(typeof dlFbCfg==='function')?dlFbCfg():{url:'',code:''};
+    return (c.url&&c.code)?(c.url+'/'+c.code+'__wa_skip'):'';
+  }
+  function status(t,color){ var e=document.getElementById('dl-skip-status'); if(e){ e.textContent=t||''; if(color) e.style.color=color; } }
+  function cache(){ try{ localStorage.setItem(CACHE_KEY,JSON.stringify(_skip)); }catch(e){} }
+  function esc3(v){ return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+  window.dlIsSkipped=function(s){ return !!_skip[skey(s)]; };
+
+  function repaint(){
+    var n=Object.keys(_skip).length;
+    var c=document.getElementById('dl-skip-cnt'); if(c) c.textContent=n;
+    dlSkipRender();
+    if(typeof dlRender==='function'){ try{ dlRender(); }catch(e){} }
+  }
+
+  function startStream(){
+    stopStream();
+    var b=base();
+    if(!b){ return; }
+    var mirror={};
+    _es=new EventSource(b+'.json');
+    var onEvt=function(ev){
+      try{
+        var d=JSON.parse(ev.data);
+        _applyRTPatch(mirror,d.path,d.data,ev.type==='patch');
+        var out={};
+        Object.keys(mirror).forEach(function(k){
+          var r=mirror[k];
+          if(r&&typeof r==='object') out[k]={adm:String(r.adm||k),name:r.name||'',cls:r.cls||''};
+        });
+        _skip=out; cache(); repaint();
+      }catch(e){}
+    };
+    _es.addEventListener('put',onEvt);
+    _es.addEventListener('patch',onEvt);
+  }
+  function stopStream(){ if(_es){ try{ _es.close(); }catch(e){} _es=null; } }
+
+  // Ride on the Due List stream's lifecycle (connect, foreground resume, watchdog)
+  var _origStart=window.dlFbStartSync||dlFbStartSync;
+  var _wrapped=function(){ var r=_origStart.apply(this,arguments); try{ startStream(); }catch(e){} return r; };
+  try{ dlFbStartSync=_wrapped; }catch(e){}
+  window.dlFbStartSync=_wrapped;
+  var _origStop=window.dlFbStopSync||dlFbStopSync;
+  try{ dlFbStopSync=function(){ var r=_origStop.apply(this,arguments); return r; }; }catch(e){}
+  setInterval(function(){
+    if(base() && (!_es || _es.readyState===2)) startStream();
+  },20000);
+  document.addEventListener('DOMContentLoaded',function(){ startStream(); repaint(); });
+
+  function write(k,val){
+    var b=base();
+    if(!b){ status('⚠️ Connect Firebase Sync first (saved on this device only for now)','#d97706'); return Promise.resolve(false); }
+    return fetch(b+'/'+encodeURIComponent(k)+'.json',{
+      method: val===null?'DELETE':'PUT',
+      headers:{'Content-Type':'application/json'},
+      body: val===null?undefined:JSON.stringify(val)
+    }).then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return true; })
+      .catch(function(e){ status('❌ Sync failed: '+e.message,'#dc2626'); return false; });
+  }
+
+  window.dlSkipAdd=function(i){
+    var s=(window._dlSkipHits||[])[i]; if(!s) return;
+    var k=skey(s);
+    var rec={adm:String(s.adm||''),name:s.name||'',cls:s.cls||''};
+    _skip[k]=rec; cache(); repaint();
+    // un-select so it isn't in the current send selection either
+    try{ var a=String(s.adm||s.name); if(typeof dlSelected!=='undefined'&&dlSelected.has(a)){ dlSelected.delete(a); if(typeof dlUpdateSelCount==='function') dlUpdateSelCount(); } }catch(e){}
+    write(k,rec).then(function(ok){ if(ok) status('✅ '+rec.name+' added to the skip list — synced on all PCs','#166534'); });
+    var q=document.getElementById('dl-skip-q'); if(q){ q.value=''; } dlSkipSearch();
+  };
+  window.dlSkipBulkAdd=function(){
+    var el=document.getElementById('dl-skip-bulk'); if(!el) return;
+    var toks=el.value.split(/[,;\n\s]+/).map(function(t){return t.trim();}).filter(Boolean);
+    if(!toks.length){ status('Enter admission numbers (comma-separated)','#d97706'); return; }
+    var patch={}, added=0, unknown=[];
+    toks.forEach(function(t){
+      var hit=(window.dlData||[]).find(function(x){ return String(x.adm).trim().toLowerCase()===t.toLowerCase(); });
+      var rec=hit?{adm:String(hit.adm),name:hit.name||'',cls:hit.cls||''}:{adm:t,name:'',cls:''};
+      if(!hit) unknown.push(t);
+      var k=key(rec.adm);
+      if(!_skip[k]){ added++; }
+      _skip[k]=rec; patch[k]=rec;
+      try{ if(typeof dlSelected!=='undefined') dlSelected.delete(String(rec.adm)); }catch(e){}
+    });
+    cache(); repaint(); if(typeof dlUpdateSelCount==='function'){ try{ dlUpdateSelCount(); }catch(e){} }
+    el.value='';
+    var b=base();
+    var note=(unknown.length?' (not found in Due List, added anyway: '+unknown.join(', ')+')':'');
+    if(!b){ status('⚠️ Firebase not connected — saved on this device only'+note,'#d97706'); return; }
+    fetch(b+'.json',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(patch)})
+      .then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); status('✅ '+added+' newly added, synced on all PCs'+note,'#166534'); })
+      .catch(function(e){ status('❌ Sync failed: '+e.message,'#dc2626'); });
+  };
+  window.dlSkipRemove=function(k){
+    var r=_skip[k]; delete _skip[k]; cache(); repaint();
+    write(k,null).then(function(ok){ if(ok) status('✅ '+(r&&r.name||'Student')+' removed from the skip list','#166534'); });
+  };
+  window.dlSkipSearch=function(){
+    var q=((document.getElementById('dl-skip-q')||{}).value||'').trim().toLowerCase();
+    var box=document.getElementById('dl-skip-results'); if(!box) return;
+    if(!q){ box.innerHTML=''; window._dlSkipHits=[]; return; }
+    var hits=(window.dlData||[]).filter(function(s){
+      if(window.dlIsSkipped(s)) return false;
+      return String(s.name||'').toLowerCase().indexOf(q)>-1 || String(s.adm||'').toLowerCase().indexOf(q)>-1 || String(s.cls||'').toLowerCase().indexOf(q)>-1;
+    }).slice(0,8);
+    window._dlSkipHits=hits;
+    box.innerHTML=hits.length?hits.map(function(s,i){
+      return '<div style="display:flex;align-items:center;gap:8px;background:#fff;border:1.5px solid #e8dcc8;border-radius:9px;padding:7px 10px">'
+        +'<div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:700;color:#1a1208;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc3(s.name)+'</div>'
+        +'<div style="font-size:10px;color:#a89f92">#'+esc3(s.adm)+(s.cls?' · '+esc3(s.cls):'')+'</div></div>'
+        +'<button onclick="dlSkipAdd('+i+')" style="background:#dc2626;color:#fff;border:none;border-radius:8px;padding:6px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap">🚫 Skip</button></div>';
+    }).join(''):'<div style="font-size:11px;color:#94a3b8;padding:4px 2px">No student found (only students with a pending balance are listed)</div>';
+  };
+  window.dlSkipRender=function(){
+    var box=document.getElementById('dl-skip-list'); if(!box) return;
+    var keys=Object.keys(_skip).sort(function(a,b){ return String(_skip[a].name).localeCompare(String(_skip[b].name)); });
+    var c=document.getElementById('dl-skip-cnt'); if(c) c.textContent=keys.length;
+    box.innerHTML=keys.length?keys.map(function(k){
+      var r=_skip[k];
+      return '<div style="display:flex;align-items:center;gap:8px;background:#fef2f2;border:1.5px solid #fecaca;border-radius:9px;padding:7px 10px">'
+        +'<div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:700;color:#1a1208;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc3(r.name)+'</div>'
+        +'<div style="font-size:10px;color:#a89f92">#'+esc3(r.adm)+(r.cls?' · '+esc3(r.cls):'')+'</div></div>'
+        +'<button data-k="'+esc3(k)+'" onclick="dlSkipRemove(this.dataset.k)" style="background:#fff;color:#16a34a;border:1.5px solid #16a34a;border-radius:8px;padding:5px 9px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap">Remove</button></div>';
+    }).join(''):'<div style="font-size:11px;color:#94a3b8;padding:4px 2px">No students on the skip list yet.</div>';
+  };
+})();
 
 // ═══════════════════════════════════════════════════════
 //  RAZORPAY + TRANSACTION SYSTEM
