@@ -10317,12 +10317,53 @@ window.dlSendWhatsApp=function(){
   // ── Create QR for each student first, then send ──
   var proxyUrl=(localStorage.getItem('dl_rzp_proxy_url')||'').replace(/\/+$/,'');
   if(proxyUrl){
-    dlCreateQRsAndSend(students,phoneId,token,tmplName,proxyUrl);
+    // Part QR ON → first make sure every student being messaged has a Part QR
+    // (only the missing ones are created), then continue with the Full QRs + send.
+    dlEnsurePartQrs(students,proxyUrl,function(){
+      dlCreateQRsAndSend(students,phoneId,token,tmplName,proxyUrl);
+    });
   } else {
     // No Razorpay configured → send directly (old flow)
     dlSendBatch(students,phoneId,token,tmplName,0,0,0,[]);
   }
 };
+
+// ── Auto-create missing Part QRs for the students being messaged ──
+// Runs only when the Part QR switch is ON. Students that already have a Part QR
+// are skipped by the worker (nothing is regenerated, nothing is ever removed —
+// only_due). Any failure is non-fatal: the send simply continues with Full QRs.
+function dlEnsurePartQrs(students,proxyUrl,done){
+  if(localStorage.getItem('qr_part_enabled')!=='1'){ done(); return; }
+  var sub=document.getElementById('dl-wa-prog-sub');
+  var db={}; try{ ((typeof S!=='undefined'&&S.students)||[]).forEach(function(x){ var a=String(x.admissionNumber||'').trim(); if(a) db[a]=x; }); }catch(e){}
+  var seen={}, list=[];
+  students.forEach(function(s){
+    var a=String(s.adm||'').trim();
+    if(!a||seen[a]||!(Number(s.balance)>0)) return;
+    seen[a]=1;
+    var d=db[a];
+    list.push({adm:a,name:(d&&d.name)||s.name||'',cls:(d&&d.class)||s.cls||s.class||''});
+  });
+  if(!list.length){ done(); return; }
+  var created=0, guard=0;
+  function step(){
+    if(guard++>300){ done(); return; }
+    if(sub) sub.textContent='Checking Part QRs…'+(created?(' ('+created+' created)'):'');
+    fetch(proxyUrl+'/sync-part-qrs',{
+      method:'POST',
+      headers:dlApiHeaders({'Content-Type':'application/json'}),
+      body:JSON.stringify({students:list,only_due:true})
+    }).then(function(r){ return r.json().then(function(j){ return {ok:r.ok,j:j}; }); })
+      .then(function(x){
+        if(!x.ok||!x.j){ done(); return; }
+        created+=x.j.created||0;
+        if(sub&&created) sub.textContent='Part QRs created: '+created+' · '+(x.j.remaining_create||0)+' left…';
+        if(x.j.remaining_create&&x.j.created) step(); else done();
+      })
+      .catch(function(){ done(); });
+  }
+  step();
+}
 
 // ── Create QR codes for all students, then start sending ──
 function dlCreateQRsAndSend(students,phoneId,token,tmplName,proxyUrl){
