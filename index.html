@@ -3311,7 +3311,8 @@ Reason: {reason}"></textarea>
               <div id="qr-wipe-state" style="font-size:11px;margin:2px 0 12px 24px;color:#6a6055">Loading status…</div>
 
               <div style="display:flex;flex-direction:column;gap:8px">
-                <button id="qr-part-sync-btn" onclick="qrSyncPartQrs()" style="width:100%;border-radius:10px;padding:10px 12px;font-size:12px;font-weight:700;cursor:pointer;text-align:left;font-family:inherit;background:#f97316;color:#fff;border:none">🔄 Sync Static (Part) QRs — from Student DB</button>
+                <button id="qr-part-sync-btn" onclick="qrSyncPartQrs()" style="width:100%;border-radius:10px;padding:10px 12px;font-size:12px;font-weight:700;cursor:pointer;text-align:left;font-family:inherit;background:#f97316;color:#fff;border:none">🔄 Sync Static (Part) QRs — ALL students (Student DB)</button>
+                <button id="qr-part-sync-due-btn" onclick="qrSyncPartQrs('due')" style="width:100%;border-radius:10px;padding:10px 12px;font-size:12px;font-weight:700;cursor:pointer;text-align:left;font-family:inherit;background:#fff7ed;color:#c2410c;border:1.5px solid #f97316">🔄 Sync Static (Part) QRs — only Due List students</button>
                 <button onclick="qrOpenClosePicker()" style="width:100%;border-radius:10px;padding:10px 12px;font-size:12px;font-weight:700;cursor:pointer;text-align:left;font-family:inherit;background:#fff;color:#dc2626;border:1.5px solid #e8dcc8">🗑️ Close Full QRs… (select or all)</button>
                 <button onclick="qrRefreshStats()" style="width:100%;border-radius:10px;padding:10px 12px;font-size:12px;font-weight:700;cursor:pointer;text-align:left;font-family:inherit;background:transparent;color:#6a6055;border:1.5px dashed #d9cdb6">↻ Refresh counts</button>
               </div>
@@ -5462,8 +5463,10 @@ async function qrLoop(path,bodyFn,progress){
 function qrPartOn(){ return localStorage.getItem('qr_part_enabled')==='1'; }
 window.qrPartInit=function(){
   var cb=document.getElementById('qr-part-on'); if(cb) cb.checked=qrPartOn();
-  var b=document.getElementById('qr-part-sync-btn');
-  if(b){ b.disabled=!qrPartOn(); b.style.opacity=qrPartOn()?'1':'.45'; b.style.cursor=qrPartOn()?'pointer':'not-allowed'; }
+  ['qr-part-sync-btn','qr-part-sync-due-btn'].forEach(function(id){
+    var b=document.getElementById(id);
+    if(b){ b.disabled=!qrPartOn(); b.style.opacity=qrPartOn()?'1':'.45'; b.style.cursor=qrPartOn()?'pointer':'not-allowed'; }
+  });
   var t=document.getElementById('qr-part-state');
   if(t){ t.textContent=qrPartOn()?'ON — the payment page shows a "Pay full / Pay part" popup (for students that have a Part QR)':'OFF — payment page works as before (Full QR only)'; t.style.color=qrPartOn()?'var(--green-d)':'var(--sub)'; }
 };
@@ -5517,25 +5520,41 @@ window.qrRefreshStats=async function(){
   qrPartLoad();
 };
 
-window.qrSyncPartQrs=async function(){
+// mode: undefined/'all' = every student in the Student DB (also removes Part QRs of students that left)
+//       'due'           = only students currently on the Due List (create/update only, NEVER removes anything)
+window.qrSyncPartQrs=async function(mode){
   if(!qrPartOn()){ qrSay('ℹ️ Part QR is OFF — turn the switch ON above','var(--amber)'); return; }
-  var stu=((typeof S!=='undefined'&&S.students)||[]).map(function(x){
-    return {adm:String(x.admissionNumber||'').trim(),name:x.name||'',cls:x.class||''};
-  }).filter(function(x){ return x.adm; });
-  if(!stu.length){ qrSay('⚠️ The Student DB is empty — run Student Sync in Gate Pass first','var(--amber)'); return; }
+  var dueOnly=(mode==='due');
+  var dbStu=((typeof S!=='undefined'&&S.students)||[]);
+  var stu;
+  if(dueOnly){
+    var byAdm={}; dbStu.forEach(function(x){ var a=String(x.admissionNumber||'').trim(); if(a) byAdm[a]=x; });
+    var seen={};
+    stu=(window.dlData||[]).filter(function(x){ return x&&Number(x.balance)>0&&String(x.adm||'').trim(); }).map(function(x){
+      var a=String(x.adm).trim(), db=byAdm[a];
+      return {adm:a,name:(db&&db.name)||x.name||'',cls:(db&&db.class)||x.cls||''};
+    }).filter(function(x){ if(seen[x.adm]) return false; seen[x.adm]=1; return true; });
+    if(!stu.length){ qrSay('⚠️ The Due List is empty — load the Due List first','var(--amber)'); return; }
+  }else{
+    stu=dbStu.map(function(x){
+      return {adm:String(x.admissionNumber||'').trim(),name:x.name||'',cls:x.class||''};
+    }).filter(function(x){ return x.adm; });
+    if(!stu.length){ qrSay('⚠️ The Student DB is empty — run Student Sync in Gate Pass first','var(--amber)'); return; }
+  }
+  var extra=dueOnly?{only_due:true}:{};
   try{
     qrSay('⏳ Preparing preview…');
-    var d=await qrCall('POST','/sync-part-qrs',{students:stu,dry:true});
-    if(!d.create.length&&!d.update&&!d.remove.length){ qrSay('✅ Everything is in sync — '+d.keep+' Part QRs, nothing to do','var(--green-d)'); return; }
-    var msg='Student DB: '+stu.length+' students\n\n✅ New Part QRs to create: '+d.create.length
+    var d=await qrCall('POST','/sync-part-qrs',Object.assign({students:stu,dry:true},extra));
+    if(!d.create.length&&!d.update&&!d.remove.length){ qrSay('✅ Everything is in sync — '+(dueOnly?('all '+stu.length+' Due List students already have a Part QR'):(d.keep+' Part QRs'))+', nothing to do','var(--green-d)'); return; }
+    var msg=(dueOnly?'Due List: ':'Student DB: ')+stu.length+' students\n\n✅ New Part QRs to create: '+d.create.length
       +'\n✏️ Name/class updates: '+d.update
-      +'\n🗑️ Records to delete (not in the student list): '+d.remove.length;
+      +(dueOnly?'':'\n🗑️ Records to delete (not in the student list): '+d.remove.length);
     if(d.remove.length) msg+='\n    '+d.remove.slice(0,10).map(function(x){ return (x.name||'?')+' ('+x.adm+')'; }).join(', ')+(d.remove.length>10?' …':'');
     msg+='\n\nContinue?';
     if(!confirm(msg)){ qrSay(''); return; }
     var force=false,created=0,removed=0,updated=0,failed=[],guard=0,j=null;
     while(guard++<300){
-      try{ j=await qrCall('POST','/sync-part-qrs',{students:stu,force:force}); }
+      try{ j=await qrCall('POST','/sync-part-qrs',Object.assign({students:stu,force:force},extra)); }
       catch(e){
         if(e.status===409&&e.data&&e.data.remove){
           if(confirm('⚠️ '+e.data.remove+' Part QR records are about to be removed (that is a lot). Are you sure?')){ force=true; continue; }
