@@ -16,7 +16,7 @@
    file badlo to CACHE ka number bhi badha dena.
    ═══════════════════════════════════════════════════════════════ */
 
-const CACHE = 'reception-suite-v4';
+const CACHE = 'reception-suite-v5';
 
 const SHELL = [
   './',

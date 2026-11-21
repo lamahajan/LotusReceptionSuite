@@ -11935,6 +11935,33 @@ function attDisconnWorker(){
 
 function attRefresh(){ attLoadForDate(attViewDate || todayStr()); }
 
+// Live refresh: marks saved in EduNest (or on another phone) reach the worker; while today's Attendance screen is open and nothing is
+// waiting to be saved here, fetch today's statuses quietly every 20 s and redraw only when something changed.
+var _attLiveBusy=false;
+async function attLiveRefresh(){
+  try{
+    var scr=document.getElementById('screen-att');
+    if(_attLiveBusy||!attWorkerUrl||attReadOnly||attSaving||document.hidden||!scr||!scr.classList.contains('active'))return;
+    var date=attViewDate||todayStr(); if(date!==todayStr())return;
+    var pending=Object.keys(attDraft).some(function(a){return (attDraft[a]||'unmarked')!==(attSynced[a]||'unmarked');});
+    if(pending)return;                                   // never throw away marks the user has not saved yet
+    _attLiveBusy=true;
+    var r=await fetch(attWorkerUrl+'/status?date='+date,{cache:'no-store'});
+    var d=r.ok?await r.json():null;
+    var recs=(d&&d.attendance&&typeof d.attendance==='object')?d.attendance:null;
+    if(!recs||attViewDate!==date)return;
+    var sig=function(o){return JSON.stringify(Object.keys(o).sort().map(function(k){return [k,(o[k]||{}).status];}));};
+    if(sig(recs)===sig(attToday))return;
+    pending=Object.keys(attDraft).some(function(a){return (attDraft[a]||'unmarked')!==(attSynced[a]||'unmarked');});
+    if(pending||attSaving)return;                        // the user started marking while we were fetching
+    attToday=recs; attDraft={}; attSynced={};
+    _attTodayLoaded=true; if(typeof refreshHomeAttStat==='function')refreshHomeAttStat();
+    attRenderList();
+  }catch(e){}finally{_attLiveBusy=false;}
+}
+setInterval(attLiveRefresh,20000);
+document.addEventListener('visibilitychange',function(){ if(!document.hidden) attLiveRefresh(); });
+
 async function attLoadToday(){
   var dInput=document.getElementById('att-date-input');
   var t=todayStr();
