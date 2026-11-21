@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
 <meta name="apple-mobile-web-app-title" content="Reception Suite"/>
@@ -53,19 +53,21 @@ body.dark{
   --border:#38305a;--border2:#4e4480;--text:#e8e0ff;--muted:#504878;--scroll:#4e4480;
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-html,body{height:100%;overflow:hidden}
-body{font-family:var(--sans);background:var(--bg);color:var(--txt);transition:background .25s,color .25s}
+html,body{height:100%;height:100vh;height:100dvh;overflow:hidden;-webkit-text-size-adjust:100%;text-size-adjust:100%}
+body{font-family:var(--sans);background:var(--bg);color:var(--txt);transition:background .25s,color .25s;overflow-wrap:break-word}
+h1,h2,h3,.htitle,.home-h1,.home-eyebrow,.form-title{text-wrap:balance}
+code,a,.rel{overflow-wrap:anywhere}
 ::-webkit-scrollbar{width:4px;height:4px}
 ::-webkit-scrollbar-thumb{background:var(--scroll);border-radius:4px}
 ::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-button{display:none}
 
 /* ═══ APP SHELL ═══ */
-#app-shell{display:flex;height:100vh;overflow:hidden}
+#app-shell{display:flex;height:100vh;height:100dvh;overflow:hidden}
 
 /* ─── Sidebar ─── */
 #sidebar{
-  width:260px;min-width:260px;height:100vh;
+  width:260px;min-width:260px;height:100vh;height:100dvh;
   background:#ffffff;border-right:1px solid #e8e2d4;
   display:flex;flex-direction:column;overflow:hidden;
   transition:width .25s ease,min-width .25s ease;
@@ -159,8 +161,8 @@ body.dark .sb-toggle{background:#1a1714;border-color:#3c3628;color:#9e9488;}
 .sb-toggle:hover{background:rgba(181,136,62,.12);color:#b5883e;border-color:#b5883e;}
 
 /* ─── Main ─── */
-#main-content{flex:1;position:relative;height:100vh;overflow:hidden;min-width:0}
-.screen{position:absolute;inset:0;overflow-y:auto;display:none;background:inherit}
+#main-content{flex:1;position:relative;height:100vh;height:100dvh;overflow:hidden;min-width:0}
+.screen{position:absolute;inset:0;overflow-y:auto;display:none;background:inherit;-webkit-overflow-scrolling:touch}
 .screen.active{display:block}
 
 /* ─── Mobile topbar ─── */
@@ -180,37 +182,219 @@ body.dark .mt-screen-name{color:#f4ede0;}
 #mobile-drawer.open .md-panel{transform:none}
 
 /* ─── Bottom nav ─── */
-/* ── Bottom Nav ── */
 #bottom-nav{
   display:none;position:fixed;bottom:0;left:0;right:0;
-  height:calc(54px + env(safe-area-inset-bottom));
-  padding-bottom:env(safe-area-inset-bottom);
+  height:calc(56px + env(safe-area-inset-bottom, 0px));
+  padding-bottom:env(safe-area-inset-bottom, 0px);
+  padding-left:env(safe-area-inset-left, 0px);
+  padding-right:env(safe-area-inset-right, 0px);
   z-index:300;background:var(--surf);
   border-top:1.5px solid var(--bdr);
 }
 .bn-btn{
-  flex:1 1 0;min-width:0;
+  flex:1 1 0;min-width:0;min-height:48px;
   display:flex;flex-direction:column;align-items:center;
   justify-content:center;gap:1px;
   background:none;border:none;color:var(--mut);cursor:pointer;
-  font-family:var(--sans);font-size:9px;font-weight:700;
-  letter-spacing:.2px;transition:color .15s;padding:6px 2px 4px;
-  white-space:nowrap;overflow:hidden;
+  font-family:var(--sans);font-size:9.5px;font-weight:700;
+  letter-spacing:.2px;transition:color .15s,transform .12s;padding:6px 2px 4px;
+  white-space:nowrap;overflow:hidden;touch-action:manipulation;
 }
 .bn-icon{font-size:20px;line-height:1}
+.bn-btn:active{transform:scale(0.92)}
 .bn-btn.active{color:#b5883e}
 .bn-btn.active .bn-icon{transform:scale(1.12);transition:transform .15s}
 /* Unread dot on WA button */
 .bn-wa-dot{width:7px;height:7px;background:#25d366;border-radius:50%;
   position:absolute;top:4px;right:calc(50% - 14px);}
 
+/* ─── Home hero actions ─── */
+.hero-act-btn{
+  width:38px;height:38px;border-radius:11px;
+  background:var(--card,#f0ece4);border:1.5px solid var(--bdr,#e0d9cc);
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;font-size:16px;transition:all .15s;flex-shrink:0;
+}
+body.dark .hero-act-btn{background:#211d18;border-color:#3c3628;}
+.hero-act-btn:hover{background:rgba(181,136,62,.15);border-color:#b5883e;}
+.hero-act-btn:active{transform:scale(0.92);}
+
+/* ─── Attendance Status Circle Buttons ─── */
+.att-status-btn{
+  width:36px;height:36px;flex-shrink:0;border-radius:50%;
+  font-size:13px;font-weight:800;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;padding:0;
+  transition:transform .12s;touch-action:manipulation;
+}
+.att-status-btn:active{transform:scale(0.88);}
+
 @media(max-width:768px){
+  /* Prevent iOS zoom on focus */
+  input:not([type="checkbox"]):not([type="radio"]), select, textarea {
+    font-size:16px!important;
+  }
+
+  /* Safe Area scroll paddings for soft keyboards */
+  html, .screen, .main-wrap {
+    scroll-padding-bottom:calc(66px + env(safe-area-inset-bottom, 0px));
+    scroll-padding-top:calc(58px + env(safe-area-inset-top, 0px));
+  }
+
   #sidebar{display:none!important}
   #mobile-topbar{display:none!important}
   #bottom-nav{display:flex!important;align-items:stretch}
-  .screen{top:0;bottom:calc(54px + env(safe-area-inset-bottom))}
+  .screen{
+    top:0;
+    bottom:calc(56px + env(safe-area-inset-bottom, 0px));
+    padding-left:env(safe-area-inset-left, 0px);
+    padding-right:env(safe-area-inset-right, 0px);
+  }
+
+  /* Safe-area padding for screen headers */
+  #screen-rec .hdr,
+  #screen-ref .hdr,
+  .att-header,
+  .dl-header {
+    height:auto!important;
+    min-height:calc(52px + env(safe-area-inset-top, 0px))!important;
+    padding-top:env(safe-area-inset-top, 0px)!important;
+  }
+  #screen-ref .tabs {
+    top:calc(52px + env(safe-area-inset-top, 0px))!important;
+  }
+
+  /* Module headers mobile fit */
+  #screen-rec .hdr {
+    padding-left:max(10px, env(safe-area-inset-left, 0px))!important;
+    padding-right:max(10px, env(safe-area-inset-right, 0px))!important;
+    gap:6px!important;
+  }
+  #screen-rec #stim {display:none!important}
+  #screen-rec #theme-btn {padding:5px 8px!important;font-size:11px!important}
+  #screen-rec #tbadge {padding:3px 6px!important;font-size:10px!important}
+
+  #screen-ref .hdr {
+    padding-left:max(10px, env(safe-area-inset-left, 0px))!important;
+    padding-right:max(10px, env(safe-area-inset-right, 0px))!important;
+    gap:6px!important;
+  }
+
+  .att-header {
+    padding-left:max(10px, env(safe-area-inset-left, 0px))!important;
+    padding-right:max(10px, env(safe-area-inset-right, 0px))!important;
+    gap:6px!important;
+  }
+  .att-header-title {
+    font-size:14px!important;
+    white-space:nowrap!important;
+    overflow:hidden!important;
+    text-overflow:ellipsis!important;
+  }
+  #att-date-input {
+    padding:6px 7px!important;
+    font-size:13px!important;
+    max-width:126px!important;
+    min-width:0!important;
+  }
+  .att-header button {padding:6px 8px!important}
+
+  .dl-header {
+    padding-left:max(10px, env(safe-area-inset-left, 0px))!important;
+    padding-right:max(10px, env(safe-area-inset-right, 0px))!important;
+    gap:6px!important;
+  }
+  .dl-header-title {
+    font-size:14px!important;
+    white-space:nowrap!important;
+    overflow:hidden!important;
+    text-overflow:ellipsis!important;
+  }
+
+  /* Attendance touch targets */
+  .att-status-btn {
+    width:40px!important;
+    height:40px!important;
+    font-size:14px!important;
+  }
+
+  /* Due List Checkboxes */
+  .dl-chk {width:22px!important;height:22px!important}
+  .dl-select-mode .dl-card-inner {padding-left:42px!important}
+
+  /* Home Hero on mobile */
+  .home-hero{padding:max(18px, calc(16px + env(safe-area-inset-top, 0px))) 16px 18px!important}
+  .home-h1{font-size:clamp(20px, 6vw, 26px)!important}
+  .home-body{padding:16px 14px 28px!important}
+  .app-card{padding:18px 16px 16px!important;border-radius:16px!important}
+  .app-card:active{transform:scale(0.98)}
+
+  /* Settings Screen */
+  #screen-settings{padding-bottom:calc(70px + env(safe-area-inset-bottom, 0px))!important}
+  #screen-settings > div{padding:max(16px, calc(12px + env(safe-area-inset-top, 0px))) 14px 40px!important}
+
+  /* Toasts above bottom nav */
+  #toast{
+    bottom:calc(72px + env(safe-area-inset-bottom, 0px))!important;
+    max-width:calc(100vw - 32px);
+    white-space:normal!important;
+    text-align:center;
+  }
+  #ref-toast{
+    bottom:calc(72px + env(safe-area-inset-bottom, 0px))!important;
+    max-width:calc(100vw - 32px);
+    white-space:normal!important;
+  }
+
+  /* Mobile Modals */
+  .modal-ov,
+  #qp-modal,
+  #gp-sib-modal,
+  #gp-wa-modal,
+  #att-settings-modal,
+  #att-stats-modal,
+  #att-calendar-modal,
+  #att-day-edit-modal,
+  #att-bus-report-modal,
+  #att-bus-students-modal,
+  #dl-settings-modal,
+  #dl-txn-detail-modal,
+  #refno-popup-ov,
+  #pw-prompt-ov,
+  #dl-wa-progress {
+    padding:max(10px, env(safe-area-inset-top, 0px)) max(10px, env(safe-area-inset-right, 0px)) max(12px, env(safe-area-inset-bottom, 0px)) max(10px, env(safe-area-inset-left, 0px))!important;
+  }
+  .modal-box,
+  #screen-rec .qp-box,
+  #gp-sib-modal > div,
+  #gp-wa-modal > div,
+  #att-settings-modal > div,
+  #att-stats-modal > div,
+  #att-calendar-modal > div,
+  #att-day-edit-modal > div,
+  #att-bus-report-modal > div,
+  #att-bus-students-modal > div,
+  #dl-settings-modal > div,
+  #dl-txn-detail-modal > div,
+  #refno-popup,
+  #pw-prompt-box,
+  .dl-wa-prog-box {
+    max-height:calc(100dvh - 28px)!important;
+    max-height:calc(100vh - 28px)!important;
+    overflow-y:auto!important;
+    -webkit-overflow-scrolling:touch!important;
+    width:100%!important;
+    box-sizing:border-box!important;
+  }
 }
 @media(min-width:769px){.screen{top:0;bottom:0}}
+@media(max-width:380px){
+  .att-header-title,
+  .dl-header-title{display:none!important}
+  #screen-rec .htitle,
+  #screen-ref .hdr-title{font-size:13px!important}
+  .bn-btn{font-size:8.5px!important}
+  .bn-icon{font-size:18px!important}
+}
 
 /* ═══ HOME SCREEN ═══ */
 #screen-home{background:#f2efe8;}
@@ -419,7 +603,13 @@ body{color:var(--text);font-family:var(--sans);min-height:100vh}
 #screen-rec .qp-head-info .qp-name {font-size:18px;font-weight:800;color:var(--purple)}
 #screen-rec .qp-head-info .qp-meta {font-size:12px;color:var(--sub);margin-top:2px}
 #screen-rec .qp-freq-bar {background:var(--purple-l);border:1px solid var(--purple);border-radius:var(--rs);padding:8px 12px;margin-bottom:14px;font-size:12px;color:var(--purple);font-weight:600}
-@media(max-width:480px){.g2{grid-template-columns:1fr}.hdate{display:none}}
+@media(max-width:600px){
+  .g2{grid-template-columns:1fr}
+  .hdate{display:none}
+  #tab-rec .row:first-child{display:grid;grid-template-columns:1fr auto;gap:8px}
+  #tab-rec #rcq{min-width:0!important}
+  #tab-rec #rcdate{width:130px!important}
+}
 
 </style>
 
@@ -532,7 +722,7 @@ body{color:var(--text);font-family:var(--sans);min-height:100vh}
 
 /* TOAST */
 #ref-toast {
-  position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(100px);
+  position:fixed; bottom:calc(72px + env(safe-area-inset-bottom, 0px)); left:50%; transform:translateX(-50%) translateY(100px);
   border-radius:12px; padding:12px 22px; font-size:13px; font-weight:700;
   z-index:9999; transition:transform .35s cubic-bezier(.34,1.56,.64,1), opacity .2s;
   white-space:nowrap; pointer-events:none; box-shadow:0 8px 28px rgba(0,0,0,.18);
@@ -621,6 +811,13 @@ body{color:var(--text);font-family:var(--sans);min-height:100vh}
 /* FILTER BAR */
 #screen-ref .filter-bar {background:var(--bg2);border:1.5px solid var(--border);border-radius:var(--r);padding:12px 14px;margin-bottom:14px;box-shadow:var(--sha)}
 #screen-ref .filter-row {display:flex;gap:7px;flex-wrap:wrap;align-items:flex-end}
+@media(max-width:600px){
+  #screen-ref .filter-bar{padding:10px 12px;margin-bottom:10px}
+  #screen-ref .filter-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  #screen-ref .filter-row #sq{grid-column:1 / -1;min-width:0!important}
+  #screen-ref .filter-row #sf-status,#screen-ref .filter-row #sf-month{width:100%!important;min-width:0!important}
+  #screen-ref .filter-row button{grid-column:1 / -1;width:100%;min-height:40px}
+}
 
 /* SETTINGS */
 #screen-ref .settings-section {background:var(--bg2);border:1.5px solid var(--border);border-radius:var(--r);padding:18px;margin-bottom:18px;box-shadow:var(--sha)}
@@ -785,6 +982,9 @@ body{color:var(--text);font-family:var(--sans);min-height:100vh}
       <button class="sb-btn" id="sb-due" onclick="goTo('due')">
         <span class="sb-icon">💸</span><span class="sb-lbl">Due List</span>
       </button>
+      <button class="sb-btn" id="sb-settings" onclick="goTo('settings')">
+        <span class="sb-icon">⚙️</span><span class="sb-lbl">Settings</span>
+      </button>
 
     </nav>
     <div class="sb-bottom">
@@ -803,9 +1003,17 @@ body{color:var(--text);font-family:var(--sans);min-height:100vh}
     <!-- HOME -->
     <div id="screen-home" class="screen active">
       <div class="home-hero">
-        <div class="home-eyebrow">🪷 Lotus International School</div>
-        <div class="home-h1" id="home-greeting">School Suite</div>
-        <div class="home-sub" id="home-date-txt"></div>
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px">
+          <div>
+            <div class="home-eyebrow">🪷 Lotus International School</div>
+            <div class="home-h1" id="home-greeting">School Suite</div>
+            <div class="home-sub" id="home-date-txt"></div>
+          </div>
+          <div class="home-hero-actions" style="display:flex;align-items:center;gap:8px;flex-shrink:0;margin-top:2px">
+            <button class="hero-act-btn" onclick="toggleTheme()" id="home-theme-btn" title="Toggle Dark/Light Mode" aria-label="Toggle theme">🌙</button>
+            <button class="hero-act-btn" onclick="goTo('settings')" id="home-settings-btn" title="Settings" aria-label="Settings">⚙️</button>
+          </div>
+        </div>
       </div>
       <div class="home-body">
         <div class="home-cards">
@@ -2739,9 +2947,9 @@ Reason: {reason}"></textarea>
     <div id="screen-att" class="screen">
 
       <!-- HEADER -->
-      <div style="background:#fff;border-bottom:1px solid #e2e8f0;padding:0 14px;height:54px;display:flex;align-items:center;gap:10px;flex-shrink:0;z-index:9">
+      <div class="att-header" style="background:#fff;border-bottom:1px solid #e2e8f0;padding:0 14px;height:54px;display:flex;align-items:center;gap:10px;flex-shrink:0;z-index:9">
         <span style="font-size:20px;flex-shrink:0">🗓️</span>
-        <span style="font-size:15px;font-weight:800;color:#0f172a;letter-spacing:-.2px;flex:1">Attendance</span>
+        <span class="att-header-title" style="font-size:15px;font-weight:800;color:#0f172a;letter-spacing:-.2px;flex:1">Attendance</span>
         <input type="date" id="att-date-input" onchange="attOnDateChange()" style="border:1.5px solid #e2e8f0;border-radius:9px;padding:7px 10px;font-size:13px;font-family:var(--sans);color:#0f172a;background:#f8fafc;outline:none">
         <button onclick="attShowBusReport()" style="background:#f1f5f9;border:1.5px solid #e2e8f0;border-radius:9px;padding:7px 10px;cursor:pointer;font-size:14px" title="Bus-wise Report">🚌</button>
         <button onclick="attOpenSettings()" style="background:#f1f5f9;border:1.5px solid #e2e8f0;border-radius:9px;padding:7px 10px;cursor:pointer;font-size:14px" title="Settings">⚙️</button>
@@ -2924,9 +3132,9 @@ Reason: {reason}"></textarea>
     <div id="screen-due" class="screen">
 
   <!-- HEADER -->
-  <div style="background:#fff;border-bottom:1px solid #e2e8f0;padding:0 14px;height:54px;display:flex;align-items:center;gap:10px;flex-shrink:0;z-index:9">
+  <div class="dl-header" style="background:#fff;border-bottom:1px solid #e2e8f0;padding:0 14px;height:54px;display:flex;align-items:center;gap:10px;flex-shrink:0;z-index:9">
     <span style="font-size:20px;flex-shrink:0">💸</span>
-    <span style="font-size:15px;font-weight:800;color:#0f172a;letter-spacing:-.2px;flex:1">Due List</span>
+    <span class="dl-header-title" style="font-size:15px;font-weight:800;color:#0f172a;letter-spacing:-.2px;flex:1">Due List</span>
     <!-- Outstanding amount moved next to settings -->
     <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;margin-right:6px">
       <div style="font-size:15px;font-weight:800;color:#8b5cf6;font-family:'Outfit',sans-serif;line-height:1" id="dl-stat-amount">₹0</div>
@@ -3421,8 +3629,13 @@ Reason: {reason}"></textarea>
 <!-- ═══ SETTINGS SCREEN ═══ -->
 <div id="screen-settings" class="screen" style="background:var(--bg);overflow-y:auto">
   <div style="max-width:640px;margin:0 auto;padding:20px 16px 40px">
-    <div style="font-size:22px;font-weight:900;color:var(--txt);margin-bottom:4px">⚙️ Settings</div>
-    <div style="font-size:13px;color:var(--sub);margin-bottom:24px">Configure all modules from one place</div>
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+      <button onclick="goTo('home')" class="hero-act-btn" style="width:36px;height:36px;font-size:14px" title="Back to Home" aria-label="Back">←</button>
+      <div>
+        <div style="font-size:22px;font-weight:900;color:var(--txt);line-height:1.2">⚙️ Settings</div>
+        <div style="font-size:12.5px;color:var(--sub);margin-top:2px">Configure all modules from one place</div>
+      </div>
+    </div>
 
     <!-- Theme -->
     <div style="background:var(--surf);border:1.5px solid var(--bdr);border-radius:var(--r);padding:16px 18px;margin-bottom:14px;box-shadow:var(--sha)">
@@ -3515,6 +3728,7 @@ Reason: {reason}"></textarea>
       <button class="sb-btn" id="mdr-ref" onclick="goTo('ref');closeMobileDrawer()"><span class="sb-icon">📒</span><span class="sb-lbl">Reference Register</span></button>
       <button class="sb-btn" id="mdr-att" onclick="goTo('att');closeMobileDrawer()"><span class="sb-icon">🗓️</span><span class="sb-lbl">Attendance</span></button>
       <button class="sb-btn" id="mdr-due" onclick="goTo('due');closeMobileDrawer()"><span class="sb-icon">💸</span><span class="sb-lbl">Due List</span></button>
+      <button class="sb-btn" id="mdr-settings" onclick="goTo('settings');closeMobileDrawer()"><span class="sb-icon">⚙️</span><span class="sb-lbl">Settings</span></button>
     </nav>
     <div class="sb-bottom">
       <button class="sb-theme-row" onclick="toggleTheme()">
@@ -3615,7 +3829,7 @@ function toggleTheme(){
   localStorage.setItem('lis_theme',_isDark?'dark':'light');
   var track=document.getElementById('sb-ttrack');if(track)track.classList.toggle('on',_isDark);
   var lbl=document.getElementById('sb-tlbl');if(lbl)lbl.textContent=_isDark?'Light Mode':'Dark Mode';
-  ['sb-ticon','mdr-ticon','mt-theme-btn'].forEach(function(id){var el=document.getElementById(id);if(el)el.textContent=_isDark?'☀️':'🌙';});
+  ['sb-ticon','mdr-ticon','mt-theme-btn','home-theme-btn'].forEach(function(id){var el=document.getElementById(id);if(el)el.textContent=_isDark?'☀️':'🌙';});
   ['screen-rec','screen-ref'].forEach(function(id){var el=document.getElementById(id);if(el)el.classList.toggle('dark',_isDark);});
   // sync theme buttons inside screens
   var tb=document.getElementById('theme-btn');if(tb)tb.textContent=_isDark?'☀️ Light':'🌙 Dark';
@@ -3627,7 +3841,7 @@ function initTheme(){
   if(_sbCollapsed){document.getElementById('sidebar').classList.add('collapsed');document.getElementById('sb-toggle-btn').textContent='▶';}
   var track=document.getElementById('sb-ttrack');if(track)track.classList.toggle('on',_isDark);
   var lbl=document.getElementById('sb-tlbl');if(lbl)lbl.textContent=_isDark?'Light Mode':'Dark Mode';
-  ['sb-ticon','mdr-ticon','mt-theme-btn'].forEach(function(id){var el=document.getElementById(id);if(el)el.textContent=_isDark?'☀️':'🌙';});
+  ['sb-ticon','mdr-ticon','mt-theme-btn','home-theme-btn'].forEach(function(id){var el=document.getElementById(id);if(el)el.textContent=_isDark?'☀️':'🌙';});
   ['screen-rec','screen-ref'].forEach(function(id){var el=document.getElementById(id);if(el)el.classList.toggle('dark',_isDark);});
 }
 function toggleSidebar(){
@@ -3692,9 +3906,10 @@ async function refreshHomeAttStat(){
     attStat.textContent=p+' present today';
   }catch(e){/* leave last known value on network failure */}
 }
-function checkNav(){document.getElementById('bottom-nav').style.display=window.innerWidth<=768?'flex':'none';}
+function checkNav(){var bn=document.getElementById('bottom-nav');if(bn)bn.style.display=window.innerWidth<=768?'flex':'none';}
 window.addEventListener('resize',checkNav);
 window.addEventListener('load',function(){
+  checkNav();
   initTheme();
   var days=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
   var months=['January','February','March','April','May','June','July','August','September','October','November','December'];
@@ -12227,7 +12442,7 @@ function attRenderList(){
     var avaC=attAvatarColor(adm||s.name);
     function btn(val,label,solidColor){
       var active=status===val;
-      return '<button '+(attReadOnly?'disabled':'onclick="attMark(\''+adm.replace(/'/g,"\\'")+'\',\''+val+'\')"')+' style="width:34px;height:34px;flex-shrink:0;border-radius:50%;font-size:13px;font-weight:800;cursor:'+(attReadOnly?'default':'pointer')+';border:1.5px solid '+(active?solidColor:'#e2e8f0')+';background:'+(active?solidColor:'#fff')+';color:'+(active?'#fff':'#64748b')+';display:flex;align-items:center;justify-content:center;padding:0">'+label+'</button>';
+      return '<button class="att-status-btn" '+(attReadOnly?'disabled':'onclick="attMark(\''+adm.replace(/'/g,"\\'")+'\',\''+val+'\')"')+' style="flex-shrink:0;border-radius:50%;cursor:'+(attReadOnly?'default':'pointer')+';border:1.5px solid '+(active?solidColor:'#e2e8f0')+';background:'+(active?solidColor:'#fff')+';color:'+(active?'#fff':'#64748b')+';display:flex;align-items:center;justify-content:center;padding:0">'+label+'</button>';
     }
     html+='<div style="background:#fff;border:1.5px solid #f1f5f9;border-radius:12px;padding:10px 12px;margin-bottom:8px;display:flex;align-items:center;gap:10px">'
       +'<div style="width:38px;height:38px;border-radius:10px;background:'+avaC.bg+';color:'+avaC.fg+';display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;flex-shrink:0">'+initials+'</div>'
