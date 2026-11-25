@@ -4135,6 +4135,9 @@ function _rebuildPassesFromMirror(){
       else if(p.date===_today||p.date===_yesterday)_fetchPhotoFromFB(p.id).then(ph=>{if(ph){const sp=S.passes.find(x=>x.id===p.id);if(sp)sp.pickerPhoto=ph;renderAll();}});
     }
   });
+  // Keep locally-created passes that haven't reached Firebase yet (not in mirror, never pushed)
+  const _inArr=new Set(arr.map(p=>p.id));
+  (S.passes||[]).forEach(p=>{if(p&&p.id&&!_inArr.has(p.id)&&!(p.id in _pushedPassSig)){arr.push(p);}});
   arr.sort((a,b)=>(b.date+b.time).localeCompare(a.date+a.time));
   S.passes=arr;
   saveLocal();
@@ -4201,7 +4204,7 @@ async function push(k){
     const currentMap={};S.passes.forEach(p=>{if(p&&p.id)currentMap[p.id]=p;});
     const toWrite=[],toDeleteIds=[];
     Object.keys(currentMap).forEach(id=>{
-      const val=_strip(currentMap[id]),sig=JSON.stringify(val);
+      const val=_strip(currentMap[id]),sig=_gpStable(val);
       if(_pushedPassSig[id]!==sig)toWrite.push({id,val,sig});
     });
     Object.keys(_pushedPassSig).forEach(id=>{if(!(id in currentMap))toDeleteIds.push(id);});
@@ -4247,6 +4250,24 @@ document.addEventListener('visibilitychange',()=>{
 function todayStr(){return new Date().toLocaleDateString('en-CA',{timeZone:'Asia/Kolkata'});}
 function nowT(){return new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:true}).replace(/\b(am|pm)\b/gi,function(m){return m.toUpperCase();});}
 function uid(){return Date.now().toString(36)+Math.random().toString(36).substr(2,5);}
+let _gpIdFloor=0;
+function nextGpId(){const p='GP-'+todayStr().slice(2,4);let m=_gpIdFloor;const chk=id=>{if(typeof id==='string'&&id.startsWith(p)){const n=parseInt(id.slice(p.length),10);if(!isNaN(n)&&n>m)m=n;}};for(const x of S.passes){if(x)chk(x.id);}Object.keys(_passesById).forEach(chk);Object.keys(_pushedPassSig).forEach(chk);return p+String(m+1).padStart(4,'0');}
+function _gpStable(v){if(v===null||typeof v!=='object')return JSON.stringify(v);if(Array.isArray(v))return '['+v.map(_gpStable).join(',')+']';return '{'+Object.keys(v).sort().filter(k=>v[k]!==undefined).map(k=>JSON.stringify(k)+':'+_gpStable(v[k])).join(',')+'}';}
+// Atomically reserve the pass ID on Firebase (conditional PUT) so two devices can never overwrite each other's pass
+async function gpClaimId(pass){
+  if(!cfg.url||!cfg.code)return pass;
+  const strip=q=>(q&&q.pickerPhoto&&q.pickerPhoto!=='__has_photo')?{...q,pickerPhoto:null,_hasPhoto:true}:q;
+  for(let i=0;i<20;i++){
+    try{
+      const val=strip(pass);
+      const r=await fetch(`${cfg.url}/${cfg.code}/passes/${pass.id}.json`,{method:'PUT',headers:{'Content-Type':'application/json','if-match':'null_etag'},body:JSON.stringify(val)});
+      if(r.status===412){const n=parseInt(pass.id.slice(-4),10);_gpIdFloor=Math.max(_gpIdFloor,isNaN(n)?0:n);pass.id=nextGpId();continue;}
+      if(r.ok){_pushedPassSig[pass.id]=_gpStable(val);_savePushedSig();}
+      return pass;
+    }catch(err){return pass;} // offline — keep local ID, push() will retry later
+  }
+  return pass;
+}
 function e(s){return s?String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'):''}
 function fmtD(d){if(!d)return'';try{return new Date(d+'T00:00:00').toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'})}catch{return d}}
 let _gpToastT;function gpToast(m,t='ok'){const el=document.getElementById('toast');if(!el)return;el.textContent=m;el.className='show '+t;clearTimeout(_gpToastT);_gpToastT=setTimeout(()=>el.className='',3200);}
@@ -4468,7 +4489,7 @@ async function issuePass(){
   const _issueBtn=document.querySelector('[onclick="issuePass()"]');
   if(_issueBtn){_issueBtn.disabled=true;_issueBtn.textContent='⏳ Issuing…';}
   try{
-  const pass={id:uid(),date:todayStr(),time:nowT(),gateOutTime:null,studentName:cpSel.name,admissionNumber:cpSel.admissionNumber,class:cpSel.class||'',fatherName:cpSel.fatherName||'',motherName:cpSel.motherName||'',pickedUpBy:by,relation:document.getElementById('cprel').value,reason:document.getElementById('cpreason').value.trim(),busNumber:document.getElementById('cpbus').value||cpSel.busNumber||'',pickerPhoto:photo};
+  const pass={id:nextGpId(),date:todayStr(),time:nowT(),gateOutTime:null,studentName:cpSel.name,admissionNumber:cpSel.admissionNumber,class:cpSel.class||'',fatherName:cpSel.fatherName||'',motherName:cpSel.motherName||'',pickedUpBy:by,relation:document.getElementById('cprel').value,reason:document.getElementById('cpreason').value.trim(),busNumber:document.getElementById('cpbus').value||cpSel.busNumber||'',pickerPhoto:photo};
   const stu=S.students.find(s=>s.admissionNumber===pass.admissionNumber);
   clrSel();['cpby','cpreason'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('cprel').value='';document.getElementById('cpbus').value='';clrPhoto();
@@ -4485,6 +4506,7 @@ async function issuePass(){
 // Telegram log, OneDrive, WhatsApp, and the sibling-suggestion check. Used by
 // both the manual "Issue Gate Pass" button and the sibling quick-cut flow.
 async function _gpFinalizePass(pass,stu,isCascade){
+  await gpClaimId(pass);
   // Cache photo locally before push strips it
   if(pass.pickerPhoto&&pass.pickerPhoto!=='__has_photo')_photoCache.set(pass.id,pass.pickerPhoto);
   S.passes.unshift(pass);
@@ -4592,7 +4614,7 @@ async function pickSiblingCutPass(adm,btn){
   }
   if(btn){btn.disabled=true;btn.textContent='⏳ Issuing…';}
   _sibPendingAdms=_sibPendingAdms.filter(a=>a!==adm);
-  const pass={id:uid(),date:todayStr(),time:nowT(),gateOutTime:null,studentName:s.name,admissionNumber:s.admissionNumber,class:s.class||'',fatherName:s.fatherName||'',motherName:s.motherName||'',pickedUpBy:by,relation:(prev&&prev.relation)||'',reason:(prev&&prev.reason)||'',busNumber:s.busNumber||'',pickerPhoto:sibPhoto};
+  const pass={id:nextGpId(),date:todayStr(),time:nowT(),gateOutTime:null,studentName:s.name,admissionNumber:s.admissionNumber,class:s.class||'',fatherName:s.fatherName||'',motherName:s.motherName||'',pickedUpBy:by,relation:(prev&&prev.relation)||'',reason:(prev&&prev.reason)||'',busNumber:s.busNumber||'',pickerPhoto:sibPhoto};
   renderSibList(); // remove this row from the popup right away (finalize may re-add further siblings)
   await _gpFinalizePass(pass,s,true); // true = cascade, keep dismissed-list from this chain
 }
@@ -4756,7 +4778,8 @@ async function issueQuickPass(){
   const _qpBtn=document.querySelector('[onclick="issueQuickPass()"]');
   if(_qpBtn){_qpBtn.disabled=true;_qpBtn.textContent='⏳ Issuing…';}
   try{
-  const pass={id:uid(),date:todayStr(),time:nowT(),gateOutTime:null,studentName:qpSel.name,admissionNumber:qpSel.adm,class:qpSel.cls||'',fatherName:stu?stu.fatherName||'':'',motherName:stu?stu.motherName||'':'',pickedUpBy:by,relation:document.getElementById('qprel').value,reason:document.getElementById('qpreason').value.trim(),busNumber:stu?stu.busNumber||'':'',pickerPhoto:null};
+  const pass={id:nextGpId(),date:todayStr(),time:nowT(),gateOutTime:null,studentName:qpSel.name,admissionNumber:qpSel.adm,class:qpSel.cls||'',fatherName:stu?stu.fatherName||'':'',motherName:stu?stu.motherName||'':'',pickedUpBy:by,relation:document.getElementById('qprel').value,reason:document.getElementById('qpreason').value.trim(),busNumber:stu?stu.busNumber||'':'',pickerPhoto:null};
+  await gpClaimId(pass);
   S.passes.unshift(pass);
   await push('passes');
   gpToast(`⚡ Quick pass issued for ${pass.studentName}`);
