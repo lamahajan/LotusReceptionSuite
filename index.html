@@ -4247,6 +4247,7 @@ document.addEventListener('visibilitychange',()=>{
 function todayStr(){return new Date().toLocaleDateString('en-CA',{timeZone:'Asia/Kolkata'});}
 function nowT(){return new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:true}).replace(/\b(am|pm)\b/gi,function(m){return m.toUpperCase();});}
 function uid(){return Date.now().toString(36)+Math.random().toString(36).substr(2,5);}
+function nextGpId(){const p='GP-'+todayStr().slice(2,4);let m=0;for(const x of S.passes){if(x&&typeof x.id==='string'&&x.id.startsWith(p)){const n=parseInt(x.id.slice(p.length),10);if(!isNaN(n)&&n>m)m=n;}}return p+String(m+1).padStart(4,'0');}
 function e(s){return s?String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'):''}
 function fmtD(d){if(!d)return'';try{return new Date(d+'T00:00:00').toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'})}catch{return d}}
 let _gpToastT;function gpToast(m,t='ok'){const el=document.getElementById('toast');if(!el)return;el.textContent=m;el.className='show '+t;clearTimeout(_gpToastT);_gpToastT=setTimeout(()=>el.className='',3200);}
@@ -4468,7 +4469,7 @@ async function issuePass(){
   const _issueBtn=document.querySelector('[onclick="issuePass()"]');
   if(_issueBtn){_issueBtn.disabled=true;_issueBtn.textContent='⏳ Issuing…';}
   try{
-  const pass={id:uid(),date:todayStr(),time:nowT(),gateOutTime:null,studentName:cpSel.name,admissionNumber:cpSel.admissionNumber,class:cpSel.class||'',fatherName:cpSel.fatherName||'',motherName:cpSel.motherName||'',pickedUpBy:by,relation:document.getElementById('cprel').value,reason:document.getElementById('cpreason').value.trim(),busNumber:document.getElementById('cpbus').value||cpSel.busNumber||'',pickerPhoto:photo};
+  const pass={id:nextGpId(),date:todayStr(),time:nowT(),gateOutTime:null,studentName:cpSel.name,admissionNumber:cpSel.admissionNumber,class:cpSel.class||'',fatherName:cpSel.fatherName||'',motherName:cpSel.motherName||'',pickedUpBy:by,relation:document.getElementById('cprel').value,reason:document.getElementById('cpreason').value.trim(),busNumber:document.getElementById('cpbus').value||cpSel.busNumber||'',pickerPhoto:photo};
   const stu=S.students.find(s=>s.admissionNumber===pass.admissionNumber);
   clrSel();['cpby','cpreason'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('cprel').value='';document.getElementById('cpbus').value='';clrPhoto();
@@ -4592,7 +4593,7 @@ async function pickSiblingCutPass(adm,btn){
   }
   if(btn){btn.disabled=true;btn.textContent='⏳ Issuing…';}
   _sibPendingAdms=_sibPendingAdms.filter(a=>a!==adm);
-  const pass={id:uid(),date:todayStr(),time:nowT(),gateOutTime:null,studentName:s.name,admissionNumber:s.admissionNumber,class:s.class||'',fatherName:s.fatherName||'',motherName:s.motherName||'',pickedUpBy:by,relation:(prev&&prev.relation)||'',reason:(prev&&prev.reason)||'',busNumber:s.busNumber||'',pickerPhoto:sibPhoto};
+  const pass={id:nextGpId(),date:todayStr(),time:nowT(),gateOutTime:null,studentName:s.name,admissionNumber:s.admissionNumber,class:s.class||'',fatherName:s.fatherName||'',motherName:s.motherName||'',pickedUpBy:by,relation:(prev&&prev.relation)||'',reason:(prev&&prev.reason)||'',busNumber:s.busNumber||'',pickerPhoto:sibPhoto};
   renderSibList(); // remove this row from the popup right away (finalize may re-add further siblings)
   await _gpFinalizePass(pass,s,true); // true = cascade, keep dismissed-list from this chain
 }
@@ -4756,7 +4757,7 @@ async function issueQuickPass(){
   const _qpBtn=document.querySelector('[onclick="issueQuickPass()"]');
   if(_qpBtn){_qpBtn.disabled=true;_qpBtn.textContent='⏳ Issuing…';}
   try{
-  const pass={id:uid(),date:todayStr(),time:nowT(),gateOutTime:null,studentName:qpSel.name,admissionNumber:qpSel.adm,class:qpSel.cls||'',fatherName:stu?stu.fatherName||'':'',motherName:stu?stu.motherName||'':'',pickedUpBy:by,relation:document.getElementById('qprel').value,reason:document.getElementById('qpreason').value.trim(),busNumber:stu?stu.busNumber||'':'',pickerPhoto:null};
+  const pass={id:nextGpId(),date:todayStr(),time:nowT(),gateOutTime:null,studentName:qpSel.name,admissionNumber:qpSel.adm,class:qpSel.cls||'',fatherName:stu?stu.fatherName||'':'',motherName:stu?stu.motherName||'':'',pickedUpBy:by,relation:document.getElementById('qprel').value,reason:document.getElementById('qpreason').value.trim(),busNumber:stu?stu.busNumber||'':'',pickerPhoto:null};
   S.passes.unshift(pass);
   await push('passes');
   gpToast(`⚡ Quick pass issued for ${pass.studentName}`);
